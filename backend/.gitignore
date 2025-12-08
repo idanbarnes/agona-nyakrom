@@ -1,0 +1,20 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+
+# File uploads
+uploads/
+
+# Logs
+npm-debug.log
+logs/
+
+# Build output
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
