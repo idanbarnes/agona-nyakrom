@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const multer = require('multer');
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024; //5 MB
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 const tmpDir = path.join(process.cwd(), 'uploads', 'tmp');
