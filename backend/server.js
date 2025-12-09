@@ -12,6 +12,8 @@ const asafoRoutes = require('./src/routes/asafoRoutes');
 const landMarkRoutes = require('./src/routes/landmarkRoutes');
 const hallOfFameRoutes = require('./src/routes/hallOfFameRoutes');
 const settingsRoutes = require('./src/routes/settingsRoutes');
+const adminAuthRoutes = require('./src/routes/adminAuthRoutes');
+const adminTestRoutes = require('./src/routes/adminTestRoutes');
 
 
 const app = express();
@@ -27,6 +29,8 @@ app.use('/api/asafo-companies', asafoRoutes);
 app.use('/api/landmarks', landMarkRoutes);
 app.use('/api/hall-of-fame', hallOfFameRoutes);
 app.use('/api', settingsRoutes);
+app.use('/api/admin/auth', adminAuthRoutes);
+app.use('/api/admin/protected', adminTestRoutes);
 
 
 // Health check endpoint to verify server availability
