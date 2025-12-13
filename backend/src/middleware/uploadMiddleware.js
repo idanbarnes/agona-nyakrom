@@ -40,7 +40,10 @@ const upload = multer({
   storage,
   limits: { fileSize: MAX_FILE_SIZE },
   fileFilter,
+  
 });
 
 // Export a ready-to-use middleware for single image uploads
-module.exports = upload.single('image');
+module.exports = {
+  single: (fieldName = 'image') => upload.single(fieldName)
+};

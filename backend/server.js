@@ -14,7 +14,20 @@ const hallOfFameRoutes = require('./src/routes/hallOfFameRoutes');
 const settingsRoutes = require('./src/routes/settingsRoutes');
 const adminAuthRoutes = require('./src/routes/adminAuthRoutes');
 const adminTestRoutes = require('./src/routes/adminTestRoutes');
+const adminBaseRoutes = require('./src/routes/admin/adminBaseRoutes');
+const newsAdminRoutes = require('./src/routes/admin/newsAdminRoutes');
+const obituaryAdminRoutes = require('./src/routes/admin/obituaryAdminRoutes');
+const clanAdminRoutes = require('./src/routes/admin/clanAdminRoutes');
+const asafoAdminRoutes = require('./src/routes/admin/asafoAdminRoutes');
+const hallOfFameAdminRoutes = require('./src/routes/admin/hallOfFameAdminRoutes');
+const hallOfFameAdminRoute = require('./src/routes/admin/hallOfFameAdminRoutes');
 
+//for handling public endpoints routing
+const publicNewsRoutes = require('./src/routes/public/newsPublicRoutes');
+const publicObituaryRoutes = require('./src/routes/public/obituaryPublicRoutes');
+const publicClansRoutes = require('./src/routes/public/clanPublicRoutes');
+const publicAsafoRoutes = require('./src/routes/public/asafoPublicRoutes');
+const publicHallOfFameRoutes = require('./src/routes/public/hallOfFamePublicRoutes');
 
 const app = express();
 
@@ -29,8 +42,22 @@ app.use('/api/asafo-companies', asafoRoutes);
 app.use('/api/landmarks', landMarkRoutes);
 app.use('/api/hall-of-fame', hallOfFameRoutes);
 app.use('/api', settingsRoutes);
-app.use('/api/admin/auth', adminAuthRoutes);
+app.use('/api/admin/auth', adminAuthRoutes);//ensure that protected routes receives authentication first.
 app.use('/api/admin/protected', adminTestRoutes);
+app.use('/api/admin', adminBaseRoutes);
+app.use('/api/admin/news', newsAdminRoutes);
+app.use('/api/admin/obituaries', obituaryAdminRoutes);
+app.use('/api/admin/clans', clanAdminRoutes);
+app.use('/api/admin/asafo-companies', asafoAdminRoutes);
+app.use('/api/admin/hall-of-fame', hallOfFameAdminRoutes);
+app.use('/api/admin/hall-of-fame', hallOfFameAdminRoute);
+
+//for handling public endpoints (registerd)
+app.use('/api/public/news', publicNewsRoutes);
+app.use('/api/public/obituaries', publicObituaryRoutes);
+app.use('/api/public/clans', publicClansRoutes);
+app.use('/api/public/asafo-companies', publicAsafoRoutes);
+app.use('/api/public/hall-of-fame', publicHallOfFameRoutes);
 
 
 // Health check endpoint to verify server availability
