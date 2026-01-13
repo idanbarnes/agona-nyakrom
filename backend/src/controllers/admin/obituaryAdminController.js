@@ -4,6 +4,21 @@ const { requireFields, isValidSlugFormat } = require('../../utils/validators');
 const { generateSlug } = require('../../utils/slugify');
 const { success, error } = require('../../utils/response');
 
+const parseBooleanField = (value) => {
+  if (value === undefined) return undefined;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === '1' || normalized === 'on') {
+      return true;
+    }
+    if (normalized === 'false' || normalized === '0' || normalized === '') {
+      return false;
+    }
+  }
+  return Boolean(value);
+};
+
 const processImageIfPresent = async (file, uniqueId) => {
   if (!file) return {};
   return mediaService.processImage(file, 'obituaries', uniqueId);
@@ -40,8 +55,10 @@ const createObituary = async (req, res) => {
       date_of_death,
       burial_date,
       funeral_date,
+      published,
     } = req.body || {};
 
+    const publishedValue = parseBooleanField(published);
     const { valid, missing } = requireFields(req.body || {}, ['full_name', 'summary', 'biography']);
     if (!valid) {
       return error(res, `Missing fields: ${missing.join(', ')}`, 400);
@@ -65,6 +82,7 @@ const createObituary = async (req, res) => {
       date_of_death,
       burial_date,
       funeral_date,
+      published: publishedValue,
       images,
     });
 
@@ -91,8 +109,10 @@ const updateObituary = async (req, res) => {
       date_of_death,
       burial_date,
       funeral_date,
+      published,
     } = req.body || {};
 
+    const publishedValue = parseBooleanField(published);
     const updatableFields = [
       'full_name',
       'summary',
@@ -102,6 +122,7 @@ const updateObituary = async (req, res) => {
       'date_of_death',
       'burial_date',
       'funeral_date',
+      'published',
     ];
     const hasFieldUpdate = updatableFields.some((field) => req.body && req.body[field] !== undefined);
     const hasImageUpdate = Boolean(req.file || typeof req.body?.image === 'string');
@@ -135,6 +156,7 @@ const updateObituary = async (req, res) => {
       date_of_death,
       burial_date,
       funeral_date,
+      published: publishedValue,
       images,
     });
 

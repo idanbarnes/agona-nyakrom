@@ -1,0 +1,823 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import {
+  createClanLeader,
+  deleteClanLeader,
+  getSingleClan,
+  reorderClanLeaders,
+  updateClan,
+  updateClanLeader,
+} from '../../services/api/adminClansApi.js'
+import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+
+// Draft leaders are created inline before persisting to the API.
+const createDraftLeader = (type) => ({
+  id: `${type}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  type,
+  name: '',
+  title: '',
+  position: '',
+  image: null,
+  error: '',
+})
+
+function AdminClansEditPage() {
+  const { id } = useParams()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [initialState, setInitialState] = useState(null)
+  const [formState, setFormState] = useState({
+    name: '',
+    intro: '',
+    history: '',
+    key_contributions: '',
+    published: false,
+    image: null,
+    existingImageUrl: '',
+  })
+  const [leaders, setLeaders] = useState({ current: [], past: [] })
+  const [draftLeaders, setDraftLeaders] = useState({ current: [], past: [] })
+  const [leaderMessage, setLeaderMessage] = useState(
+    location.state?.leaderSaveError || ''
+  )
+  const [autoDrafted, setAutoDrafted] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+
+  const hasLeaderErrors = useMemo(() => {
+    const allLeaders = [
+      ...leaders.current,
+      ...leaders.past,
+      ...draftLeaders.current,
+      ...draftLeaders.past,
+    ]
+    return allLeaders.some((leader) => leader.error)
+  }, [leaders, draftLeaders])
+
+  const handleAuthError = (error) => {
+    if (error?.status === 401) {
+      clearAuthToken()
+      navigate('/login', { replace: true })
+      return true
+    }
+    return false
+  }
+
+  const updateLeaderState = (type, leaderId, updates, isDraft = false) => {
+    const setter = isDraft ? setDraftLeaders : setLeaders
+    setter((current) => ({
+      ...current,
+      [type]: current[type].map((leader) =>
+        leader.id === leaderId ? { ...leader, ...updates } : leader
+      ),
+    }))
+  }
+
+  const addDraftLeader = (type) => {
+    setDraftLeaders((current) => ({
+      ...current,
+      [type]: [...current[type], createDraftLeader(type)],
+    }))
+  }
+
+  const removeDraftLeader = (type, leaderId) => {
+    setDraftLeaders((current) => ({
+      ...current,
+      [type]: current[type].filter((leader) => leader.id !== leaderId),
+    }))
+  }
+
+  // Use FormData when an image is present; otherwise JSON is fine.
+  const buildLeaderFormData = (leader, displayOrder) => {
+    const formData = new FormData()
+    if (leader.type) {
+      formData.append('type', leader.type)
+    }
+    if (leader.name) {
+      formData.append('name', leader.name)
+    }
+    if (leader.title) {
+      formData.append('title', leader.title)
+    }
+    if (leader.position !== undefined) {
+      formData.append('position', leader.position)
+    }
+    if (displayOrder !== undefined) {
+      formData.append('display_order', String(displayOrder))
+    }
+    if (leader.image) {
+      formData.append('image', leader.image)
+    }
+    return formData
+  }
+
+  // Reorder leaders within a section and persist display_order server-side.
+  const handleReorder = async (type, direction, leaderId) => {
+    setLeaderMessage('')
+    setErrorMessage('')
+
+    const list = leaders[type]
+    const index = list.findIndex((leader) => leader.id === leaderId)
+    if (index === -1) {
+      return
+    }
+
+    const targetIndex = direction === 'up' ? index - 1 : index + 1
+    if (targetIndex < 0 || targetIndex >= list.length) {
+      return
+    }
+
+    const nextList = [...list]
+    const [moved] = nextList.splice(index, 1)
+    nextList.splice(targetIndex, 0, moved)
+
+    const previousState = leaders
+    setLeaders((current) => ({
+      ...current,
+      [type]: nextList.map((leader, orderIndex) => ({
+        ...leader,
+        display_order: orderIndex + 1,
+      })),
+    }))
+
+    try {
+      await reorderClanLeaders(id, {
+        current: leaders.current.map((leader) => leader.id),
+        past: leaders.past.map((leader) => leader.id),
+        [type]: nextList.map((leader) => leader.id),
+      })
+    } catch (reorderError) {
+      if (handleAuthError(reorderError)) {
+        return
+      }
+      setLeaders(previousState)
+      setLeaderMessage(
+        reorderError.message || 'Unable to reorder clan leaders.'
+      )
+    }
+  }
+
+  const handleSaveLeader = async (type, leader) => {
+    setLeaderMessage('')
+
+    if (!leader.position) {
+      updateLeaderState(type, leader.id, { error: 'Position is required.' })
+      return
+    }
+
+    updateLeaderState(type, leader.id, { error: '', isSaving: true })
+
+    try {
+      const payload = leader.image
+        ? buildLeaderFormData(leader, leader.display_order)
+        : {
+            type: leader.type,
+            name: leader.name || '',
+            title: leader.title || '',
+            position: leader.position,
+            display_order: leader.display_order,
+          }
+      const response = await updateClanLeader(id, leader.id, payload)
+      const updated = response?.data ?? response
+      updateLeaderState(type, leader.id, {
+        ...updated,
+        image: null,
+        existingImageUrl:
+          updated?.image_url ||
+          updated?.imageUrl ||
+          updated?.image ||
+          updated?.images?.medium ||
+          updated?.images?.large ||
+          updated?.images?.original ||
+          '',
+        isSaving: false,
+      })
+    } catch (leaderError) {
+      if (handleAuthError(leaderError)) {
+        return
+      }
+      updateLeaderState(type, leader.id, {
+        error: leaderError.message || 'Unable to save leader.',
+        isSaving: false,
+      })
+    }
+  }
+
+  const handleDeleteLeader = async (type, leaderId) => {
+    setLeaderMessage('')
+    setErrorMessage('')
+
+    try {
+      await deleteClanLeader(id, leaderId)
+      setLeaders((current) => ({
+        ...current,
+        [type]: current[type].filter((leader) => leader.id !== leaderId),
+      }))
+    } catch (leaderError) {
+      if (handleAuthError(leaderError)) {
+        return
+      }
+      setLeaderMessage(leaderError.message || 'Unable to delete leader.')
+    }
+  }
+
+  const handleCreateLeader = async (type, leader) => {
+    if (!leader.position) {
+      updateLeaderState(type, leader.id, { error: 'Position is required.' }, true)
+      return
+    }
+
+    updateLeaderState(type, leader.id, { error: '', isSaving: true }, true)
+
+    try {
+      const response = await createClanLeader(
+        id,
+        buildLeaderFormData(leader, leaders[type].length + 1)
+      )
+      const created = response?.data ?? response
+      setLeaders((current) => ({
+        ...current,
+        [type]: [...current[type], created],
+      }))
+      setDraftLeaders((current) => ({
+        ...current,
+        [type]: current[type].filter((entry) => entry.id !== leader.id),
+      }))
+    } catch (leaderError) {
+      if (handleAuthError(leaderError)) {
+        return
+      }
+      updateLeaderState(
+        type,
+        leader.id,
+        {
+          error: leaderError.message || 'Unable to save leader.',
+          isSaving: false,
+        },
+        true
+      )
+    }
+  }
+
+  useEffect(() => {
+    if (!getAuthToken()) {
+      navigate('/login', { replace: true })
+      return
+    }
+
+    const fetchClan = async () => {
+      setIsLoading(true)
+      setErrorMessage('')
+
+      try {
+        const payload = await getSingleClan(id)
+        const data = payload?.data ?? payload
+        const clan = data?.clan || data
+
+        const currentLeaders = data?.leaders?.current || []
+        const pastLeaders = data?.leaders?.past || []
+
+        const nextState = {
+          name: clan?.name || '',
+          intro: clan?.intro || '',
+          history: clan?.history || '',
+          key_contributions: clan?.key_contributions || '',
+          published: Boolean(clan?.published),
+          image: null,
+          existingImageUrl: clan?.image_url || clan?.imageUrl || clan?.image || '',
+        }
+
+        setInitialState(nextState)
+        // Auto-draft the UI when entering edit mode.
+        setFormState({ ...nextState, published: false })
+        setAutoDrafted(true)
+        setLeaders({
+          current: currentLeaders.map((leader) => ({
+            ...leader,
+            image: null,
+            existingImageUrl:
+              leader?.image_url ||
+              leader?.imageUrl ||
+              leader?.image ||
+              leader?.images?.medium ||
+              leader?.images?.large ||
+              leader?.images?.original ||
+              '',
+          })),
+          past: pastLeaders.map((leader) => ({
+            ...leader,
+            image: null,
+            existingImageUrl:
+              leader?.image_url ||
+              leader?.imageUrl ||
+              leader?.image ||
+              leader?.images?.medium ||
+              leader?.images?.large ||
+              leader?.images?.original ||
+              '',
+          })),
+        })
+      } catch (error) {
+        if (error.status === 401) {
+          // Token expired; force re-authentication.
+          clearAuthToken()
+          navigate('/login', { replace: true })
+          return
+        }
+
+        setErrorMessage(error.message || 'Unable to load clan.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchClan()
+  }, [id, navigate])
+
+  useEffect(() => {
+    if (location.state?.failedLeaders?.length) {
+      const failed = location.state.failedLeaders
+      setDraftLeaders((current) => ({
+        current: [
+          ...current.current,
+          ...failed.filter((leader) => leader.type === 'current'),
+        ],
+        past: [
+          ...current.past,
+          ...failed.filter((leader) => leader.type === 'past'),
+        ],
+      }))
+    }
+  }, [location.state])
+
+  const hasChanges = useMemo(() => {
+    if (!initialState) {
+      return false
+    }
+
+    return (
+      autoDrafted ||
+      formState.name !== initialState.name ||
+      formState.intro !== initialState.intro ||
+      formState.history !== initialState.history ||
+      formState.key_contributions !== initialState.key_contributions ||
+      formState.published !== initialState.published ||
+      Boolean(formState.image)
+    )
+  }, [autoDrafted, formState, initialState])
+
+  const handleChange = (event) => {
+    const { name, value, type, checked } = event.target
+    const nextValue = type === 'checkbox' ? checked : value
+    setFormState((current) => ({ ...current, [name]: nextValue }))
+  }
+
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0] || null
+    setFormState((current) => ({ ...current, image: file }))
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setErrorMessage('')
+
+    if (!hasChanges) {
+      setErrorMessage('No changes to update.')
+      return
+    }
+
+    if (!formState.name || !formState.intro || !formState.history) {
+      setErrorMessage('Name, intro, and history are required.')
+      return
+    }
+
+    if (leaderMessage || hasLeaderErrors) {
+      const message =
+        leaderMessage || 'Resolve leader errors before saving the clan.'
+      setErrorMessage(message)
+      // Keep the user on the edit page to fix the leader errors.
+      window.alert(message)
+      return
+    }
+
+    const formData = new FormData()
+    formData.append('name', formState.name)
+    formData.append('intro', formState.intro)
+    formData.append('history', formState.history)
+    if (formState.key_contributions) {
+      formData.append('key_contributions', formState.key_contributions)
+    }
+    // Force publish on successful save when leaving auto-draft mode.
+    formData.append('published', 'true')
+    if (formState.image) {
+      formData.append('image', formState.image)
+    }
+
+    setIsSubmitting(true)
+    try {
+      const response = await updateClan(id, formData)
+      if (response?.success === false) {
+        throw new Error(response?.message || 'Unable to update clan.')
+      }
+      // Confirm success before redirecting back to the list.
+      setFormState((current) => ({ ...current, published: true }))
+      setAutoDrafted(false)
+      window.alert('Clan edited successfully')
+      navigate('/admin/clans', { replace: true })
+    } catch (error) {
+      if (error.status === 401) {
+        // Token expired; force re-authentication.
+        clearAuthToken()
+        navigate('/login', { replace: true })
+        return
+      }
+
+      const message = error.message || 'Unable to update clan.'
+      setErrorMessage(message)
+      // Keep the user on the edit page to correct issues.
+      window.alert(message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <section>
+        <h2>Edit Family Clan</h2>
+        <p>Loading...</p>
+      </section>
+    )
+  }
+
+  return (
+    <section>
+      <h2>Edit Family Clan</h2>
+      {errorMessage ? <p role="alert">{errorMessage}</p> : null}
+      {leaderMessage ? <p role="status">{leaderMessage}</p> : null}
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="name">Name</label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          value={formState.name}
+          onChange={handleChange}
+          required
+        />
+
+        <label htmlFor="intro">Intro</label>
+        <textarea
+          id="intro"
+          name="intro"
+          value={formState.intro}
+          onChange={handleChange}
+          required
+        />
+
+        <label htmlFor="history">History</label>
+        <textarea
+          id="history"
+          name="history"
+          value={formState.history}
+          onChange={handleChange}
+          required
+        />
+
+        <label htmlFor="key_contributions">Key contributions (optional)</label>
+        <textarea
+          id="key_contributions"
+          name="key_contributions"
+          value={formState.key_contributions}
+          onChange={handleChange}
+        />
+
+        <label htmlFor="published">
+          <input
+            id="published"
+            name="published"
+            type="checkbox"
+            checked={formState.published}
+            onChange={handleChange}
+            disabled={autoDrafted}
+          />
+          Published
+        </label>
+
+        <label htmlFor="image">Replace image (optional)</label>
+        <input id="image" name="image" type="file" onChange={handleFileChange} />
+        {formState.existingImageUrl ? (
+          <p>
+            Current image:{' '}
+            <a href={formState.existingImageUrl} target="_blank" rel="noreferrer">
+              View
+            </a>
+          </p>
+        ) : null}
+
+        <section>
+          <h3>Current Leaders</h3>
+          <button type="button" onClick={() => addDraftLeader('current')}>
+            Add leader
+          </button>
+          {leaders.current.map((leader, index) => (
+            <div key={leader.id}>
+              <label>Name (optional)</label>
+              <input
+                type="text"
+                value={leader.name || ''}
+                onChange={(event) =>
+                  updateLeaderState('current', leader.id, {
+                    name: event.target.value,
+                  })
+                }
+              />
+              <label>Title (optional)</label>
+              <input
+                type="text"
+                value={leader.title || ''}
+                onChange={(event) =>
+                  updateLeaderState('current', leader.id, {
+                    title: event.target.value,
+                  })
+                }
+              />
+              <label>Position</label>
+              <input
+                type="text"
+                value={leader.position || ''}
+                onChange={(event) =>
+                  updateLeaderState('current', leader.id, {
+                    position: event.target.value,
+                    error: '',
+                  })
+                }
+                required
+              />
+              {leader.error ? <p role="alert">{leader.error}</p> : null}
+              <label>Replace image (optional)</label>
+              <input
+                type="file"
+                onChange={(event) =>
+                  updateLeaderState('current', leader.id, {
+                    image: event.target.files?.[0] || null,
+                  })
+                }
+              />
+              {leader.existingImageUrl ? (
+                <p>
+                  Current image:{' '}
+                  <a href={leader.existingImageUrl} target="_blank" rel="noreferrer">
+                    View
+                  </a>
+                </p>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => handleSaveLeader('current', leader)}
+                disabled={leader.isSaving}
+              >
+                {leader.isSaving ? 'Saving...' : 'Save leader'}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteLeader('current', leader.id)}
+              >
+                Delete
+              </button>
+              <button
+                type="button"
+                onClick={() => handleReorder('current', 'up', leader.id)}
+                disabled={index === 0}
+              >
+                Move up
+              </button>
+              <button
+                type="button"
+                onClick={() => handleReorder('current', 'down', leader.id)}
+                disabled={index === leaders.current.length - 1}
+              >
+                Move down
+              </button>
+            </div>
+          ))}
+
+          {draftLeaders.current.map((leader) => (
+            <div key={leader.id}>
+              <label>Name (optional)</label>
+              <input
+                type="text"
+                value={leader.name || ''}
+                onChange={(event) =>
+                  updateLeaderState('current', leader.id, {
+                    name: event.target.value,
+                  }, true)
+                }
+              />
+              <label>Title (optional)</label>
+              <input
+                type="text"
+                value={leader.title || ''}
+                onChange={(event) =>
+                  updateLeaderState('current', leader.id, {
+                    title: event.target.value,
+                  }, true)
+                }
+              />
+              <label>Position</label>
+              <input
+                type="text"
+                value={leader.position || ''}
+                onChange={(event) =>
+                  updateLeaderState('current', leader.id, {
+                    position: event.target.value,
+                    error: '',
+                  }, true)
+                }
+                required
+              />
+              {leader.error ? <p role="alert">{leader.error}</p> : null}
+              <label>Image (optional)</label>
+              <input
+                type="file"
+                onChange={(event) =>
+                  updateLeaderState('current', leader.id, {
+                    image: event.target.files?.[0] || null,
+                  }, true)
+                }
+              />
+              <button
+                type="button"
+                onClick={() => handleCreateLeader('current', leader)}
+                disabled={leader.isSaving}
+              >
+                {leader.isSaving ? 'Saving...' : 'Save leader'}
+              </button>
+              <button
+                type="button"
+                onClick={() => removeDraftLeader('current', leader.id)}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </section>
+
+        <section>
+          <h3>Past Leaders</h3>
+          <button type="button" onClick={() => addDraftLeader('past')}>
+            Add leader
+          </button>
+          {leaders.past.map((leader, index) => (
+            <div key={leader.id}>
+              <label>Name (optional)</label>
+              <input
+                type="text"
+                value={leader.name || ''}
+                onChange={(event) =>
+                  updateLeaderState('past', leader.id, {
+                    name: event.target.value,
+                  })
+                }
+              />
+              <label>Title (optional)</label>
+              <input
+                type="text"
+                value={leader.title || ''}
+                onChange={(event) =>
+                  updateLeaderState('past', leader.id, {
+                    title: event.target.value,
+                  })
+                }
+              />
+              <label>Position</label>
+              <input
+                type="text"
+                value={leader.position || ''}
+                onChange={(event) =>
+                  updateLeaderState('past', leader.id, {
+                    position: event.target.value,
+                    error: '',
+                  })
+                }
+                required
+              />
+              {leader.error ? <p role="alert">{leader.error}</p> : null}
+              <label>Replace image (optional)</label>
+              <input
+                type="file"
+                onChange={(event) =>
+                  updateLeaderState('past', leader.id, {
+                    image: event.target.files?.[0] || null,
+                  })
+                }
+              />
+              {leader.existingImageUrl ? (
+                <p>
+                  Current image:{' '}
+                  <a href={leader.existingImageUrl} target="_blank" rel="noreferrer">
+                    View
+                  </a>
+                </p>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => handleSaveLeader('past', leader)}
+                disabled={leader.isSaving}
+              >
+                {leader.isSaving ? 'Saving...' : 'Save leader'}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteLeader('past', leader.id)}
+              >
+                Delete
+              </button>
+              <button
+                type="button"
+                onClick={() => handleReorder('past', 'up', leader.id)}
+                disabled={index === 0}
+              >
+                Move up
+              </button>
+              <button
+                type="button"
+                onClick={() => handleReorder('past', 'down', leader.id)}
+                disabled={index === leaders.past.length - 1}
+              >
+                Move down
+              </button>
+            </div>
+          ))}
+
+          {draftLeaders.past.map((leader) => (
+            <div key={leader.id}>
+              <label>Name (optional)</label>
+              <input
+                type="text"
+                value={leader.name || ''}
+                onChange={(event) =>
+                  updateLeaderState('past', leader.id, {
+                    name: event.target.value,
+                  }, true)
+                }
+              />
+              <label>Title (optional)</label>
+              <input
+                type="text"
+                value={leader.title || ''}
+                onChange={(event) =>
+                  updateLeaderState('past', leader.id, {
+                    title: event.target.value,
+                  }, true)
+                }
+              />
+              <label>Position</label>
+              <input
+                type="text"
+                value={leader.position || ''}
+                onChange={(event) =>
+                  updateLeaderState('past', leader.id, {
+                    position: event.target.value,
+                    error: '',
+                  }, true)
+                }
+                required
+              />
+              {leader.error ? <p role="alert">{leader.error}</p> : null}
+              <label>Image (optional)</label>
+              <input
+                type="file"
+                onChange={(event) =>
+                  updateLeaderState('past', leader.id, {
+                    image: event.target.files?.[0] || null,
+                  }, true)
+                }
+              />
+              <button
+                type="button"
+                onClick={() => handleCreateLeader('past', leader)}
+                disabled={leader.isSaving}
+              >
+                {leader.isSaving ? 'Saving...' : 'Save leader'}
+              </button>
+              <button
+                type="button"
+                onClick={() => removeDraftLeader('past', leader.id)}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </section>
+
+        <button type="submit" disabled={isSubmitting || !hasChanges}>
+          {isSubmitting ? 'Saving...' : 'Save changes'}
+        </button>
+      </form>
+    </section>
+  )
+}
+
+export default AdminClansEditPage

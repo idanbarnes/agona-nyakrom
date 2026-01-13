@@ -1,0 +1,99 @@
+/* Tailwind layers: base, components, utilities */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 98%;
+  --foreground: 222 14% 12%;
+
+  --surface: 0 0% 100%;
+  --surface-foreground: 222 14% 12%;
+
+  --muted: 210 16% 92%;
+  --muted-foreground: 215 12% 40%;
+
+  --border: 214 14% 88%;
+
+  --primary: 221 83% 53%;
+  --primary-foreground: 210 40% 98%;
+
+  --accent: 215 20% 95%;
+  --accent-foreground: 222 14% 12%;
+
+  --danger: 0 84% 60%;
+  --warning: 38 92% 50%;
+  --success: 142 71% 45%;
+
+  --ring: 221 83% 53%;
+
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: 222 14% 10%;
+  --foreground: 210 40% 98%;
+
+  --surface: 222 14% 12%;
+  --surface-foreground: 210 40% 98%;
+
+  --muted: 217 14% 18%;
+  --muted-foreground: 215 20% 70%;
+
+  --border: 217 14% 22%;
+
+  --primary: 217 91% 60%;
+  --primary-foreground: 210 40% 98%;
+
+  --accent: 217 14% 18%;
+  --accent-foreground: 210 40% 98%;
+
+  --danger: 0 84% 60%;
+  --warning: 38 92% 50%;
+  --success: 142 71% 45%;
+
+  --ring: 217 91% 60%;
+}
+
+/* =========================
+   Design Tokens (CSS Vars)
+   ========================= */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: hsl(var(--border));
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100%;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  a {
+    color: hsl(var(--primary));
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  :focus-visible {
+    outline: none;
+    @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}

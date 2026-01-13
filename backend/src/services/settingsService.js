@@ -11,17 +11,6 @@ const getHistory = async () => {
   return rows[0] || null;
 };
 
-const getHomepageSettings = async () => {
-  const { rows } = await pool.query(
-    `SELECT *
-     FROM homepage_settings
-     WHERE published = true
-     ORDER BY created_at DESC
-     LIMIT 1`
-  );
-  return rows[0] || null;
-};
-
 const getGlobalSettings = async () => {
   const { rows } = await pool.query(
     `SELECT *
@@ -35,6 +24,5 @@ const getGlobalSettings = async () => {
 
 module.exports = {
   getHistory,
-  getHomepageSettings,
   getGlobalSettings,
 };

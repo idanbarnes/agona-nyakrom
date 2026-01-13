@@ -6,6 +6,7 @@ const mapLandmark = (row) => {
   const {
     id,
     name,
+    title,
     slug,
     category,
     description,
@@ -24,6 +25,7 @@ const mapLandmark = (row) => {
   return {
     id,
     name,
+    title,
     slug,
     category,
     description,
@@ -31,6 +33,8 @@ const mapLandmark = (row) => {
     latitude,
     longitude,
     video_url,
+    location: address,
+    google_map_link: video_url,
     images: {
       original: original_image_path,
       large: large_image_path,

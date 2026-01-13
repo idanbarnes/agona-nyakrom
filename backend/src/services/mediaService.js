@@ -16,6 +16,7 @@ const SECTION_DIRS = {
   'hall-of-fame': 'hall-of-fame',
   carousel: 'carousel',
   history: 'history',
+  homepage: 'homepage',
 };
 
 const variants = [

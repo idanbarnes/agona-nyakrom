@@ -45,15 +45,17 @@ const mapObituary = (row) => {
 
   return {
     id,
+    full_name: name,
     name,
     slug,
-    birth_date,
-    death_date,
+    date_of_birth: birth_date,
+    date_of_death: death_date,
     age,
-    funeral_start_at,
-    funeral_end_at,
+    funeral_date: funeral_start_at,
+    burial_date: funeral_end_at,
     location,
-    description,
+    summary: description || null,
+    biography: description || null,
     map_link,
     images: {
       original: original_image_path,

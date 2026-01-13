@@ -17,6 +17,7 @@ const baseSelect = `
   large_image_path,
   medium_image_path,
   thumbnail_image_path,
+  published,
   created_at,
   updated_at
 `;
@@ -39,6 +40,7 @@ const mapObituary = (row) => {
     large_image_path,
     medium_image_path,
     thumbnail_image_path,
+    published,
     created_at,
     updated_at,
   } = row;
@@ -60,6 +62,7 @@ const mapObituary = (row) => {
       medium: medium_image_path,
       thumbnail: thumbnail_image_path,
     },
+    published,
     created_at,
     updated_at,
   };
@@ -77,6 +80,7 @@ const create = async (data) => {
     burial_date = null,
     funeral_date = null,
     images = {},
+    published = false,
   } = data;
 
   const { original, large, medium, thumbnail } = images;
@@ -85,9 +89,9 @@ const create = async (data) => {
     INSERT INTO obituaries
       (name, slug, age, birth_date, death_date, funeral_start_at, funeral_end_at,
        description, original_image_path, large_image_path, medium_image_path, thumbnail_image_path,
-       created_at, updated_at)
+       published, created_at, updated_at)
     VALUES
-      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
     RETURNING ${baseSelect}
   `;
 
@@ -104,6 +108,7 @@ const create = async (data) => {
     large || null,
     medium || null,
     thumbnail || null,
+    published,
   ];
 
   const { rows } = await pool.query(query, values);
@@ -131,6 +136,7 @@ const update = async (id, data) => {
   if (data.date_of_death !== undefined) setField('death_date', data.date_of_death);
   if (data.funeral_date !== undefined) setField('funeral_start_at', data.funeral_date);
   if (data.burial_date !== undefined) setField('funeral_end_at', data.burial_date);
+  if (data.published !== undefined) setField('published', data.published);
 
   if (data.images) {
     const { original, large, medium, thumbnail } = data.images;

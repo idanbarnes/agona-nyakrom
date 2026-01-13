@@ -1,4 +1,4 @@
-// 
+// For postgre connection and migration
 
 require('dotenv').config();
 

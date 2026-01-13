@@ -1,4 +1,5 @@
 const clanAdminService = require('../../services/admin/clanAdminService');
+const clanLeaderService = require('../../services/admin/clanLeaderAdminService');
 const mediaService = require('../../services/mediaService');
 const { requireFields } = require('../../utils/validators');
 const { generateSlug } = require('../../utils/slugify');
@@ -27,6 +28,18 @@ const extractImageFromRequest = (req) => {
     mimetype,
     size: buffer.length,
   };
+};
+
+const groupLeaders = (leaders = []) => {
+  const grouped = { current: [], past: [] };
+  leaders.forEach((leader) => {
+    if (leader?.type === 'past') {
+      grouped.past.push(leader);
+    } else {
+      grouped.current.push(leader);
+    }
+  });
+  return grouped;
 };
 
 // POST /create
@@ -149,7 +162,15 @@ const getSingleClan = async (req, res) => {
     if (!clan) {
       return error(res, 'Clan not found', 404);
     }
-    return success(res, clan, 'Clan fetched successfully');
+    const leaders = await clanLeaderService.getByClan(id);
+    return success(
+      res,
+      {
+        ...clan,
+        leaders: groupLeaders(leaders),
+      },
+      'Clan fetched successfully'
+    );
   } catch (err) {
     console.error('Error fetching clan (single):', err.message);
     return error(res, 'Failed to fetch clan', 500);

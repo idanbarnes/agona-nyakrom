@@ -1,4 +1,5 @@
 const { pool } = require('../../config/db');
+const clanLeaderService = require('./clanLeaderService');
 
 const baseSelect = `
   id,
@@ -70,7 +71,23 @@ const findBySlug = async (slug) => {
      LIMIT 1`,
     [slug]
   );
-  return mapClan(rows[0]);
+  const clan = mapClan(rows[0]);
+  if (!clan) return null;
+
+  const leaders = await clanLeaderService.getByClan(clan.id);
+  const grouped = { current: [], past: [] };
+  leaders.forEach((leader) => {
+    if (leader?.type === 'past') {
+      grouped.past.push(leader);
+    } else {
+      grouped.current.push(leader);
+    }
+  });
+
+  return {
+    ...clan,
+    leaders: grouped,
+  };
 };
 
 module.exports = {

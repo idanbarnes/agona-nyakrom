@@ -5,6 +5,16 @@ const { pool } = require('../config/db');
 const SALT_ROUNDS = 10;
 
 const seedAdmin = async () => {
+  const isDev = process.env.NODE_ENV === 'development';
+  const allowSeed = process.env.ALLOW_ADMIN_SEED === 'true';
+
+  if (!isDev && !allowSeed) {
+    console.log(
+      'Admin seeding skipped: set NODE_ENV=development or ALLOW_ADMIN_SEED=true to enable.'
+    );
+    process.exit(0);
+  }
+
   const email = process.env.ADMIN_DEFAULT_EMAIL;
   const password = process.env.ADMIN_DEFAULT_PASSWORD;
 
