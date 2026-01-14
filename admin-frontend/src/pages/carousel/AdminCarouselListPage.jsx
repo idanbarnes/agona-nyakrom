@@ -46,7 +46,7 @@ function AdminCarouselListPage() {
   const [total, setTotal] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isReordering, setIsReordering] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
+  const [error, setError] = useState(null)
   const [successMessage, setSuccessMessage] = useState(
     location.state?.successMessage || ''
   )
@@ -54,6 +54,8 @@ function AdminCarouselListPage() {
     total !== null
       ? page >= Math.ceil(total / limit)
       : items.length < limit
+  const errorMessage =
+    typeof error === 'string' ? error : error?.message || 'Failed to load data.'
 
   const sortedItems = useMemo(() => {
     return [...items].sort((left, right) => {
@@ -62,10 +64,11 @@ function AdminCarouselListPage() {
       return leftOrder - rightOrder
     })
   }, [items])
+  const isEmpty = !isLoading && !error && sortedItems.length === 0
 
   const fetchSlides = useCallback(async () => {
     setIsLoading(true)
-    setErrorMessage('')
+    setError(null)
     setSuccessMessage('')
 
     try {
@@ -84,7 +87,7 @@ function AdminCarouselListPage() {
         return
       }
 
-      setErrorMessage(error.message || 'Unable to load carousel slides.')
+      setError(error)
     } finally {
       setIsLoading(false)
     }
@@ -101,7 +104,7 @@ function AdminCarouselListPage() {
   }, [fetchSlides, navigate, page])
 
   const handleDelete = async (id) => {
-    setErrorMessage('')
+    setError(null)
     setSuccessMessage('')
 
     if (!window.confirm('Delete this slide?')) {
@@ -124,7 +127,7 @@ function AdminCarouselListPage() {
       }
 
       const message = error.message || 'Unable to delete slide.'
-      setErrorMessage(message)
+      setError(message)
       window.alert(message)
     }
   }
@@ -138,7 +141,7 @@ function AdminCarouselListPage() {
       return
     }
 
-    setErrorMessage('')
+    setError(null)
     setSuccessMessage('')
     setIsReordering(true)
 
@@ -171,7 +174,7 @@ function AdminCarouselListPage() {
       }
 
       const message = error.message || 'Unable to update slide order.'
-      setErrorMessage(message)
+      setError(message)
       window.alert(message)
     } finally {
       setIsReordering(false)
@@ -202,13 +205,13 @@ function AdminCarouselListPage() {
           Create slide
         </Button>
       </div>
-      {errorMessage ? <p role="alert">{errorMessage}</p> : null}
+      {error ? <p role="alert">{errorMessage}</p> : null}
       {successMessage ? <p role="status">{successMessage}</p> : null}
 
       <StateGate
         loading={isLoading}
-        error={errorMessage}
-        isEmpty={!isLoading && !errorMessage && sortedItems.length === 0}
+        error={error}
+        isEmpty={isEmpty}
         skeleton={<TableSkeleton rows={6} columns={6} />}
         errorFallback={
           <ErrorState

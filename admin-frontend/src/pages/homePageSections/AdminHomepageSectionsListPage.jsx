@@ -39,10 +39,12 @@ function AdminHomepageSectionsListPage() {
   const [items, setItems] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [isReordering, setIsReordering] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
+  const [error, setError] = useState(null)
   const [successMessage, setSuccessMessage] = useState(
     location.state?.successMessage || ''
   )
+  const errorMessage =
+    typeof error === 'string' ? error : error?.message || 'Failed to load data.'
 
   const sortedItems = useMemo(() => {
     return [...items].sort((left, right) => {
@@ -51,10 +53,11 @@ function AdminHomepageSectionsListPage() {
       return leftOrder - rightOrder
     })
   }, [items])
+  const isEmpty = !isLoading && !error && sortedItems.length === 0
 
   const fetchSections = useCallback(async () => {
     setIsLoading(true)
-    setErrorMessage('')
+    setError(null)
     setSuccessMessage('')
 
     try {
@@ -70,7 +73,7 @@ function AdminHomepageSectionsListPage() {
         return
       }
 
-      setErrorMessage(error.message || 'Unable to load homepage sections.')
+      setError(error)
     } finally {
       setIsLoading(false)
     }
@@ -87,7 +90,7 @@ function AdminHomepageSectionsListPage() {
   }, [fetchSections, navigate])
 
   const handleDelete = async (id) => {
-    setErrorMessage('')
+    setError(null)
     setSuccessMessage('')
 
     if (!window.confirm('Delete this section?')) {
@@ -110,7 +113,7 @@ function AdminHomepageSectionsListPage() {
       }
 
       const message = error.message || 'Unable to delete section.'
-      setErrorMessage(message)
+      setError(message)
       window.alert(message)
     }
   }
@@ -124,7 +127,7 @@ function AdminHomepageSectionsListPage() {
       return
     }
 
-    setErrorMessage('')
+    setError(null)
     setSuccessMessage('')
     setIsReordering(true)
 
@@ -149,7 +152,7 @@ function AdminHomepageSectionsListPage() {
       }
 
       const message = error.message || 'Unable to update section order.'
-      setErrorMessage(message)
+      setError(message)
       window.alert(message)
     } finally {
       setIsReordering(false)
@@ -171,13 +174,13 @@ function AdminHomepageSectionsListPage() {
           Create section
         </Button>
       </div>
-      {errorMessage ? <p role="alert">{errorMessage}</p> : null}
+      {error ? <p role="alert">{errorMessage}</p> : null}
       {successMessage ? <p role="status">{successMessage}</p> : null}
 
       <StateGate
         loading={isLoading}
-        error={errorMessage}
-        isEmpty={!isLoading && !errorMessage && sortedItems.length === 0}
+        error={error}
+        isEmpty={isEmpty}
         skeleton={<TableSkeleton rows={6} columns={6} />}
         errorFallback={
           <ErrorState

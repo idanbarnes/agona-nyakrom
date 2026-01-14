@@ -43,7 +43,7 @@ function AdminHallOfFameListPage() {
   const [items, setItems] = useState([])
   const [total, setTotal] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
+  const [error, setError] = useState(null)
   const [successMessage, setSuccessMessage] = useState(
     location.state?.successMessage || ''
   )
@@ -51,10 +51,13 @@ function AdminHallOfFameListPage() {
     total !== null
       ? page >= Math.ceil(total / limit)
       : items.length < limit
+  const errorMessage =
+    typeof error === 'string' ? error : error?.message || 'Failed to load data.'
+  const isEmpty = !isLoading && !error && (!items || items.length === 0)
 
   const fetchHallOfFame = useCallback(async () => {
     setIsLoading(true)
-    setErrorMessage('')
+    setError(null)
     setSuccessMessage('')
 
     try {
@@ -75,7 +78,7 @@ function AdminHallOfFameListPage() {
         return
       }
 
-      setErrorMessage(error.message || 'Unable to load hall of fame entries.')
+      setError(error)
     } finally {
       setIsLoading(false)
     }
@@ -92,7 +95,7 @@ function AdminHallOfFameListPage() {
   }, [fetchHallOfFame, navigate, page])
 
   const handleDelete = async (id) => {
-    setErrorMessage('')
+    setError(null)
     setSuccessMessage('')
 
     if (!window.confirm('Delete this entry?')) {
@@ -116,7 +119,7 @@ function AdminHallOfFameListPage() {
       }
 
       const message = error.message || 'Unable to delete entry.'
-      setErrorMessage(message)
+      setError(message)
       window.alert(message)
     }
   }
@@ -145,13 +148,13 @@ function AdminHallOfFameListPage() {
           Create entry
         </Button>
       </div>
-      {errorMessage ? <p role="alert">{errorMessage}</p> : null}
+      {error ? <p role="alert">{errorMessage}</p> : null}
       {successMessage ? <p role="status">{successMessage}</p> : null}
 
       <StateGate
         loading={isLoading}
-        error={errorMessage}
-        isEmpty={!isLoading && !errorMessage && items.length === 0}
+        error={error}
+        isEmpty={isEmpty}
         skeleton={<TableSkeleton rows={6} columns={7} />}
         errorFallback={
           <ErrorState
