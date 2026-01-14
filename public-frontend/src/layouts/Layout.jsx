@@ -76,6 +76,14 @@ import { Outlet } from 'react-router-dom'
 import Navbar from '../layout/Navbar.jsx'
 import Footer from '../layout/Footer.jsx'
 import { getGlobalSettings } from '../api/endpoints.js'
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '../components/ui/index.jsx'
 
 // Share global settings across public pages without refetching.
 const PublicSettingsContext = createContext({
@@ -142,6 +150,23 @@ function Layout() {
           {/* Enforce consistent page width and padding. */}
           <div className="container py-6 md:py-10">
             <div className="space-y-8 md:space-y-12">
+              {/* UI kit demo (remove later) */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between gap-2">
+                    Demo Card
+                    <Badge variant="default">New</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center justify-between gap-3">
+                  <p className="text-sm text-muted-foreground">
+                    Reusable UI components preview.
+                  </p>
+                  <Button size="sm" variant="secondary">
+                    Explore
+                  </Button>
+                </CardContent>
+              </Card>
               <Outlet />
             </div>
           </div>
