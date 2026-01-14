@@ -109,6 +109,14 @@
 
 
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  StatusBadge,
+} from '../components/ui/index.jsx'
 import { clearAuthToken } from '../lib/auth.js'
 
 function AdminLayout() {
@@ -289,6 +297,25 @@ function AdminLayout() {
         </header>
         {/* Only content area scrolls */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          {/* UI kit demo (remove later) */}
+          <div className="mb-6 max-w-md">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between gap-2">
+                  Demo Card
+                  <StatusBadge status="published" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">
+                  Button + card preview.
+                </p>
+                <Button size="sm" variant="secondary">
+                  View
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
           <Outlet />
         </main>
       </div>
