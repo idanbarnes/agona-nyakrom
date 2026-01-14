@@ -40,7 +40,7 @@ function AdminClansListPage() {
   const [items, setItems] = useState([])
   const [total, setTotal] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
+  const [error, setError] = useState(null)
   const [successMessage, setSuccessMessage] = useState(
     location.state?.successMessage || ''
   )
@@ -48,10 +48,13 @@ function AdminClansListPage() {
     total !== null
       ? page >= Math.ceil(total / limit)
       : items.length < limit
+  const errorMessage =
+    typeof error === 'string' ? error : error?.message || 'Failed to load data.'
+  const isEmpty = !isLoading && !error && (!items || items.length === 0)
 
   const fetchClans = useCallback(async () => {
     setIsLoading(true)
-    setErrorMessage('')
+    setError(null)
     setSuccessMessage('')
 
     try {
@@ -70,7 +73,7 @@ function AdminClansListPage() {
         return
       }
 
-      setErrorMessage(error.message || 'Unable to load clans.')
+      setError(error)
     } finally {
       setIsLoading(false)
     }
@@ -87,7 +90,7 @@ function AdminClansListPage() {
   }, [fetchClans, navigate, page])
 
   const handleDelete = async (id) => {
-    setErrorMessage('')
+    setError(null)
     setSuccessMessage('')
 
     if (!window.confirm('Are you sure you want to delete this clan?')) {
@@ -109,7 +112,7 @@ function AdminClansListPage() {
       }
 
       const message = error.message || 'Unable to delete clan.'
-      setErrorMessage(message)
+      setError(message)
       // Keep the user on the list to retry the action.
       window.alert(message)
     }
@@ -136,13 +139,13 @@ function AdminClansListPage() {
           Create clan
         </Button>
       </div>
-      {errorMessage ? <p role="alert">{errorMessage}</p> : null}
+      {error ? <p role="alert">{errorMessage}</p> : null}
       {successMessage ? <p role="status">{successMessage}</p> : null}
 
       <StateGate
         loading={isLoading}
-        error={errorMessage}
-        isEmpty={!isLoading && !errorMessage && items.length === 0}
+        error={error}
+        isEmpty={isEmpty}
         skeleton={<TableSkeleton rows={6} columns={5} />}
         errorFallback={
           <ErrorState
