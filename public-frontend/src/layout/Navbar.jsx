@@ -27,46 +27,97 @@ function Navbar({ settings, loading }) {
   }, [location.pathname])
 
   return (
-    <header style={{ position: 'sticky', top: 0 }}>
+    <header
+      className="z-50 border-b border-border bg-background/80 backdrop-blur"
+      style={{ position: 'sticky', top: 0 }}
+    >
       <nav aria-label="Main">
-        <div>
+        <div className="container flex h-16 items-center justify-between">
           {/* Placeholder for future logo support. */}
-          <span aria-hidden="true">□</span>
-          <NavLink to="/">{siteName}</NavLink>
-        </div>
-        <ul>
-          {resolvedItems.map((item) => (
-            <li key={item.to}>
-              <NavLink to={item.to}>{item.label}</NavLink>
-            </li>
-          ))}
-        </ul>
+          <div className="flex items-center gap-3">
+            <span aria-hidden="true" className="text-muted-foreground">
+              □
+            </span>
+            <NavLink to="/" className="text-sm font-semibold text-foreground">
+              {siteName}
+            </NavLink>
+          </div>
+          <ul className="hidden items-center gap-6 md:flex">
+            {resolvedItems.map((item) => (
+              <li key={item.to}>
+                <NavLink
+                  to={item.to}
+                  className={({ isActive }) =>
+                    [
+                      'rounded-md px-2 py-1 text-sm font-medium text-muted-foreground transition hover:text-foreground',
+                      isActive
+                        ? 'bg-muted text-foreground underline underline-offset-4'
+                        : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
         {/* Hamburger menu for small screens (visibility handled later with styling). */}
         <button
           type="button"
           aria-label="Open navigation menu"
           onClick={() => setIsOpen(true)}
+          className="rounded-md border border-border px-3 py-1 text-sm font-medium text-muted-foreground transition hover:text-foreground md:hidden"
         >
           Menu
         </button>
+        </div>
       </nav>
       {isOpen && (
-        <aside aria-label="Mobile menu">
-          <button
-            type="button"
-            aria-label="Close navigation menu"
-            onClick={() => setIsOpen(false)}
-          >
-            Close
-          </button>
-          <ul>
-            {resolvedItems.map((item) => (
-              <li key={item.to}>
-                <NavLink to={item.to}>{item.label}</NavLink>
-              </li>
-            ))}
-          </ul>
-          {loading && <p>Loading site settings...</p>}
+        <aside
+          aria-label="Mobile menu"
+          className="border-b border-border bg-background/95 backdrop-blur md:hidden"
+        >
+          <div className="container space-y-4 py-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-foreground">
+                Menu
+              </span>
+              <button
+                type="button"
+                aria-label="Close navigation menu"
+                onClick={() => setIsOpen(false)}
+                className="rounded-md border border-border px-3 py-1 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+              >
+                Close
+              </button>
+            </div>
+            <ul className="flex flex-col gap-3">
+              {resolvedItems.map((item) => (
+                <li key={item.to}>
+                  <NavLink
+                    to={item.to}
+                    className={({ isActive }) =>
+                      [
+                        'flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground',
+                        isActive ? 'bg-muted text-foreground' : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+            {loading && (
+              <p className="text-xs text-muted-foreground">
+                Loading site settings...
+              </p>
+            )}
+          </div>
         </aside>
       )}
     </header>

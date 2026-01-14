@@ -56,71 +56,125 @@ function Footer({ settings, loading, error }) {
     `${year} ${siteName}`
 
   return (
-    <footer>
-      <section>
-        <h2>{siteName}</h2>
-        <p>
-          A public home for community stories, heritage, and local milestones in
-          Nyakrom.
-        </p>
-      </section>
+    <footer className="border-t border-border bg-surface">
+      <div className="container py-10">
+        <div className="grid gap-8 md:grid-cols-3">
+          <section className="space-y-3">
+            <h2 className="text-base font-semibold text-foreground">
+              {siteName}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              A public home for community stories, heritage, and local milestones
+              in Nyakrom.
+            </p>
+          </section>
 
-      <section>
-        <h3>Quick Links</h3>
-        <ul>
-          <li>
-            <Link to="/about/history">History</Link>
-          </li>
-          <li>
-            <Link to="/clans">Clans</Link>
-          </li>
-          <li>
-            <Link to="/asafo-companies">Asafo Companies</Link>
-          </li>
-          <li>
-            <Link to="/news">News</Link>
-          </li>
-          <li>
-            <Link to="/contact">Contact Us</Link>
-          </li>
-        </ul>
-      </section>
-
-      <section>
-        <h3>Contact</h3>
-        {email && (
-          <p>
-            <a href={`mailto:${email}`}>{email}</a>
-          </p>
-        )}
-        {phone && (
-          <p>
-            <a href={`tel:${phone}`}>{phone}</a>
-          </p>
-        )}
-        {address && <p>{address}</p>}
-        {!settings && !loading && error && (
-          <p>Contact details unavailable.</p>
-        )}
-      </section>
-
-      <section>
-        <h3>Social</h3>
-        {socialLinks.length > 0 ? (
-          <ul>
-            {socialLinks.map((link, index) => (
-              <li key={link.url || index}>
-                <a href={link.url} target="_blank" rel="noopener noreferrer">
-                  {link.label || link.url}
-                </a>
+          <section className="space-y-3">
+            <h3 className="text-sm font-semibold text-foreground">Quick Links</h3>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link
+                  to="/about/history"
+                  className="text-muted-foreground transition hover:text-foreground hover:underline"
+                >
+                  History
+                </Link>
               </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No social links available.</p>
-        )}
-        <p>{copyright}</p>
-      </section>
+              <li>
+                <Link
+                  to="/clans"
+                  className="text-muted-foreground transition hover:text-foreground hover:underline"
+                >
+                  Clans
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/asafo-companies"
+                  className="text-muted-foreground transition hover:text-foreground hover:underline"
+                >
+                  Asafo Companies
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/news"
+                  className="text-muted-foreground transition hover:text-foreground hover:underline"
+                >
+                  News
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/contact"
+                  className="text-muted-foreground transition hover:text-foreground hover:underline"
+                >
+                  Contact Us
+                </Link>
+              </li>
+            </ul>
+          </section>
+
+          <section className="space-y-3">
+            <h3 className="text-sm font-semibold text-foreground">Contact</h3>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              {email && (
+                <p>
+                  <a
+                    href={`mailto:${email}`}
+                    className="transition hover:text-foreground hover:underline"
+                  >
+                    {email}
+                  </a>
+                </p>
+              )}
+              {phone && (
+                <p>
+                  <a
+                    href={`tel:${phone}`}
+                    className="transition hover:text-foreground hover:underline"
+                  >
+                    {phone}
+                  </a>
+                </p>
+              )}
+              {address && <p>{address}</p>}
+              {!settings && !loading && error && (
+                <p>Contact details unavailable.</p>
+              )}
+            </div>
+          </section>
+
+          <section className="space-y-3 md:col-span-3">
+            <div className="flex flex-col gap-4 border-t border-border pt-6 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Social</h3>
+                {socialLinks.length > 0 ? (
+                  <ul className="mt-2 flex flex-wrap gap-4 text-sm">
+                    {socialLinks.map((link, index) => (
+                      <li key={link.url || index}>
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground transition hover:text-foreground hover:underline"
+                        >
+                          {link.label || link.url}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    No social links available.
+                  </p>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">{copyright}</p>
+            </div>
+          </section>
+        </div>
+      </div>
     </footer>
   )
 }
