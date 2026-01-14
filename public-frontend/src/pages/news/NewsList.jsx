@@ -2,6 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getNews } from '../../api/endpoints.js'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import {
+  EmptyState,
+  ErrorState,
+  ImageWithFallback,
+  ListSkeleton,
+  StateGate,
+} from '../../components/ui/index.jsx'
 
 function formatDate(value) {
   if (!value) {
@@ -88,33 +95,37 @@ function NewsList() {
     return items.length >= limit
   }, [items.length, limit, meta, page])
 
-  if (loading) {
-    return (
-      <section>
-        <h1>News</h1>
-        <p>Loading news...</p>
-      </section>
-    )
-  }
-
-  if (error) {
-    return (
-      <section>
-        <h1>News</h1>
-        <p>Unable to load news.</p>
-        <pre>{error?.message || String(error)}</pre>
-      </section>
-    )
-  }
+  const visibleItems = useMemo(
+    () =>
+      items.filter(
+        (item) =>
+          item?.published !== false &&
+          item?.status !== 'draft' &&
+          item?.status !== 'unpublished',
+      ),
+    [items],
+  )
 
   return (
-    <section>
-      <h1>News</h1>
-      {items.length === 0 ? (
-        <p>No news items available.</p>
-      ) : (
-        <ul>
-          {items.map((item) => {
+    <section className="space-y-6">
+      <h1 className="text-2xl font-semibold text-foreground">News</h1>
+      <StateGate
+        loading={loading}
+        error={error}
+        isEmpty={!loading && !error && visibleItems.length === 0}
+        skeleton={<ListSkeleton rows={4} showAvatar />}
+        errorFallback={
+          <ErrorState message={error?.message || 'Unable to load news.'} />
+        }
+        empty={
+          <EmptyState
+            title="No news yet"
+            description="Check back soon for updates from the community."
+          />
+        }
+      >
+        <ul className="space-y-6">
+          {visibleItems.map((item) => {
             const publishedAt =
               item?.published_at || item?.publishedAt || item?.createdAt
             const dateLabel = formatDate(publishedAt)
@@ -122,31 +133,46 @@ function NewsList() {
             const slug = item?.slug
 
             return (
-              <li key={item?.id || slug || item?.title}>
-                {thumbnail && (
-                  <img
-                    src={resolveAssetUrl(thumbnail)}
+              <li
+                key={item?.id || slug || item?.title}
+                className="rounded-lg border border-border bg-surface p-4"
+              >
+                <div className="flex flex-col gap-4 md:flex-row">
+                  <ImageWithFallback
+                    src={thumbnail ? resolveAssetUrl(thumbnail) : null}
                     alt={item?.title || 'News thumbnail'}
+                    className="h-40 w-full rounded-md object-cover md:h-28 md:w-40"
+                    fallbackText="No image"
                   />
-                )}
-                <h2>
-                  {slug ? (
-                    <Link to={`/news/${slug}`}>
-                      {item?.title || 'Untitled'}
-                    </Link>
-                  ) : (
-                    item?.title || 'Untitled'
-                  )}
-                </h2>
-                {item?.summary && <p>{item.summary}</p>}
-                {dateLabel && <p>Published: {dateLabel}</p>}
+                  <div className="flex-1 space-y-2">
+                    <h2 className="text-lg font-semibold text-foreground">
+                      {slug ? (
+                        <Link to={`/news/${slug}`} className="hover:underline">
+                          {item?.title || 'Untitled'}
+                        </Link>
+                      ) : (
+                        item?.title || 'Untitled'
+                      )}
+                    </h2>
+                    {item?.summary ? (
+                      <p className="text-sm text-muted-foreground">
+                        {item.summary}
+                      </p>
+                    ) : null}
+                    {dateLabel ? (
+                      <p className="text-xs text-muted-foreground">
+                        Published: {dateLabel}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
               </li>
             )
           })}
         </ul>
-      )}
+      </StateGate>
 
-      <nav aria-label="News pagination">
+      <nav aria-label="News pagination" className="flex items-center gap-3">
         <button
           type="button"
           onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
