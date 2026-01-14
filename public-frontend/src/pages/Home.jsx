@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getCarousel, getHomepage } from '../api/endpoints.js'
+import { Button, ErrorState, ImageWithFallback, Skeleton } from '../components/ui/index.jsx'
 import { resolveAssetUrl } from '../lib/apiBase.js'
 import { usePublicSettings } from '../layouts/Layout.jsx'
 
@@ -215,54 +216,120 @@ function Home() {
   return (
     <section>
       <section>
-        <h1>Carousel</h1>
+        <h1 className="text-lg font-semibold text-foreground">Carousel</h1>
         {carouselLoading ? (
-          <p>Loading slides...</p>
+          <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-surface">
+            <div className="flex h-[360px] flex-col justify-end p-6 md:h-[560px] md:p-10">
+              <div className="space-y-4">
+                <Skeleton className="h-6 w-2/3 bg-muted/70" />
+                <Skeleton className="h-4 w-1/2 bg-muted/70" />
+                <Skeleton className="h-10 w-32 bg-muted/70" />
+              </div>
+            </div>
+          </div>
         ) : slides.length === 0 ? (
-          <p>No slides available.</p>
+          <div className="mt-4 rounded-2xl border border-dashed border-border bg-muted/40 px-6 py-10 text-center text-sm text-muted-foreground">
+            No slides available.
+          </div>
         ) : (
-          <article>
-            {slideImageUrl && (
-              <img src={slideImageUrl} alt={slideTitle || 'Carousel slide'} />
-            )}
-            {slideTitle && <h2>{slideTitle}</h2>}
-            {slideSubtitle && <p>{slideSubtitle}</p>}
-            {slideCtaText && slideCtaUrl && (
-              <p>
-                <a href={slideCtaUrl}>{slideCtaText}</a>
-              </p>
-            )}
-            <nav aria-label="Carousel controls">
-              <button
+          <article className="relative mt-4 h-[360px] overflow-hidden rounded-2xl border border-border bg-surface md:h-[560px]">
+            <ImageWithFallback
+              src={slideImageUrl}
+              alt={slideTitle || 'Carousel slide'}
+              fallbackText="No image"
+              className="h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+            <div className="absolute inset-0 flex items-end">
+              <div className="max-w-xl space-y-3 p-6 text-white md:p-10">
+                {slideTitle && (
+                  <h2 className="text-2xl font-semibold leading-tight md:text-4xl">
+                    {slideTitle}
+                  </h2>
+                )}
+                {slideSubtitle && (
+                  <p className="text-sm text-white/90 md:text-base">
+                    {slideSubtitle}
+                  </p>
+                )}
+                {slideCtaText && slideCtaUrl && (
+                  <div>
+                    <Button
+                      as="a"
+                      href={slideCtaUrl}
+                      variant="primary"
+                      className="shadow-lg shadow-black/20"
+                    >
+                      {slideCtaText}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+            <nav
+              aria-label="Carousel controls"
+              className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4"
+            >
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 onClick={() =>
                   setActiveSlide((prev) =>
                     slides.length ? (prev - 1 + slides.length) % slides.length : 0,
                   )
                 }
                 disabled={slides.length < 2}
+                className="h-11 w-11 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60"
+                aria-label="Previous slide"
               >
-                Prev
-              </button>
-              <span>
+                <span aria-hidden="true">‹</span>
+              </Button>
+              <div className="hidden text-sm text-white/80 md:block">
                 Slide {activeSlide + 1} of {slides.length}
-              </span>
-              <button
+              </div>
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 onClick={() =>
                   setActiveSlide((prev) =>
                     slides.length ? (prev + 1) % slides.length : 0,
                   )
                 }
                 disabled={slides.length < 2}
+                className="h-11 w-11 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60"
+                aria-label="Next slide"
               >
-                Next
-              </button>
+                <span aria-hidden="true">›</span>
+              </Button>
             </nav>
+            <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2">
+              {slides.map((slide, index) => (
+                <button
+                  key={slide?.id || slide?.slug || index}
+                  type="button"
+                  onClick={() => setActiveSlide(index)}
+                  className="flex h-8 w-8 items-center justify-center"
+                  aria-label={`Go to slide ${index + 1}`}
+                  aria-current={index === activeSlide ? 'true' : undefined}
+                >
+                  <span
+                    className={`h-2.5 w-2.5 rounded-full transition ${
+                      index === activeSlide ? 'bg-white' : 'bg-white/60'
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
           </article>
         )}
         {carouselError && (
-          <p>Slides are unavailable right now, but the homepage is loaded.</p>
+          <ErrorState
+            className="mt-4"
+            title="Slides are unavailable"
+            message="Slides are unavailable right now, but the homepage is loaded."
+          />
         )}
       </section>
 
