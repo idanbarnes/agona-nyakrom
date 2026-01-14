@@ -5,6 +5,19 @@ import {
   getAllAsafoCompanies,
 } from '../../services/api/adminAsafoApi.js'
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  PublishStatus,
+  StateGate,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TableSkeleton,
+} from '../../components/ui/index.jsx'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_LIMIT = 10
@@ -117,74 +130,131 @@ function AdminAsafoCompaniesListPage() {
   }
 
   return (
-    <section>
-      <h2>Asafo Companies</h2>
-      <p>
-        <Link to="/admin/asafo-companies/create">Create asafo company</Link>
-      </p>
-      {total !== null ? <p>Total: {total}</p> : null}
+    <section className="space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">
+            Asafo Companies
+          </h2>
+          {total !== null ? (
+            <p className="text-sm text-muted-foreground">Total: {total}</p>
+          ) : null}
+        </div>
+        <Button
+          type="button"
+          onClick={() => navigate('/admin/asafo-companies/create')}
+        >
+          Create asafo company
+        </Button>
+      </div>
       {errorMessage ? <p role="alert">{errorMessage}</p> : null}
       {successMessage ? <p role="status">{successMessage}</p> : null}
 
-      {isLoading ? (
-        <p>Loading...</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Slug</th>
-              <th>Status</th>
-              <th>Updated At</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.length === 0 ? (
+      <StateGate
+        loading={isLoading}
+        error={errorMessage}
+        isEmpty={!isLoading && !errorMessage && items.length === 0}
+        skeleton={<TableSkeleton rows={6} columns={5} />}
+        errorFallback={
+          <ErrorState
+            message={errorMessage}
+            onRetry={fetchCompanies}
+            retryLabel="Reload companies"
+          />
+        }
+        empty={
+          <EmptyState
+            title="No companies found"
+            description="Create an asafo company to start building the list."
+            action={
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => navigate('/admin/asafo-companies/create')}
+              >
+                Create asafo company
+              </Button>
+            }
+          />
+        }
+      >
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHead>
               <tr>
-                <td colSpan={5}>No companies found.</td>
+                <th className="px-4 py-3 text-left">Name</th>
+                <th className="px-4 py-3 text-left">Slug</th>
+                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">Updated At</th>
+                <th className="px-4 py-3 text-left">Actions</th>
               </tr>
-            ) : (
-              items.map((item) => (
-                <tr key={item.id || item._id}>
-                  <td>{item.name || 'Untitled'}</td>
-                  <td>{item.slug || '-'}</td>
-                  <td>
-                    {typeof item.published === 'boolean'
-                      ? item.published
-                        ? 'Published'
-                        : 'Draft'
-                      : item.status || 'Unknown'}
-                  </td>
-                  <td>{formatDate(item.updatedAt || item.updated_at)}</td>
-                  <td>
-                    <Link
-                      to={`/admin/asafo-companies/edit/${item.id || item._id}`}
-                    >
-                      Edit
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(item.id || item._id)}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      )}
+            </TableHead>
+            <TableBody>
+              {items.map((item) => {
+                const id = item.id || item._id
+                const published =
+                  typeof item.published === 'boolean'
+                    ? item.published
+                    : item.status === 'published'
 
-      <div>
-        <button type="button" onClick={handlePrevPage} disabled={page <= 1}>
+                return (
+                  <TableRow key={id}>
+                    <TableCell className="max-w-xs break-words">
+                      {item.name || 'Untitled'}
+                    </TableCell>
+                    <TableCell className="max-w-xs break-words">
+                      {item.slug || '-'}
+                    </TableCell>
+                    <TableCell>
+                      <PublishStatus published={published} />
+                    </TableCell>
+                    <TableCell>
+                      {formatDate(item.updatedAt || item.updated_at)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                          to={`/admin/asafo-companies/edit/${id}`}
+                          className="text-primary"
+                        >
+                          Edit
+                        </Link>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </StateGate>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={handlePrevPage}
+          disabled={page <= 1}
+        >
           Prev
-        </button>
-        <span>Page {page}</span>
-        <button type="button" onClick={handleNextPage} disabled={isLastPage}>
+        </Button>
+        <span className="text-sm text-muted-foreground">Page {page}</span>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={handleNextPage}
+          disabled={isLastPage}
+        >
           Next
-        </button>
+        </Button>
       </div>
     </section>
   )
