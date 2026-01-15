@@ -3,11 +3,13 @@ import { cn } from '../../lib/cn.js'
 
 export function Table({ className, ...props }) {
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
-      <table
-        className={cn('w-full text-sm text-foreground', className)}
-        {...props}
-      />
+    <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <div className="overflow-x-auto">
+        <table
+          className={cn('w-full text-sm text-foreground', className)}
+          {...props}
+        />
+      </div>
     </div>
   )
 }
@@ -29,7 +31,7 @@ export function TableToolbar({ left, right, className }) {
 export function TableHead({ className, ...props }) {
   return (
     <thead
-      className={cn('bg-muted/40 text-xs uppercase text-muted-foreground', className)}
+      className={cn('bg-muted/50 text-xs uppercase text-muted-foreground', className)}
       {...props}
     />
   )
@@ -42,7 +44,7 @@ export function TableBody({ className, ...props }) {
 export function TableRow({ className, ...props }) {
   return (
     <tr
-      className={cn('transition-colors hover:bg-accent/50', className)}
+      className={cn('transition-colors hover:bg-muted/40', className)}
       {...props}
     />
   )

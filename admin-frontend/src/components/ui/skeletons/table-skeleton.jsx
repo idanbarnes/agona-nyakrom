@@ -4,7 +4,7 @@ import { Skeleton } from '../skeleton.jsx'
 
 export function TableSkeleton({ rows = 6, columns = 5, className }) {
   return (
-    <div className={cn('rounded-lg border border-border bg-surface', className)}>
+    <div className={cn('rounded-xl border border-border bg-surface', className)}>
       <div className="border-b border-border bg-muted/40 px-4 py-3">
         <div className="flex gap-3">
           {Array.from({ length: columns }).map((_, index) => (
