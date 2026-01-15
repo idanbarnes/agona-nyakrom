@@ -1,6 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getHallOfFameDetail } from '../../api/endpoints.js'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  DetailSkeleton,
+  EmptyState,
+  ErrorState,
+  ImageWithFallback,
+  StateGate,
+} from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
 
 function HallOfFameDetail() {
@@ -9,43 +21,36 @@ function HallOfFameDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    let isMounted = true
-
-    const loadEntry = async () => {
-      setLoading(true)
-      setError(null)
-
-      try {
-        const response = await getHallOfFameDetail(slug)
-        if (!isMounted) {
-          return
-        }
-
-        // Some APIs wrap the entity in a data field.
-        setItem(response?.data || response?.item || response)
-      } catch (err) {
-        if (isMounted) {
-          setError(err)
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false)
-        }
-      }
-    }
-
-    if (slug) {
-      loadEntry()
-    } else {
+  const loadEntry = useCallback(async () => {
+    if (!slug) {
+      setItem(null)
       setLoading(false)
       setError(new Error('Missing hall of fame slug.'))
+      return
     }
 
-    return () => {
-      isMounted = false
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await getHallOfFameDetail(slug)
+      const payload = response?.data || response?.item || response
+      setItem(payload || null)
+    } catch (err) {
+      if (err?.status === 404) {
+        setItem(null)
+        setError(null)
+      } else {
+        setError(err)
+      }
+    } finally {
+      setLoading(false)
     }
   }, [slug])
+
+  useEffect(() => {
+    loadEntry()
+  }, [loadEntry])
 
   // Gather descriptive fields the backend might return.
   const details = useMemo(() => {
@@ -65,49 +70,73 @@ function HallOfFameDetail() {
   const imagePath =
     item?.images?.medium || item?.images?.large || item?.image || item?.photo
   const imageUrl = imagePath ? resolveAssetUrl(imagePath) : null
-
-  if (loading) {
-    return (
-      <section>
-        <h1>Hall of Fame</h1>
-        <p>Loading hall of fame entry...</p>
-      </section>
-    )
-  }
-
-  if (error) {
-    const notFound = error?.status === 404
-    return (
-      <section>
-        <h1>Hall of Fame</h1>
-        {notFound ? (
-          <>
-            <p>Sorry, that entry was not found.</p>
-            <p>
-              <Link to="/hall-of-fame">Back to hall of fame</Link>
-            </p>
-          </>
-        ) : (
-          <>
-            <p>Unable to load this entry.</p>
-            <pre>{error?.message || String(error)}</pre>
-          </>
-        )}
-      </section>
-    )
-  }
+  const role = item?.role || item?.title || item?.position
 
   return (
-    <section>
-      <h1>{item?.full_name || item?.name || 'Hall of Fame'}</h1>
-      {imageUrl && (
-        <img src={imageUrl} alt={item?.full_name || item?.name || 'Entry'} />
-      )}
-      {details.length > 0 ? (
-        details.map((detail, index) => <p key={index}>{detail}</p>)
-      ) : (
-        <p>No biography available.</p>
-      )}
+    <section className="container py-6 md:py-10">
+      <StateGate
+        loading={loading}
+        error={error}
+        isEmpty={!loading && !error && !item}
+        skeleton={<DetailSkeleton />}
+        errorFallback={
+          <ErrorState
+            message={error?.message || 'Unable to load this entry.'}
+            onRetry={loadEntry}
+          />
+        }
+        empty={
+          <EmptyState
+            title="Not found"
+            description="This item may have been removed."
+            action={
+              <Button as={Link} to="/hall-of-fame" variant="ghost">
+                Back to hall of fame
+              </Button>
+            }
+          />
+        }
+      >
+        <div className="space-y-8">
+          <header className="space-y-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+              <ImageWithFallback
+                src={imageUrl}
+                alt={item?.full_name || item?.name || 'Entry'}
+                className="h-28 w-28 rounded-xl border border-border object-cover"
+                fallbackText="No image"
+              />
+              <div>
+                <h1 className="text-2xl font-semibold leading-tight text-foreground md:text-4xl">
+                  {item?.full_name || item?.name || 'Hall of Fame'}
+                </h1>
+                {role ? (
+                  <p className="mt-2 text-sm text-muted-foreground">{role}</p>
+                ) : null}
+              </div>
+            </div>
+          </header>
+
+          <div className="max-w-3xl space-y-4 leading-7 text-foreground">
+            <Card className="border-border/70">
+              <CardHeader className="pb-2">
+                <CardTitle>Story</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                {details.length > 0 ? (
+                  details.map((detail, index) => (
+                    <p key={index} className="text-foreground">
+                      {detail}
+                    </p>
+                  ))
+                ) : (
+                  <p>No biography available.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </StateGate>
     </section>
   )
 }

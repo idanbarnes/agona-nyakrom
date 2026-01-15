@@ -1,6 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getObituaryDetail } from '../../api/endpoints.js'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  DetailSkeleton,
+  EmptyState,
+  ErrorState,
+  ImageWithFallback,
+  StateGate,
+} from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
 
 function ObituaryDetail() {
@@ -9,43 +21,36 @@ function ObituaryDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    let isMounted = true
-
-    const loadObituary = async () => {
-      setLoading(true)
-      setError(null)
-
-      try {
-        const response = await getObituaryDetail(slug)
-        if (!isMounted) {
-          return
-        }
-
-        // Some APIs wrap the entity in a data field.
-        setItem(response?.data || response?.item || response)
-      } catch (err) {
-        if (isMounted) {
-          setError(err)
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false)
-        }
-      }
-    }
-
-    if (slug) {
-      loadObituary()
-    } else {
+  const loadObituary = useCallback(async () => {
+    if (!slug) {
+      setItem(null)
       setLoading(false)
       setError(new Error('Missing obituary slug.'))
+      return
     }
 
-    return () => {
-      isMounted = false
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await getObituaryDetail(slug)
+      const payload = response?.data || response?.item || response
+      setItem(payload || null)
+    } catch (err) {
+      if (err?.status === 404) {
+        setItem(null)
+        setError(null)
+      } else {
+        setError(err)
+      }
+    } finally {
+      setLoading(false)
     }
   }, [slug])
+
+  useEffect(() => {
+    loadObituary()
+  }, [loadObituary])
 
   // Memoize date parsing to avoid repeated Date construction on re-renders.
   const dateOfBirth = useMemo(
@@ -74,57 +79,107 @@ function ObituaryDetail() {
     item?.images?.medium || item?.images?.large || item?.image || item?.photo
   const imageUrl = imagePath ? resolveAssetUrl(imagePath) : null
 
-  if (loading) {
-    return (
-      <section>
-        <h1>Obituary</h1>
-        <p>Loading obituary...</p>
-      </section>
-    )
-  }
+  const birthLabel = formatDate(dateOfBirth)
+  const deathLabel = formatDate(dateOfDeath)
+  const funeralLabel = formatDate(funeralDate)
+  const burialLabel = formatDate(burialDate)
+  const hasServiceDetails = funeralLabel || burialLabel
 
-  if (error) {
-    const notFound = error?.status === 404
-    return (
-      <section>
-        <h1>Obituary</h1>
-        {notFound ? (
-          <>
-            <p>Sorry, that obituary was not found.</p>
-            <p>
-              <Link to="/obituaries">Back to obituaries</Link>
-            </p>
-          </>
-        ) : (
-          <>
-            <p>Unable to load this obituary.</p>
-            <pre>{error?.message || String(error)}</pre>
-          </>
-        )}
-      </section>
-    )
-  }
+  const metaItems = [
+    item?.age ? `Age ${item.age}` : null,
+    birthLabel ? `Born ${birthLabel}` : null,
+    deathLabel ? `Passed ${deathLabel}` : null,
+  ].filter(Boolean)
 
   return (
-    <section>
-      <h1>{item?.full_name || 'Obituary'}</h1>
-      {item?.age && <p>Age: {item.age}</p>}
-      {formatDate(dateOfBirth) && (
-        <p>Date of birth: {formatDate(dateOfBirth)}</p>
-      )}
-      {formatDate(dateOfDeath) && (
-        <p>Date of death: {formatDate(dateOfDeath)}</p>
-      )}
-      {formatDate(funeralDate) && (
-        <p>Funeral date: {formatDate(funeralDate)}</p>
-      )}
-      {formatDate(burialDate) && (
-        <p>Burial date: {formatDate(burialDate)}</p>
-      )}
-      {imageUrl && (
-        <img src={imageUrl} alt={item?.full_name || 'Obituary'} />
-      )}
-      {item?.biography ? <p>{item.biography}</p> : <p>No biography provided.</p>}
+    <section className="container py-6 md:py-10">
+      <StateGate
+        loading={loading}
+        error={error}
+        isEmpty={!loading && !error && !item}
+        skeleton={<DetailSkeleton />}
+        errorFallback={
+          <ErrorState
+            message={error?.message || 'Unable to load this obituary.'}
+            onRetry={loadObituary}
+          />
+        }
+        empty={
+          <EmptyState
+            title="Not found"
+            description="This item may have been removed."
+            action={
+              <Button as={Link} to="/obituaries" variant="ghost">
+                Back to obituaries
+              </Button>
+            }
+          />
+        }
+      >
+        <div className="space-y-8">
+          <header className="space-y-3">
+            <h1 className="text-2xl font-semibold leading-tight text-foreground md:text-4xl">
+              {item?.full_name || 'Obituary'}
+            </h1>
+            {metaItems.length > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-3 text-sm text-muted-foreground">
+                {metaItems.map((meta) => (
+                  <span key={meta}>{meta}</span>
+                ))}
+              </div>
+            ) : null}
+          </header>
+
+          {imageUrl ? (
+            <ImageWithFallback
+              src={imageUrl}
+              alt={item?.full_name || 'Obituary'}
+              className="h-56 w-full rounded-xl border border-border object-cover md:h-80"
+            />
+          ) : null}
+
+          <div className="max-w-3xl space-y-6 leading-7 text-foreground">
+            <Card className="border-border/70">
+              <CardHeader className="pb-2">
+                <CardTitle>Biography</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                {item?.biography ? (
+                  <p className="text-foreground">{item.biography}</p>
+                ) : (
+                  <p>No biography provided.</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {hasServiceDetails ? (
+              <Card className="border-border/70">
+                <CardHeader className="pb-2">
+                  <CardTitle>Service Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-muted-foreground">
+                  {funeralLabel ? (
+                    <p>
+                      <span className="font-medium text-foreground">
+                        Funeral date:
+                      </span>{' '}
+                      {funeralLabel}
+                    </p>
+                  ) : null}
+                  {burialLabel ? (
+                    <p>
+                      <span className="font-medium text-foreground">
+                        Burial date:
+                      </span>{' '}
+                      {burialLabel}
+                    </p>
+                  ) : null}
+                </CardContent>
+              </Card>
+            ) : null}
+          </div>
+        </div>
+      </StateGate>
     </section>
   )
 }
