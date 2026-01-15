@@ -2,6 +2,15 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getHallOfFame } from '../../api/endpoints.js'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import {
+  Card,
+  CardContent,
+  CardSkeleton,
+  EmptyState,
+  ErrorState,
+  ImageWithFallback,
+  StateGate,
+} from '../../components/ui/index.jsx'
 
 // Extract list data across possible payload shapes.
 function extractItems(payload) {
@@ -79,59 +88,87 @@ function HallOfFameList() {
     }
   }, [])
 
-  if (loading) {
-    return (
-      <section>
-        <h1>Hall of Fame</h1>
-        <p>Loading hall of fame entries...</p>
-      </section>
-    )
-  }
-
-  if (error) {
-    return (
-      <section>
-        <h1>Hall of Fame</h1>
-        <p>Unable to load hall of fame entries.</p>
-        <pre>{error?.message || String(error)}</pre>
-      </section>
-    )
-  }
-
   return (
-    <section>
-      <h1>Hall of Fame</h1>
-      {items.length === 0 ? (
-        <p>No entries available.</p>
-      ) : (
-        <ul>
-          {items.map((item) => {
-            const thumbnail = item?.images?.thumbnail || item?.thumbnail
-            const slug = item?.slug
-            const name = item?.full_name || item?.name || 'Unnamed'
-            const summary = getSummary(item)
+    <section className="container py-6 md:py-10">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold text-foreground md:text-3xl">
+          Hall of Fame
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Celebrating the people whose achievements shaped our history.
+        </p>
+      </div>
+      <div className="mt-8">
+        <StateGate
+          loading={loading}
+          error={error}
+          isEmpty={!loading && !error && items.length === 0}
+          skeleton={
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <CardSkeleton key={`hof-skeleton-${index}`} />
+              ))}
+            </div>
+          }
+          errorFallback={
+            <ErrorState
+              message={error?.message || 'Unable to load hall of fame entries.'}
+            />
+          }
+          empty={
+            <EmptyState
+              title="No hall of fame entries yet"
+              description="Please check back as we highlight community heroes."
+            />
+          }
+        >
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {items.map((item) => {
+              const thumbnail = item?.images?.thumbnail || item?.thumbnail
+              const slug = item?.slug
+              const name = item?.full_name || item?.name || 'Unnamed'
+              const summary = getSummary(item)
+              const role = item?.title || item?.role || item?.position
 
-            return (
-              <li key={item?.id || slug || name}>
-                {thumbnail && (
-                  <img
-                    src={resolveAssetUrl(thumbnail)}
-                    alt={`${name} thumbnail`}
+              return (
+                <Card
+                  key={item?.id || slug || name}
+                  className="flex h-full flex-col overflow-hidden transition hover:shadow-sm"
+                >
+                  <ImageWithFallback
+                    src={thumbnail ? resolveAssetUrl(thumbnail) : null}
+                    alt={`${name} portrait`}
+                    className="h-56 w-full object-cover"
+                    fallbackText="No image"
                   />
-                )}
-                <h2>
-                  {slug ? (
-                    <Link to={`/hall-of-fame/${slug}`}>{name}</Link>
-                  ) : (
-                    name
-                  )}
-                </h2>
-                {summary && <p>{summary}</p>}
-              </li>
-            )
-          })}
-        </ul>
-      )}
+                  <CardContent className="space-y-3 pt-4">
+                    <div className="space-y-1">
+                      <h2 className="text-lg font-semibold text-foreground">
+                        {slug ? (
+                          <Link
+                            to={`/hall-of-fame/${slug}`}
+                            className="hover:underline"
+                          >
+                            {name}
+                          </Link>
+                        ) : (
+                          name
+                        )}
+                      </h2>
+                      {role ? (
+                        <p className="text-sm text-muted-foreground">{role}</p>
+                      ) : null}
+                    </div>
+                    {summary ? (
+                      <p className="text-sm text-muted-foreground">{summary}</p>
+                    ) : null}
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </StateGate>
+      </div>
     </section>
   )
 }

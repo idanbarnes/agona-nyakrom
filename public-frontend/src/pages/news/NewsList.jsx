@@ -3,10 +3,15 @@ import { Link } from 'react-router-dom'
 import { getNews } from '../../api/endpoints.js'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
 import {
+  Button,
+  Card,
+  CardContent,
+  CardFooter,
+  CardSkeleton,
   EmptyState,
   ErrorState,
   ImageWithFallback,
-  ListSkeleton,
+  Pagination,
   StateGate,
 } from '../../components/ui/index.jsx'
 
@@ -106,89 +111,118 @@ function NewsList() {
     [items],
   )
 
-  return (
-    <section className="space-y-6">
-      <h1 className="text-2xl font-semibold text-foreground">News</h1>
-      <StateGate
-        loading={loading}
-        error={error}
-        isEmpty={!loading && !error && visibleItems.length === 0}
-        skeleton={<ListSkeleton rows={4} showAvatar />}
-        errorFallback={
-          <ErrorState message={error?.message || 'Unable to load news.'} />
-        }
-        empty={
-          <EmptyState
-            title="No news yet"
-            description="Check back soon for updates from the community."
-          />
-        }
-      >
-        <ul className="space-y-6">
-          {visibleItems.map((item) => {
-            const publishedAt =
-              item?.published_at || item?.publishedAt || item?.createdAt
-            const dateLabel = formatDate(publishedAt)
-            const thumbnail = item?.images?.thumbnail
-            const slug = item?.slug
+  const totalPages = useMemo(() => {
+    if (meta?.totalPages) {
+      return meta.totalPages
+    }
 
-            return (
-              <li
-                key={item?.id || slug || item?.title}
-                className="rounded-lg border border-border bg-surface p-4"
-              >
-                <div className="flex flex-col gap-4 md:flex-row">
+    if (meta?.total_pages) {
+      return meta.total_pages
+    }
+
+    if (meta?.total) {
+      return Math.ceil(meta.total / limit)
+    }
+
+    return hasNextPage ? page + 1 : page
+  }, [hasNextPage, limit, meta, page])
+
+  return (
+    <section className="container py-6 md:py-10">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold text-foreground md:text-3xl">
+          News
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          The latest stories, announcements, and community updates.
+        </p>
+      </div>
+      <div className="mt-8 space-y-8">
+        <StateGate
+          loading={loading}
+          error={error}
+          isEmpty={!loading && !error && visibleItems.length === 0}
+          skeleton={
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <CardSkeleton key={`news-skeleton-${index}`} />
+              ))}
+            </div>
+          }
+          errorFallback={
+            <ErrorState message={error?.message || 'Unable to load news.'} />
+          }
+          empty={
+            <EmptyState
+              title="No news yet"
+              description="Check back soon for updates from the community."
+            />
+          }
+        >
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {visibleItems.map((item) => {
+              const publishedAt =
+                item?.published_at || item?.publishedAt || item?.createdAt
+              const dateLabel = formatDate(publishedAt)
+              const thumbnail = item?.images?.thumbnail
+              const slug = item?.slug
+
+              return (
+                <Card
+                  key={item?.id || slug || item?.title}
+                  className="flex h-full flex-col overflow-hidden transition hover:shadow-sm"
+                >
                   <ImageWithFallback
                     src={thumbnail ? resolveAssetUrl(thumbnail) : null}
                     alt={item?.title || 'News thumbnail'}
-                    className="h-40 w-full rounded-md object-cover md:h-28 md:w-40"
+                    className="h-40 w-full object-cover"
                     fallbackText="No image"
                   />
-                  <div className="flex-1 space-y-2">
-                    <h2 className="text-lg font-semibold text-foreground">
-                      {slug ? (
-                        <Link to={`/news/${slug}`} className="hover:underline">
-                          {item?.title || 'Untitled'}
-                        </Link>
-                      ) : (
-                        item?.title || 'Untitled'
-                      )}
-                    </h2>
+                  <CardContent className="flex flex-1 flex-col gap-3 pt-4">
+                    <div className="space-y-1">
+                      <h2 className="text-lg font-semibold text-foreground">
+                        {slug ? (
+                          <Link
+                            to={`/news/${slug}`}
+                            className="hover:underline"
+                          >
+                            {item?.title || 'Untitled'}
+                          </Link>
+                        ) : (
+                          item?.title || 'Untitled'
+                        )}
+                      </h2>
+                      {dateLabel ? (
+                        <p className="text-xs text-muted-foreground">
+                          Published {dateLabel}
+                        </p>
+                      ) : null}
+                    </div>
                     {item?.summary ? (
                       <p className="text-sm text-muted-foreground">
                         {item.summary}
                       </p>
                     ) : null}
-                    {dateLabel ? (
-                      <p className="text-xs text-muted-foreground">
-                        Published: {dateLabel}
-                      </p>
+                  </CardContent>
+                  <CardFooter className="justify-start">
+                    {slug ? (
+                      <Button asChild variant="ghost" size="sm">
+                        <Link to={`/news/${slug}`}>Read more</Link>
+                      </Button>
                     ) : null}
-                  </div>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
-      </StateGate>
+                  </CardFooter>
+                </Card>
+              )
+            })}
+          </div>
+        </StateGate>
 
-      <nav aria-label="News pagination" className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-          disabled={page === 1}
-        >
-          Prev
-        </button>
-        <span>Page {page}</span>
-        <button
-          type="button"
-          onClick={() => setPage((prev) => prev + 1)}
-          disabled={!hasNextPage}
-        >
-          Next
-        </button>
-      </nav>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onChange={setPage}
+        />
+      </div>
     </section>
   )
 }

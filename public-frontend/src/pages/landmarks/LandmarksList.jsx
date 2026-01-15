@@ -2,6 +2,16 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getLandmarks } from '../../api/endpoints.js'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import {
+  Card,
+  CardContent,
+  CardSkeleton,
+  EmptyState,
+  ErrorState,
+  ImageWithFallback,
+  Pagination,
+  StateGate,
+} from '../../components/ui/index.jsx'
 
 // Normalize the location field to a readable string.
 function formatLocation(value) {
@@ -108,79 +118,113 @@ function LandmarksList() {
     return items.length >= limit
   }, [items.length, limit, meta, page])
 
-  if (loading) {
-    return (
-      <section>
-        <h1>Landmarks</h1>
-        <p>Loading landmarks...</p>
-      </section>
-    )
-  }
+  const totalPages = useMemo(() => {
+    if (meta?.totalPages) {
+      return meta.totalPages
+    }
 
-  if (error) {
-    return (
-      <section>
-        <h1>Landmarks</h1>
-        <p>Unable to load landmarks.</p>
-        <pre>{error?.message || String(error)}</pre>
-      </section>
-    )
-  }
+    if (meta?.total_pages) {
+      return meta.total_pages
+    }
+
+    if (meta?.total) {
+      return Math.ceil(meta.total / limit)
+    }
+
+    return hasNextPage ? page + 1 : page
+  }, [hasNextPage, limit, meta, page])
 
   return (
-    <section>
-      <h1>Landmarks</h1>
-      {items.length === 0 ? (
-        <p>No landmarks available.</p>
-      ) : (
-        <ul>
-          {items.map((item) => {
-            const name = item?.name || item?.title || 'Untitled'
-            const slug = item?.slug
-            const location = formatLocation(item?.location)
-            const thumbnail = item?.images?.thumbnail || item?.thumbnail
-            const description = getShortDescription(item)
+    <section className="container py-6 md:py-10">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold text-foreground md:text-3xl">
+          Landmarks
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Discover notable places and historic locations across the community.
+        </p>
+      </div>
+      <div className="mt-8 space-y-8">
+        <StateGate
+          loading={loading}
+          error={error}
+          isEmpty={!loading && !error && items.length === 0}
+          skeleton={
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <CardSkeleton key={`landmark-skeleton-${index}`} />
+              ))}
+            </div>
+          }
+          errorFallback={
+            <ErrorState
+              message={error?.message || 'Unable to load landmarks.'}
+            />
+          }
+          empty={
+            <EmptyState
+              title="No landmarks available"
+              description="Please check back as new landmarks are added."
+            />
+          }
+        >
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {items.map((item) => {
+              const name = item?.name || item?.title || 'Untitled'
+              const slug = item?.slug
+              const location = formatLocation(item?.location)
+              const thumbnail = item?.images?.thumbnail || item?.thumbnail
+              const description = getShortDescription(item)
 
-            return (
-              <li key={item?.id || slug || name}>
-                {thumbnail && (
-                  <img
-                    src={resolveAssetUrl(thumbnail)}
+              return (
+                <Card
+                  key={item?.id || slug || name}
+                  className="flex h-full flex-col overflow-hidden transition hover:shadow-sm"
+                >
+                  <ImageWithFallback
+                    src={thumbnail ? resolveAssetUrl(thumbnail) : null}
                     alt={name || 'Landmark thumbnail'}
+                    className="h-48 w-full object-cover"
+                    fallbackText="No image"
                   />
-                )}
-                <h2>
-                  {slug ? (
-                    <Link to={`/landmarks/${slug}`}>{name}</Link>
-                  ) : (
-                    name
-                  )}
-                </h2>
-                {description && <p>{description}</p>}
-                {location && <p>Location: {location}</p>}
-              </li>
-            )
-          })}
-        </ul>
-      )}
+                  <CardContent className="space-y-3 pt-4">
+                    <div className="space-y-1">
+                      <h2 className="text-lg font-semibold text-foreground">
+                        {slug ? (
+                          <Link
+                            to={`/landmarks/${slug}`}
+                            className="hover:underline"
+                          >
+                            {name}
+                          </Link>
+                        ) : (
+                          name
+                        )}
+                      </h2>
+                      {location ? (
+                        <p className="text-xs text-muted-foreground">
+                          {location}
+                        </p>
+                      ) : null}
+                    </div>
+                    {description ? (
+                      <p className="text-sm text-muted-foreground">
+                        {description}
+                      </p>
+                    ) : null}
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </StateGate>
 
-      <nav aria-label="Landmarks pagination">
-        <button
-          type="button"
-          onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-          disabled={page === 1}
-        >
-          Prev
-        </button>
-        <span>Page {page}</span>
-        <button
-          type="button"
-          onClick={() => setPage((prev) => prev + 1)}
-          disabled={!hasNextPage}
-        >
-          Next
-        </button>
-      </nav>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onChange={setPage}
+        />
+      </div>
     </section>
   )
 }

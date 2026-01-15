@@ -2,6 +2,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getObituaries } from '../../api/endpoints.js'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import {
+  Card,
+  EmptyState,
+  ErrorState,
+  ImageWithFallback,
+  ListSkeleton,
+  Pagination,
+  StateGate,
+} from '../../components/ui/index.jsx'
 
 // Format date strings to a readable format when valid.
 function formatDate(value) {
@@ -111,81 +120,106 @@ function ObituaryList() {
     return items.length >= limit
   }, [items.length, limit, meta, page])
 
-  if (loading) {
-    return (
-      <section>
-        <h1>Obituaries</h1>
-        <p>Loading obituaries...</p>
-      </section>
-    )
-  }
+  const totalPages = useMemo(() => {
+    if (meta?.totalPages) {
+      return meta.totalPages
+    }
 
-  if (error) {
-    return (
-      <section>
-        <h1>Obituaries</h1>
-        <p>Unable to load obituaries.</p>
-        <pre>{error?.message || String(error)}</pre>
-      </section>
-    )
-  }
+    if (meta?.total_pages) {
+      return meta.total_pages
+    }
+
+    if (meta?.total) {
+      return Math.ceil(meta.total / limit)
+    }
+
+    return hasNextPage ? page + 1 : page
+  }, [hasNextPage, limit, meta, page])
 
   return (
-    <section>
-      <h1>Obituaries</h1>
-      {items.length === 0 ? (
-        <p>No obituaries available.</p>
-      ) : (
-        <ul>
-          {items.map((item) => {
-            const dateOfDeath = formatDate(item?.date_of_death)
-            const thumbnail = item?.images?.thumbnail || item?.thumbnail
-            const slug = item?.slug
-            const summary = getSummary(item)
-
-            return (
-              <li key={item?.id || slug || item?.full_name}>
-                {thumbnail && (
-                  <img
-                    src={resolveAssetUrl(thumbnail)}
-                    alt={item?.full_name || 'Obituary thumbnail'}
-                  />
-                )}
-                <h2>
-                  {slug ? (
-                    <Link to={`/obituaries/${slug}`}>
-                      {item?.full_name || 'Unnamed'}
-                    </Link>
-                  ) : (
-                    item?.full_name || 'Unnamed'
-                  )}
-                </h2>
-                {item?.age && <p>Age: {item.age}</p>}
-                {dateOfDeath && <p>Date of death: {dateOfDeath}</p>}
-                {summary && <p>{summary}</p>}
-              </li>
-            )
-          })}
-        </ul>
-      )}
-
-      <nav aria-label="Obituaries pagination">
-        <button
-          type="button"
-          onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-          disabled={page === 1}
+    <section className="container py-6 md:py-10">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold text-foreground md:text-3xl">
+          Obituaries
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Honoring the lives and legacies of our community members.
+        </p>
+      </div>
+      <div className="mt-8 space-y-8">
+        <StateGate
+          loading={loading}
+          error={error}
+          isEmpty={!loading && !error && items.length === 0}
+          skeleton={<ListSkeleton rows={5} showAvatar />}
+          errorFallback={
+            <ErrorState message={error?.message || 'Unable to load obituaries.'} />
+          }
+          empty={
+            <EmptyState
+              title="No obituaries available"
+              description="Please check back later for new memorials."
+            />
+          }
         >
-          Prev
-        </button>
-        <span>Page {page}</span>
-        <button
-          type="button"
-          onClick={() => setPage((prev) => prev + 1)}
-          disabled={!hasNextPage}
-        >
-          Next
-        </button>
-      </nav>
+          <ul className="space-y-4">
+            {items.map((item) => {
+              const dateOfDeath = formatDate(item?.date_of_death)
+              const thumbnail = item?.images?.thumbnail || item?.thumbnail
+              const slug = item?.slug
+              const summary = getSummary(item)
+
+              return (
+                <li key={item?.id || slug || item?.full_name}>
+                  <Card className="p-4 transition hover:shadow-sm">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                      <ImageWithFallback
+                        src={thumbnail ? resolveAssetUrl(thumbnail) : null}
+                        alt={item?.full_name || 'Obituary thumbnail'}
+                        className="h-24 w-24 rounded-md object-cover"
+                        fallbackText="No photo"
+                      />
+                      <div className="flex-1 space-y-2">
+                        <div className="space-y-1">
+                          <h2 className="text-lg font-semibold text-foreground">
+                            {slug ? (
+                              <Link
+                                to={`/obituaries/${slug}`}
+                                className="hover:underline"
+                              >
+                                {item?.full_name || 'Unnamed'}
+                              </Link>
+                            ) : (
+                              item?.full_name || 'Unnamed'
+                            )}
+                          </h2>
+                          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                            {item?.age ? <span>Age {item.age}</span> : null}
+                            {dateOfDeath ? (
+                              <span>Died {dateOfDeath}</span>
+                            ) : null}
+                          </div>
+                        </div>
+                        {summary ? (
+                          <p className="text-sm text-muted-foreground">
+                            {summary}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                  </Card>
+                </li>
+              )
+            })}
+          </ul>
+        </StateGate>
+
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onChange={setPage}
+        />
+      </div>
     </section>
   )
 }
