@@ -9,6 +9,7 @@ import {
   Button,
   EmptyState,
   ErrorState,
+  Pagination,
   PublishStatus,
   StateGate,
   Table,
@@ -121,25 +122,32 @@ function AdminObituariesListPage() {
     }
   }
 
-  const handlePrevPage = () => {
-    setPage((current) => Math.max(DEFAULT_PAGE, current - 1))
+  const totalPages =
+    total !== null ? Math.max(1, Math.ceil(total / limit)) : isLastPage ? page : page + 1
+
+  const handlePageChange = (nextPage) => {
+    if (nextPage < DEFAULT_PAGE || nextPage > totalPages) {
+      return
+    }
+    setPage(nextPage)
   }
 
-  const handleNextPage = () => {
-    setPage((current) => current + 1)
-  }
+  const actionLinkClassName =
+    'inline-flex h-8 items-center justify-center rounded-md border border-transparent px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
 
   return (
-    <section className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">Obituaries</h2>
-          {total !== null ? (
-            <p className="text-sm text-muted-foreground">Total: {total}</p>
-          ) : null}
-        </div>
+    <section className="space-y-4 md:space-y-6">
+      <div className="space-y-1">
+        <h2 className="text-xl font-semibold md:text-2xl">Obituaries</h2>
+        {total !== null ? (
+          <p className="text-sm text-muted-foreground">Total: {total}</p>
+        ) : null}
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div />
         <Button
           type="button"
+          variant="primary"
           onClick={() => navigate('/admin/obituaries/create')}
         >
           Create obituary
@@ -176,86 +184,80 @@ function AdminObituariesListPage() {
           />
         }
       >
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHead>
-              <tr>
-                <th className="px-4 py-3 text-left">Full Name</th>
-                <th className="px-4 py-3 text-left">Age</th>
-                <th className="px-4 py-3 text-left">Date of Death</th>
-                <th className="px-4 py-3 text-left">Status</th>
-                <th className="px-4 py-3 text-left">Updated At</th>
-                <th className="px-4 py-3 text-left">Actions</th>
-              </tr>
-            </TableHead>
-            <TableBody>
-              {items.map((item) => {
-                const id = item.id || item._id
-                const published = Boolean(
-                  item.published || item.is_published || item.isPublished,
-                )
-                const fullName =
-                  item.full_name || item.fullName || item.name || 'Unknown'
+        <Table>
+          <TableHead>
+            <tr>
+              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
+                Full Name
+              </th>
+              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
+                Age
+              </th>
+              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
+                Date of Death
+              </th>
+              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
+                Status
+              </th>
+              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
+                Updated At
+              </th>
+              <th className="px-4 py-3 text-right font-medium whitespace-nowrap">
+                Actions
+              </th>
+            </tr>
+          </TableHead>
+          <TableBody>
+            {items.map((item) => {
+              const id = item.id || item._id
+              const published = Boolean(
+                item.published || item.is_published || item.isPublished,
+              )
+              const fullName =
+                item.full_name || item.fullName || item.name || 'Unknown'
 
-                return (
-                  <TableRow key={id}>
-                    <TableCell className="max-w-xs break-words">
-                      {fullName}
-                    </TableCell>
-                    <TableCell>{item.age ?? '-'}</TableCell>
-                    <TableCell>
-                      {formatDate(item.dateOfDeath || item.date_of_death)}
-                    </TableCell>
-                    <TableCell>
-                      <PublishStatus published={published} />
-                    </TableCell>
-                    <TableCell>
-                      {formatDate(item.updatedAt || item.updated_at)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Link
-                          to={`/admin/obituaries/edit/${id}`}
-                          className="text-primary"
-                        >
-                          Edit
-                        </Link>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </div>
+              return (
+                <TableRow key={id}>
+                  <TableCell className="max-w-xs break-words">
+                    {fullName}
+                  </TableCell>
+                  <TableCell>{item.age ?? '-'}</TableCell>
+                  <TableCell>
+                    {formatDate(item.dateOfDeath || item.date_of_death)}
+                  </TableCell>
+                  <TableCell>
+                    <PublishStatus published={published} />
+                  </TableCell>
+                  <TableCell>
+                    {formatDate(item.updatedAt || item.updated_at)}
+                  </TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <Link
+                        to={`/admin/obituaries/edit/${id}`}
+                        className={actionLinkClassName}
+                      >
+                        Edit
+                      </Link>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(id)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
       </StateGate>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={handlePrevPage}
-          disabled={page <= 1}
-        >
-          Prev
-        </Button>
-        <span className="text-sm text-muted-foreground">Page {page}</span>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={handleNextPage}
-          disabled={isLastPage}
-        >
-          Next
-        </Button>
+      <div className="flex justify-end">
+        <Pagination page={page} totalPages={totalPages} onChange={handlePageChange} />
       </div>
     </section>
   )

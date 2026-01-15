@@ -11,6 +11,7 @@ import {
   EmptyState,
   ErrorState,
   ImageWithFallback,
+  Pagination,
   PublishStatus,
   StateGate,
   Table,
@@ -181,27 +182,37 @@ function AdminCarouselListPage() {
     }
   }
 
-  const handlePrevPage = () => {
-    setPage((current) => Math.max(DEFAULT_PAGE, current - 1))
-  }
-
-  const handleNextPage = () => {
-    setPage((current) => current + 1)
-  }
-
   const imageFromSlide = (slide) =>
     slide?.image_url || slide?.imageUrl || slide?.image || ''
 
+  const totalPages =
+    total !== null ? Math.max(1, Math.ceil(total / limit)) : isLastPage ? page : page + 1
+
+  const handlePageChange = (nextPage) => {
+    if (nextPage < DEFAULT_PAGE || nextPage > totalPages) {
+      return
+    }
+    setPage(nextPage)
+  }
+
+  const actionLinkClassName =
+    'inline-flex h-8 items-center justify-center rounded-md border border-transparent px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+
   return (
-    <section className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">Carousel</h2>
-          {total !== null ? (
-            <p className="text-sm text-muted-foreground">Total: {total}</p>
-          ) : null}
-        </div>
-        <Button type="button" onClick={() => navigate('/admin/carousel/create')}>
+    <section className="space-y-4 md:space-y-6">
+      <div className="space-y-1">
+        <h2 className="text-xl font-semibold md:text-2xl">Carousel</h2>
+        {total !== null ? (
+          <p className="text-sm text-muted-foreground">Total: {total}</p>
+        ) : null}
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div />
+        <Button
+          type="button"
+          variant="primary"
+          onClick={() => navigate('/admin/carousel/create')}
+        >
           Create slide
         </Button>
       </div>
@@ -236,112 +247,106 @@ function AdminCarouselListPage() {
           />
         }
       >
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHead>
-              <tr>
-                <th className="px-4 py-3 text-left">Thumbnail</th>
-                <th className="px-4 py-3 text-left">Title</th>
-                <th className="px-4 py-3 text-left">Status</th>
-                <th className="px-4 py-3 text-left">Display Order</th>
-                <th className="px-4 py-3 text-left">Updated At</th>
-                <th className="px-4 py-3 text-left">Actions</th>
-              </tr>
-            </TableHead>
-            <TableBody>
-              {sortedItems.map((item, index) => {
-                const id = item.id || item._id
-                const published =
-                  typeof item.published === 'boolean'
-                    ? item.published
-                    : item.status === 'published'
+        <Table>
+          <TableHead>
+            <tr>
+              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
+                Thumbnail
+              </th>
+              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
+                Title
+              </th>
+              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
+                Status
+              </th>
+              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
+                Display Order
+              </th>
+              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
+                Updated At
+              </th>
+              <th className="px-4 py-3 text-right font-medium whitespace-nowrap">
+                Actions
+              </th>
+            </tr>
+          </TableHead>
+          <TableBody>
+            {sortedItems.map((item, index) => {
+              const id = item.id || item._id
+              const published =
+                typeof item.published === 'boolean'
+                  ? item.published
+                  : item.status === 'published'
 
-                return (
-                  <TableRow key={id}>
-                    <TableCell>
-                      <ImageWithFallback
-                        src={imageFromSlide(item)}
-                        alt={item.title || 'Slide'}
-                        className="h-12 w-20 rounded-md object-cover"
-                        fallbackText="No image"
-                      />
-                    </TableCell>
-                    <TableCell className="max-w-xs break-words">
-                      {item.title || '-'}
-                    </TableCell>
-                    <TableCell>
-                      <PublishStatus published={published} />
-                    </TableCell>
-                    <TableCell>
-                      {item.display_order ?? item.displayOrder ?? '-'}
-                    </TableCell>
-                    <TableCell>
-                      {formatDate(item.updatedAt || item.updated_at)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Link
-                          to={`/admin/carousel/edit/${id}`}
-                          className="text-primary"
-                        >
-                          Edit
-                        </Link>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(id)}
-                        >
-                          Delete
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleMove(index, 'up')}
-                          disabled={index === 0 || isReordering}
-                        >
-                          Move Up
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleMove(index, 'down')}
-                          disabled={
-                            index === sortedItems.length - 1 || isReordering
-                          }
-                        >
-                          Move Down
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </div>
+              return (
+                <TableRow key={id}>
+                  <TableCell>
+                    <ImageWithFallback
+                      src={imageFromSlide(item)}
+                      alt={item.title || 'Slide'}
+                      className="h-12 w-20 rounded-md object-cover"
+                      fallbackText="No image"
+                    />
+                  </TableCell>
+                  <TableCell className="max-w-xs break-words">
+                    {item.title || '-'}
+                  </TableCell>
+                  <TableCell>
+                    <PublishStatus published={published} />
+                  </TableCell>
+                  <TableCell>
+                    {item.display_order ?? item.displayOrder ?? '-'}
+                  </TableCell>
+                  <TableCell>
+                    {formatDate(item.updatedAt || item.updated_at)}
+                  </TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <Link
+                        to={`/admin/carousel/edit/${id}`}
+                        className={actionLinkClassName}
+                      >
+                        Edit
+                      </Link>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(id)}
+                      >
+                        Delete
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleMove(index, 'up')}
+                        disabled={index === 0 || isReordering}
+                      >
+                        Move Up
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleMove(index, 'down')}
+                        disabled={
+                          index === sortedItems.length - 1 || isReordering
+                        }
+                      >
+                        Move Down
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
       </StateGate>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={handlePrevPage}
-          disabled={page <= 1}
-        >
-          Prev
-        </Button>
-        <span className="text-sm text-muted-foreground">Page {page}</span>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={handleNextPage}
-          disabled={isLastPage}
-        >
-          Next
-        </Button>
+      <div className="flex justify-end">
+        <Pagination page={page} totalPages={totalPages} onChange={handlePageChange} />
       </div>
     </section>
   )
