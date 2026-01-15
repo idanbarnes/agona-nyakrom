@@ -7,6 +7,7 @@ import {
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
 import {
   Button,
+  ConfirmDialog,
   EmptyState,
   ErrorState,
   Pagination,
@@ -18,6 +19,7 @@ import {
   TableHead,
   TableRow,
   TableSkeleton,
+  ToastMessage,
 } from '../../components/ui/index.jsx'
 
 const DEFAULT_PAGE = 1
@@ -48,6 +50,7 @@ function AdminObituariesListPage() {
   const [successMessage, setSuccessMessage] = useState(
     location.state?.successMessage || ''
   )
+  const [confirmState, setConfirmState] = useState({ open: false, id: null })
   const isLastPage =
     total !== null
       ? page >= Math.ceil(total / limit)
@@ -96,10 +99,6 @@ function AdminObituariesListPage() {
     setErrorMessage('')
     setSuccessMessage('')
 
-    if (!window.confirm('Delete this obituary?')) {
-      return
-    }
-
     try {
       const response = await deleteObituary(id)
       if (response?.success === false) {
@@ -119,6 +118,22 @@ function AdminObituariesListPage() {
       const message = error.message || 'Unable to delete obituary.'
       setErrorMessage(message)
       window.alert(message)
+    }
+  }
+
+  const handleDeleteClick = (id) => {
+    setConfirmState({ open: true, id })
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!confirmState.id) {
+      return
+    }
+
+    try {
+      await handleDelete(confirmState.id)
+    } finally {
+      setConfirmState({ open: false, id: null })
     }
   }
 
@@ -153,8 +168,12 @@ function AdminObituariesListPage() {
           Create obituary
         </Button>
       </div>
-      {errorMessage ? <p role="alert">{errorMessage}</p> : null}
-      {successMessage ? <p role="status">{successMessage}</p> : null}
+      {errorMessage ? (
+        <ToastMessage type="error" message={errorMessage} />
+      ) : null}
+      {successMessage ? (
+        <ToastMessage type="success" message={successMessage} />
+      ) : null}
 
       <StateGate
         loading={isLoading}
@@ -243,7 +262,7 @@ function AdminObituariesListPage() {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(id)}
+                        onClick={() => handleDeleteClick(id)}
                       >
                         Delete
                       </Button>
@@ -259,6 +278,16 @@ function AdminObituariesListPage() {
       <div className="flex justify-end">
         <Pagination page={page} totalPages={totalPages} onChange={handlePageChange} />
       </div>
+
+      <ConfirmDialog
+        open={confirmState.open}
+        title="Delete obituary"
+        description="Delete this obituary?"
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmState({ open: false, id: null })}
+      />
     </section>
   )
 }
