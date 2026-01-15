@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getCarousel, getHomepage } from '../api/endpoints.js'
-import { Button, ErrorState, ImageWithFallback, Skeleton } from '../components/ui/index.jsx'
+import {
+  Button,
+  Card,
+  CardContent,
+  ErrorState,
+  ImageWithFallback,
+  Skeleton,
+} from '../components/ui/index.jsx'
 import { resolveAssetUrl } from '../lib/apiBase.js'
 import { usePublicSettings } from '../layouts/Layout.jsx'
 
@@ -68,6 +75,26 @@ function formatItemLabel(item) {
     item.slug ||
     item.id ||
     JSON.stringify(item)
+  )
+}
+
+function selectItemImage(item) {
+  if (!item || typeof item !== 'object') {
+    return ''
+  }
+
+  const images = item?.images || {}
+
+  return (
+    images.medium ||
+    images.thumbnail ||
+    images.large ||
+    images.original ||
+    item?.image ||
+    item?.image_url ||
+    item?.thumbnail ||
+    item?.thumbnail_url ||
+    ''
   )
 }
 
@@ -333,50 +360,165 @@ function Home() {
         )}
       </section>
 
-      <h1>{heroTitle || 'Home'}</h1>
-      {heroSubtitle && <p>{heroSubtitle}</p>}
-      {heroCtaText && heroCtaLink && (
-        <p>
-          <a href={heroCtaLink}>{heroCtaText}</a>
-        </p>
-      )}
-      {settings?.siteName && (
-        <p>
-          <strong>Site:</strong> {settings.siteName}
-        </p>
-      )}
+      <section className="py-8 md:py-12">
+        <div className="container">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold md:text-2xl">
+                {heroTitle || 'Home'}
+              </h2>
+              {heroSubtitle && (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {heroSubtitle}
+                </p>
+              )}
+            </div>
+            {heroCtaText && heroCtaLink && (
+              <Button as="a" href={heroCtaLink} variant="ghost">
+                {heroCtaText}
+              </Button>
+            )}
+          </div>
+          {settings?.siteName && (
+            <p className="mt-4 text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Site:</span>{' '}
+              {settings.siteName}
+            </p>
+          )}
+        </div>
+      </section>
 
       {sections.length > 0 && (
         <section>
-          <h2>Sections</h2>
-          {sections.map((section, index) => (
-            <article key={section?.id || section?.slug || index}>
-              <h3>{section?.title || `Section ${index + 1}`}</h3>
-              <p>{section?.content || section?.description}</p>
-            </article>
-          ))}
+          {sections.map((section, index) => {
+            const sectionTitle = pickFirstString(
+              section?.title,
+              section?.name,
+              `Section ${index + 1}`,
+            )
+            const sectionSubtitle = pickFirstString(
+              section?.subtitle,
+              section?.summary,
+            )
+            const sectionBody = pickFirstString(
+              section?.content,
+              section?.description,
+            )
+
+            return (
+              <section
+                key={section?.id || section?.slug || index}
+                className="border-t border-border py-8 md:py-12"
+              >
+                <div className="container">
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <h2 className="text-xl font-semibold md:text-2xl">
+                        {sectionTitle}
+                      </h2>
+                      {sectionSubtitle && (
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {sectionSubtitle}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {sectionBody && (
+                    <div className="mt-6">
+                      <Card>
+                        <CardContent className="space-y-2">
+                          <p className="text-sm text-muted-foreground">
+                            {sectionBody}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )
+          })}
         </section>
       )}
 
       {featuredBlocks.length > 0 && (
         <section>
-          <h2>Featured</h2>
-          {featuredBlocks.map((block, index) => (
-            <article key={block?.id || block?.title || index}>
-              <h3>{block?.title || `Featured ${index + 1}`}</h3>
-              {Array.isArray(block?.items) ? (
-                <ul>
-                  {block.items.map((item, itemIndex) => (
-                    <li key={item?.id || item?.slug || itemIndex}>
-                      {formatItemLabel(item)}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p>{formatItemLabel(block?.items)}</p>
-              )}
-            </article>
-          ))}
+          {featuredBlocks.map((block, index) => {
+            const blockTitle = pickFirstString(
+              block?.title,
+              block?.name,
+              `Featured ${index + 1}`,
+            )
+            const blockSubtitle = pickFirstString(
+              block?.subtitle,
+              block?.summary,
+            )
+            return (
+              <section
+                key={block?.id || block?.title || index}
+                className="border-t border-border py-8 md:py-12"
+              >
+                <div className="container">
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <h2 className="text-xl font-semibold md:text-2xl">
+                        {blockTitle}
+                      </h2>
+                      {blockSubtitle && (
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {blockSubtitle}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-6">
+                    {Array.isArray(block?.items) ? (
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {block.items.map((item, itemIndex) => {
+                          const itemLabel = formatItemLabel(item)
+                          const itemImagePath = selectItemImage(item)
+                          const itemImageUrl = itemImagePath
+                            ? resolveAssetUrl(itemImagePath)
+                            : ''
+
+                          return (
+                            <Card
+                              key={item?.id || item?.slug || itemIndex}
+                              className="overflow-hidden"
+                            >
+                              {itemImageUrl && (
+                                <div className="aspect-[4/3] w-full overflow-hidden bg-muted/40">
+                                  <ImageWithFallback
+                                    src={itemImageUrl}
+                                    alt={itemLabel || 'Featured item'}
+                                    fallbackText="No image"
+                                    className="h-full w-full object-cover"
+                                  />
+                                </div>
+                              )}
+                              <CardContent className="space-y-2">
+                                <p className="text-sm font-medium text-foreground">
+                                  {itemLabel}
+                                </p>
+                              </CardContent>
+                            </Card>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <Card>
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground">
+                            {formatItemLabel(block?.items)}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                </div>
+              </section>
+            )
+          })}
         </section>
       )}
     </section>
