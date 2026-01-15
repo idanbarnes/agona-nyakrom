@@ -7,6 +7,7 @@ import {
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
 import {
   Button,
+  ConfirmDialog,
   EmptyState,
   ErrorState,
   Pagination,
@@ -18,6 +19,7 @@ import {
   TableHead,
   TableRow,
   TableSkeleton,
+  ToastMessage,
 } from '../../components/ui/index.jsx'
 
 const DEFAULT_PAGE = 1
@@ -48,6 +50,7 @@ function AdminLandmarksListPage() {
   const [successMessage, setSuccessMessage] = useState(
     location.state?.successMessage || ''
   )
+  const [confirmState, setConfirmState] = useState({ open: false, id: null })
   const isLastPage =
     total !== null
       ? page >= Math.ceil(total / limit)
@@ -99,10 +102,6 @@ function AdminLandmarksListPage() {
     setError(null)
     setSuccessMessage('')
 
-    if (!window.confirm('Delete this landmark?')) {
-      return
-    }
-
     try {
       const response = await deleteLandmark(id)
       if (response?.success === false) {
@@ -122,6 +121,22 @@ function AdminLandmarksListPage() {
       const message = error.message || 'Unable to delete landmark.'
       setError(message)
       window.alert(message)
+    }
+  }
+
+  const handleDeleteClick = (id) => {
+    setConfirmState({ open: true, id })
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!confirmState.id) {
+      return
+    }
+
+    try {
+      await handleDelete(confirmState.id)
+    } finally {
+      setConfirmState({ open: false, id: null })
     }
   }
 
@@ -156,8 +171,10 @@ function AdminLandmarksListPage() {
           Create landmark
         </Button>
       </div>
-      {error ? <p role="alert">{errorMessage}</p> : null}
-      {successMessage ? <p role="status">{successMessage}</p> : null}
+      {error ? <ToastMessage type="error" message={errorMessage} /> : null}
+      {successMessage ? (
+        <ToastMessage type="success" message={successMessage} />
+      ) : null}
 
       <StateGate
         loading={isLoading}
@@ -241,7 +258,7 @@ function AdminLandmarksListPage() {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(id)}
+                        onClick={() => handleDeleteClick(id)}
                       >
                         Delete
                       </Button>
@@ -257,6 +274,16 @@ function AdminLandmarksListPage() {
       <div className="flex justify-end">
         <Pagination page={page} totalPages={totalPages} onChange={handlePageChange} />
       </div>
+
+      <ConfirmDialog
+        open={confirmState.open}
+        title="Delete landmark"
+        description="Delete this landmark?"
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmState({ open: false, id: null })}
+      />
     </section>
   )
 }

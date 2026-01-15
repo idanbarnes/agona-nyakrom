@@ -8,6 +8,7 @@ import {
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
 import {
   Button,
+  ConfirmDialog,
   EmptyState,
   ErrorState,
   PublishStatus,
@@ -18,6 +19,7 @@ import {
   TableHead,
   TableRow,
   TableSkeleton,
+  ToastMessage,
 } from '../../components/ui/index.jsx'
 
 function formatDate(value) {
@@ -43,6 +45,7 @@ function AdminHomepageSectionsListPage() {
   const [successMessage, setSuccessMessage] = useState(
     location.state?.successMessage || ''
   )
+  const [confirmState, setConfirmState] = useState({ open: false, id: null })
   const errorMessage =
     typeof error === 'string' ? error : error?.message || 'Failed to load data.'
 
@@ -93,10 +96,6 @@ function AdminHomepageSectionsListPage() {
     setError(null)
     setSuccessMessage('')
 
-    if (!window.confirm('Delete this section?')) {
-      return
-    }
-
     try {
       const response = await deleteSection(id)
       if (response?.success === false) {
@@ -115,6 +114,22 @@ function AdminHomepageSectionsListPage() {
       const message = error.message || 'Unable to delete section.'
       setError(message)
       window.alert(message)
+    }
+  }
+
+  const handleDeleteClick = (id) => {
+    setConfirmState({ open: true, id })
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!confirmState.id) {
+      return
+    }
+
+    try {
+      await handleDelete(confirmState.id)
+    } finally {
+      setConfirmState({ open: false, id: null })
     }
   }
 
@@ -180,8 +195,10 @@ function AdminHomepageSectionsListPage() {
           Create section
         </Button>
       </div>
-      {error ? <p role="alert">{errorMessage}</p> : null}
-      {successMessage ? <p role="status">{successMessage}</p> : null}
+      {error ? <ToastMessage type="error" message={errorMessage} /> : null}
+      {successMessage ? (
+        <ToastMessage type="success" message={successMessage} />
+      ) : null}
 
       <StateGate
         loading={isLoading}
@@ -271,7 +288,7 @@ function AdminHomepageSectionsListPage() {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(id)}
+                        onClick={() => handleDeleteClick(id)}
                       >
                         Delete
                       </Button>
@@ -303,6 +320,16 @@ function AdminHomepageSectionsListPage() {
           </TableBody>
         </Table>
       </StateGate>
+
+      <ConfirmDialog
+        open={confirmState.open}
+        title="Delete homepage section"
+        description="Delete this section?"
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmState({ open: false, id: null })}
+      />
     </section>
   )
 }
