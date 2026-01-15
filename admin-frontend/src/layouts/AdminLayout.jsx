@@ -109,14 +109,7 @@
 
 
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  StatusBadge,
-} from '../components/ui/index.jsx'
+import { Button } from '../components/ui/index.jsx'
 import { clearAuthToken } from '../lib/auth.js'
 
 function AdminLayout() {
@@ -129,7 +122,7 @@ function AdminLayout() {
   }
 
   return (
-    <div className="h-screen overflow-hidden flex bg-background text-foreground">
+    <div className="flex h-screen overflow-hidden bg-background text-foreground">
       {/* Admin shell: fixed sidebar, topbar, and scrollable content */}
       <aside className="w-64 shrink-0 border-r border-border bg-surface">
         <div className="h-full flex flex-col">
@@ -137,13 +130,14 @@ function AdminLayout() {
             <h1 className="text-base font-semibold">Admin</h1>
           </div>
           {/* Sidebar scrolls independently when menu is long */}
-          <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+          <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
             <NavLink
               className={({ isActive }) =>
                 [
-                  'block rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  'text-muted-foreground hover:text-foreground hover:bg-accent',
-                  isActive ? 'bg-accent text-foreground' : '',
+                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-accent text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
                 ].join(' ')
               }
               to="/dashboard"
@@ -154,9 +148,10 @@ function AdminLayout() {
             <NavLink
               className={({ isActive }) =>
                 [
-                  'block rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  'text-muted-foreground hover:text-foreground hover:bg-accent',
-                  isActive ? 'bg-accent text-foreground' : '',
+                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-accent text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
                 ].join(' ')
               }
               to="/admin/news"
@@ -167,9 +162,10 @@ function AdminLayout() {
             <NavLink
               className={({ isActive }) =>
                 [
-                  'block rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  'text-muted-foreground hover:text-foreground hover:bg-accent',
-                  isActive ? 'bg-accent text-foreground' : '',
+                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-accent text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
                 ].join(' ')
               }
               to="/admin/obituaries"
@@ -180,9 +176,10 @@ function AdminLayout() {
             <NavLink
               className={({ isActive }) =>
                 [
-                  'block rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  'text-muted-foreground hover:text-foreground hover:bg-accent',
-                  isActive ? 'bg-accent text-foreground' : '',
+                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-accent text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
                 ].join(' ')
               }
               to="/admin/clans"
@@ -193,9 +190,10 @@ function AdminLayout() {
             <NavLink
               className={({ isActive }) =>
                 [
-                  'block rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  'text-muted-foreground hover:text-foreground hover:bg-accent',
-                  isActive ? 'bg-accent text-foreground' : '',
+                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-accent text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
                 ].join(' ')
               }
               to="/admin/asafo-companies"
@@ -206,9 +204,10 @@ function AdminLayout() {
             <NavLink
               className={({ isActive }) =>
                 [
-                  'block rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  'text-muted-foreground hover:text-foreground hover:bg-accent',
-                  isActive ? 'bg-accent text-foreground' : '',
+                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-accent text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
                 ].join(' ')
               }
               to="/admin/hall-of-fame"
@@ -219,9 +218,10 @@ function AdminLayout() {
             <NavLink
               className={({ isActive }) =>
                 [
-                  'block rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  'text-muted-foreground hover:text-foreground hover:bg-accent',
-                  isActive ? 'bg-accent text-foreground' : '',
+                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-accent text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
                 ].join(' ')
               }
               to="/admin/global-settings"
@@ -232,9 +232,10 @@ function AdminLayout() {
             <NavLink
               className={({ isActive }) =>
                 [
-                  'block rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  'text-muted-foreground hover:text-foreground hover:bg-accent',
-                  isActive ? 'bg-accent text-foreground' : '',
+                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-accent text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
                 ].join(' ')
               }
               to="/admin/homepage-sections"
@@ -245,9 +246,10 @@ function AdminLayout() {
             <NavLink
               className={({ isActive }) =>
                 [
-                  'block rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  'text-muted-foreground hover:text-foreground hover:bg-accent',
-                  isActive ? 'bg-accent text-foreground' : '',
+                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-accent text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
                 ].join(' ')
               }
               to="/admin/landmarks"
@@ -258,9 +260,10 @@ function AdminLayout() {
             <NavLink
               className={({ isActive }) =>
                 [
-                  'block rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  'text-muted-foreground hover:text-foreground hover:bg-accent',
-                  isActive ? 'bg-accent text-foreground' : '',
+                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-accent text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
                 ].join(' ')
               }
               to="/admin/carousel"
@@ -271,9 +274,10 @@ function AdminLayout() {
             <NavLink
               className={({ isActive }) =>
                 [
-                  'block rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  'text-muted-foreground hover:text-foreground hover:bg-accent',
-                  isActive ? 'bg-accent text-foreground' : '',
+                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-accent text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
                 ].join(' ')
               }
               to="/admin/history"
@@ -286,36 +290,14 @@ function AdminLayout() {
       </aside>
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="h-16 flex items-center justify-end px-4 border-b border-border bg-background/80 backdrop-blur">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-          >
+        <header className="h-16 flex items-center justify-between px-4 border-b border-border bg-background/80 backdrop-blur">
+          <h2 className="text-sm font-semibold text-foreground">Dashboard</h2>
+          <Button type="button" variant="secondary" size="sm" onClick={handleLogout}>
             Logout
-          </button>
+          </Button>
         </header>
         {/* Only content area scrolls */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          {/* UI kit demo (remove later) */}
-          <div className="mb-6 max-w-md">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between gap-2">
-                  Demo Card
-                  <StatusBadge status="published" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex items-center justify-between gap-3">
-                <p className="text-sm text-muted-foreground">
-                  Button + card preview.
-                </p>
-                <Button size="sm" variant="secondary">
-                  View
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
           <Outlet />
         </main>
       </div>
