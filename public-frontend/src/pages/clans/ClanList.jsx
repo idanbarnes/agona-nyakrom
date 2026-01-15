@@ -2,6 +2,15 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getClans } from '../../api/endpoints.js'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import {
+  Card,
+  CardContent,
+  CardSkeleton,
+  EmptyState,
+  ErrorState,
+  ImageWithFallback,
+  StateGate,
+} from '../../components/ui/index.jsx'
 
 // Extract list data across possible payload shapes.
 function extractItems(payload) {
@@ -54,59 +63,91 @@ function ClanList() {
     }
   }, [])
 
-  if (loading) {
-    return (
-      <section>
-        <h1>Clans</h1>
-        <p>Loading clans...</p>
-      </section>
-    )
-  }
-
-  if (error) {
-    return (
-      <section>
-        <h1>Clans</h1>
-        <p>Unable to load clans.</p>
-        <pre>{error?.message || String(error)}</pre>
-      </section>
-    )
-  }
-
   return (
-    <section>
-      <h1>Clans</h1>
-      {items.length === 0 ? (
-        <p>No clans available.</p>
-      ) : (
-        <ul>
-          {items.map((item) => {
-            const thumbnail = item?.images?.thumbnail || item?.thumbnail
-            const slug = item?.slug
+    <section className="container py-6 md:py-10">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold text-foreground md:text-3xl">
+          Clans
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Explore clans and the leaders guiding each community.
+        </p>
+      </div>
+      <div className="mt-8">
+        <StateGate
+          loading={loading}
+          error={error}
+          isEmpty={!loading && !error && items.length === 0}
+          skeleton={
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <CardSkeleton key={`clan-skeleton-${index}`} />
+              ))}
+            </div>
+          }
+          errorFallback={
+            <ErrorState message={error?.message || 'Unable to load clans.'} />
+          }
+          empty={
+            <EmptyState
+              title="No clans available"
+              description="Please check back later for clan updates."
+            />
+          }
+        >
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {items.map((item) => {
+              const thumbnail = item?.images?.thumbnail || item?.thumbnail
+              const slug = item?.slug
+              const leadersCount =
+                item?.leaders_count ||
+                item?.leadersCount ||
+                item?.leaders?.length
 
-            return (
-              <li key={item?.id || slug || item?.name}>
-                {thumbnail && (
-                  <img
-                    src={resolveAssetUrl(thumbnail)}
+              return (
+                <Card
+                  key={item?.id || slug || item?.name}
+                  className="flex h-full flex-col overflow-hidden transition hover:shadow-sm"
+                >
+                  <ImageWithFallback
+                    src={thumbnail ? resolveAssetUrl(thumbnail) : null}
                     alt={item?.name || 'Clan thumbnail'}
+                    className="h-40 w-full object-cover"
+                    fallbackText="No image"
                   />
-                )}
-                <h2>
-                  {slug ? (
-                    <Link to={`/clans/${slug}`}>
-                      {item?.name || 'Unnamed clan'}
-                    </Link>
-                  ) : (
-                    item?.name || 'Unnamed clan'
-                  )}
-                </h2>
-                {item?.intro && <p>{item.intro}</p>}
-              </li>
-            )
-          })}
-        </ul>
-      )}
+                  <CardContent className="space-y-3 pt-4">
+                    <div className="space-y-1">
+                      <h2 className="text-lg font-semibold text-foreground">
+                        {slug ? (
+                          <Link
+                            to={`/clans/${slug}`}
+                            className="hover:underline"
+                          >
+                            {item?.name || 'Unnamed clan'}
+                          </Link>
+                        ) : (
+                          item?.name || 'Unnamed clan'
+                        )}
+                      </h2>
+                      {leadersCount ? (
+                        <p className="text-xs text-muted-foreground">
+                          {leadersCount} leader
+                          {leadersCount === 1 ? '' : 's'}
+                        </p>
+                      ) : null}
+                    </div>
+                    {item?.intro ? (
+                      <p className="text-sm text-muted-foreground">
+                        {item.intro}
+                      </p>
+                    ) : null}
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </StateGate>
+      </div>
     </section>
   )
 }
