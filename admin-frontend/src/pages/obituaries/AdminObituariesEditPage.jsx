@@ -5,6 +5,16 @@ import {
   updateObituary,
 } from '../../services/api/adminObituariesApi.js'
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardFooter,
+  FormField,
+  InlineError,
+  Input,
+  Textarea,
+} from '../../components/ui/index.jsx'
 
 function AdminObituariesEditPage() {
   const { id } = useParams()
@@ -212,119 +222,181 @@ function AdminObituariesEditPage() {
 
   if (isLoading) {
     return (
-      <section>
-        <h2>Edit Obituary</h2>
+      <div className="space-y-6">
+        <header className="space-y-1">
+          <h1 className="text-xl font-semibold md:text-2xl">Edit Obituary</h1>
+          <p className="text-sm text-muted-foreground">
+            Update obituary details and republish when ready.
+          </p>
+        </header>
         <p>Loading...</p>
-      </section>
+      </div>
     )
   }
 
   return (
-    <section>
-      <h2>Edit Obituary</h2>
-      {errorMessage ? <p role="alert">{errorMessage}</p> : null}
+    <div className="space-y-6">
+      <header className="space-y-1">
+        <h1 className="text-xl font-semibold md:text-2xl">Edit Obituary</h1>
+        <p className="text-sm text-muted-foreground">
+          Keep the memorial information accurate and up to date.
+        </p>
+      </header>
       <form onSubmit={handleSubmit}>
-        <label htmlFor="full_name">Full name</label>
-        <input
-          id="full_name"
-          name="full_name"
-          type="text"
-          value={formState.full_name}
-          onChange={handleChange}
-          required
-        />
+        <Card>
+          <CardContent className="space-y-5 md:space-y-6">
+            <InlineError message={errorMessage} />
+            <FormField label="Full name" htmlFor="full_name" required>
+              <Input
+                id="full_name"
+                name="full_name"
+                type="text"
+                value={formState.full_name}
+                onChange={handleChange}
+                required
+              />
+            </FormField>
 
-        <label htmlFor="age">Age (optional)</label>
-        <input
-          id="age"
-          name="age"
-          type="number"
-          value={formState.age}
-          onChange={handleChange}
-        />
+            <FormField label="Age (optional)" htmlFor="age">
+              <Input
+                id="age"
+                name="age"
+                type="number"
+                value={formState.age}
+                onChange={handleChange}
+              />
+            </FormField>
 
-        <label htmlFor="summary">Summary</label>
-        <textarea
-          id="summary"
-          name="summary"
-          value={formState.summary}
-          onChange={handleChange}
-          required
-        />
+            <FormField label="Summary" htmlFor="summary" required>
+              <Textarea
+                id="summary"
+                name="summary"
+                value={formState.summary}
+                onChange={handleChange}
+                required
+              />
+            </FormField>
 
-        <label htmlFor="biography">Biography</label>
-        <textarea
-          id="biography"
-          name="biography"
-          value={formState.biography}
-          onChange={handleChange}
-          required
-        />
+            <FormField label="Biography" htmlFor="biography" required>
+              <Textarea
+                id="biography"
+                name="biography"
+                value={formState.biography}
+                onChange={handleChange}
+                required
+              />
+            </FormField>
 
-        <label htmlFor="date_of_birth">Date of birth (optional)</label>
-        <input
-          id="date_of_birth"
-          name="date_of_birth"
-          type="date"
-          value={formState.date_of_birth}
-          onChange={handleChange}
-        />
+            <div className="grid gap-5 md:grid-cols-2">
+              <FormField label="Date of birth (optional)" htmlFor="date_of_birth">
+                <Input
+                  id="date_of_birth"
+                  name="date_of_birth"
+                  type="date"
+                  value={formState.date_of_birth}
+                  onChange={handleChange}
+                />
+              </FormField>
 
-        <label htmlFor="date_of_death">Date of death (optional)</label>
-        <input
-          id="date_of_death"
-          name="date_of_death"
-          type="date"
-          value={formState.date_of_death}
-          onChange={handleChange}
-        />
+              <FormField label="Date of death (optional)" htmlFor="date_of_death">
+                <Input
+                  id="date_of_death"
+                  name="date_of_death"
+                  type="date"
+                  value={formState.date_of_death}
+                  onChange={handleChange}
+                />
+              </FormField>
+            </div>
 
-        <label htmlFor="burial_date">Burial date (optional)</label>
-        <input
-          id="burial_date"
-          name="burial_date"
-          type="date"
-          value={formState.burial_date}
-          onChange={handleChange}
-        />
+            <div className="grid gap-5 md:grid-cols-2">
+              <FormField label="Burial date (optional)" htmlFor="burial_date">
+                <Input
+                  id="burial_date"
+                  name="burial_date"
+                  type="date"
+                  value={formState.burial_date}
+                  onChange={handleChange}
+                />
+              </FormField>
 
-        <label htmlFor="funeral_date">Funeral date (optional)</label>
-        <input
-          id="funeral_date"
-          name="funeral_date"
-          type="date"
-          value={formState.funeral_date}
-          onChange={handleChange}
-        />
+              <FormField label="Funeral date (optional)" htmlFor="funeral_date">
+                <Input
+                  id="funeral_date"
+                  name="funeral_date"
+                  type="date"
+                  value={formState.funeral_date}
+                  onChange={handleChange}
+                />
+              </FormField>
+            </div>
 
-        <label htmlFor="image">Replace image (optional)</label>
-        <input id="image" name="image" type="file" onChange={handleFileChange} />
-        {formState.existingImageUrl ? (
-          <p>
-            Current image:{' '}
-            <a href={formState.existingImageUrl} target="_blank" rel="noreferrer">
-              View
-            </a>
-          </p>
-        ) : null}
+            <FormField
+              label="Replace image (optional)"
+              htmlFor="image"
+              helpText={
+                formState.existingImageUrl ? (
+                  <span>
+                    Current image:{' '}
+                    <a
+                      href={formState.existingImageUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary underline-offset-4 hover:underline"
+                    >
+                      View
+                    </a>
+                  </span>
+                ) : null
+              }
+            >
+              <div className="rounded-lg border border-border bg-background p-4">
+                <Input
+                  id="image"
+                  name="image"
+                  type="file"
+                  onChange={handleFileChange}
+                />
+              </div>
+            </FormField>
 
-        <label htmlFor="published">
-          <input
-            id="published"
-            name="published"
-            type="checkbox"
-            checked={formState.published}
-            onChange={handleChange}
-            disabled={autoDrafted}
-          />
-          Published
-        </label>
-
-        <button type="submit" disabled={isSubmitting || !hasChanges}>
-          {isSubmitting ? 'Saving...' : 'Save changes'}
-        </button>
+            <FormField label="Published" htmlFor="published">
+              <div className="flex items-center gap-2">
+                <input
+                  id="published"
+                  name="published"
+                  type="checkbox"
+                  checked={formState.published}
+                  onChange={handleChange}
+                  disabled={autoDrafted}
+                  className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <span className="text-sm text-muted-foreground">
+                  Publishing is enabled after saving changes.
+                </span>
+              </div>
+            </FormField>
+          </CardContent>
+          <CardFooter>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => navigate('/admin/obituaries')}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              type="submit"
+              loading={isSubmitting}
+              disabled={!hasChanges}
+            >
+              {isSubmitting ? 'Saving...' : 'Save changes'}
+            </Button>
+          </CardFooter>
+        </Card>
       </form>
-    </section>
+    </div>
   )
 }
 

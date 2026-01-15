@@ -2,6 +2,16 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createSlide } from '../../services/api/adminCarouselApi.js'
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardFooter,
+  FormField,
+  InlineError,
+  Input,
+  Textarea,
+} from '../../components/ui/index.jsx'
 
 function AdminCarouselCreatePage() {
   const navigate = useNavigate()
@@ -86,83 +96,122 @@ function AdminCarouselCreatePage() {
   }
 
   return (
-    <section>
-      <h2>Create Carousel Slide</h2>
-      {errorMessage ? <p role="alert">{errorMessage}</p> : null}
+    <div className="space-y-6">
+      <header className="space-y-1">
+        <h1 className="text-xl font-semibold md:text-2xl">
+          Create Carousel Slide
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Add slide copy, call-to-action details, and ordering for the carousel.
+        </p>
+      </header>
       <form onSubmit={handleSubmit}>
-        <label htmlFor="title">Title</label>
-        <input
-          id="title"
-          name="title"
-          type="text"
-          value={formState.title}
-          onChange={handleChange}
-        />
+        <Card>
+          <CardContent className="space-y-5 md:space-y-6">
+            <InlineError message={errorMessage} />
+            <FormField label="Title" htmlFor="title">
+              <Input
+                id="title"
+                name="title"
+                type="text"
+                value={formState.title}
+                onChange={handleChange}
+              />
+            </FormField>
 
-        <label htmlFor="subtitle">Subtitle</label>
-        <input
-          id="subtitle"
-          name="subtitle"
-          type="text"
-          value={formState.subtitle}
-          onChange={handleChange}
-        />
+            <FormField label="Subtitle" htmlFor="subtitle">
+              <Input
+                id="subtitle"
+                name="subtitle"
+                type="text"
+                value={formState.subtitle}
+                onChange={handleChange}
+              />
+            </FormField>
 
-        <label htmlFor="caption">Caption</label>
-        <textarea
-          id="caption"
-          name="caption"
-          value={formState.caption}
-          onChange={handleChange}
-        />
+            <FormField label="Caption" htmlFor="caption">
+              <Textarea
+                id="caption"
+                name="caption"
+                value={formState.caption}
+                onChange={handleChange}
+              />
+            </FormField>
 
-        <label htmlFor="cta_text">CTA text</label>
-        <input
-          id="cta_text"
-          name="cta_text"
-          type="text"
-          value={formState.cta_text}
-          onChange={handleChange}
-        />
+            <FormField label="CTA text" htmlFor="cta_text">
+              <Input
+                id="cta_text"
+                name="cta_text"
+                type="text"
+                value={formState.cta_text}
+                onChange={handleChange}
+              />
+            </FormField>
 
-        <label htmlFor="cta_url">CTA URL</label>
-        <input
-          id="cta_url"
-          name="cta_url"
-          type="text"
-          value={formState.cta_url}
-          onChange={handleChange}
-        />
+            <FormField label="CTA URL" htmlFor="cta_url">
+              <Input
+                id="cta_url"
+                name="cta_url"
+                type="text"
+                value={formState.cta_url}
+                onChange={handleChange}
+              />
+            </FormField>
 
-        <label htmlFor="display_order">Display order</label>
-        <input
-          id="display_order"
-          name="display_order"
-          type="number"
-          value={formState.display_order}
-          onChange={handleChange}
-          required
-        />
+            <FormField label="Display order" htmlFor="display_order" required>
+              <Input
+                id="display_order"
+                name="display_order"
+                type="number"
+                value={formState.display_order}
+                onChange={handleChange}
+                required
+              />
+            </FormField>
 
-        <label htmlFor="published">
-          <input
-            id="published"
-            name="published"
-            type="checkbox"
-            checked={formState.published}
-            onChange={handleChange}
-          />
-          Published
-        </label>
+            <FormField label="Published" htmlFor="published">
+              <div className="flex items-center gap-2">
+                <input
+                  id="published"
+                  name="published"
+                  type="checkbox"
+                  checked={formState.published}
+                  onChange={handleChange}
+                  className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <span className="text-sm text-muted-foreground">
+                  Publish this slide immediately.
+                </span>
+              </div>
+            </FormField>
 
-        <label htmlFor="image">Image</label>
-        <input id="image" name="image" type="file" onChange={handleFileChange} />
-
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating...' : 'Create slide'}
-        </button>
+            <FormField label="Image" htmlFor="image" required>
+              <div className="rounded-lg border border-border bg-background p-4">
+                <Input
+                  id="image"
+                  name="image"
+                  type="file"
+                  onChange={handleFileChange}
+                  required
+                />
+              </div>
+            </FormField>
+          </CardContent>
+          <CardFooter>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => navigate('/admin/carousel')}
+            >
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" loading={isSubmitting}>
+              {isSubmitting ? 'Creating...' : 'Create slide'}
+            </Button>
+          </CardFooter>
+        </Card>
       </form>
-    </section>
+    </div>
   )
 }
 

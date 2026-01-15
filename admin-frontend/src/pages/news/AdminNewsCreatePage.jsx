@@ -2,6 +2,16 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createNews } from '../../services/api/adminNewsApi.js'
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardFooter,
+  FormField,
+  InlineError,
+  Input,
+  Textarea,
+} from '../../components/ui/index.jsx'
 
 function AdminNewsCreatePage() {
   const navigate = useNavigate()
@@ -74,57 +84,90 @@ function AdminNewsCreatePage() {
   }
 
   return (
-    <section>
-      <h2>Create News</h2>
-      {errorMessage ? <p role="alert">{errorMessage}</p> : null}
+    <div className="space-y-6">
+      <header className="space-y-1">
+        <h1 className="text-xl font-semibold md:text-2xl">Create News</h1>
+        <p className="text-sm text-muted-foreground">
+          Share the latest updates with a title, summary, and content.
+        </p>
+      </header>
       <form onSubmit={handleSubmit}>
-        <label htmlFor="title">Title</label>
-        <input
-          id="title"
-          name="title"
-          type="text"
-          value={formState.title}
-          onChange={handleChange}
-          required
-        />
+        <Card>
+          <CardContent className="space-y-5 md:space-y-6">
+            <InlineError message={errorMessage} />
+            <FormField label="Title" htmlFor="title" required>
+              <Input
+                id="title"
+                name="title"
+                type="text"
+                value={formState.title}
+                onChange={handleChange}
+                required
+              />
+            </FormField>
 
-        <label htmlFor="summary">Summary</label>
-        <textarea
-          id="summary"
-          name="summary"
-          value={formState.summary}
-          onChange={handleChange}
-          required
-        />
+            <FormField label="Summary" htmlFor="summary" required>
+              <Textarea
+                id="summary"
+                name="summary"
+                value={formState.summary}
+                onChange={handleChange}
+                required
+              />
+            </FormField>
 
-        <label htmlFor="content">Content</label>
-        <textarea
-          id="content"
-          name="content"
-          value={formState.content}
-          onChange={handleChange}
-          required
-        />
+            <FormField label="Content" htmlFor="content" required>
+              <Textarea
+                id="content"
+                name="content"
+                value={formState.content}
+                onChange={handleChange}
+                required
+              />
+            </FormField>
 
-        <label htmlFor="image">Image (optional)</label>
-        <input id="image" name="image" type="file" onChange={handleFileChange} />
+            <FormField label="Image (optional)" htmlFor="image">
+              <div className="rounded-lg border border-border bg-background p-4">
+                <Input
+                  id="image"
+                  name="image"
+                  type="file"
+                  onChange={handleFileChange}
+                />
+              </div>
+            </FormField>
 
-        <label htmlFor="published">
-          <input
-            id="published"
-            name="published"
-            type="checkbox"
-            checked={formState.published}
-            onChange={handleChange}
-          />
-          Published
-        </label>
-
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating...' : 'Create news'}
-        </button>
+            <FormField label="Published" htmlFor="published">
+              <div className="flex items-center gap-2">
+                <input
+                  id="published"
+                  name="published"
+                  type="checkbox"
+                  checked={formState.published}
+                  onChange={handleChange}
+                  className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <span className="text-sm text-muted-foreground">
+                  Make this news item visible on the site.
+                </span>
+              </div>
+            </FormField>
+          </CardContent>
+          <CardFooter>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => navigate('/admin/news')}
+            >
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" loading={isSubmitting}>
+              {isSubmitting ? 'Creating...' : 'Create news'}
+            </Button>
+          </CardFooter>
+        </Card>
       </form>
-    </section>
+    </div>
   )
 }
 

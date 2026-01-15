@@ -5,6 +5,16 @@ import {
   updateHallOfFame,
 } from '../../services/api/adminHallOfFameApi.js'
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardFooter,
+  FormField,
+  InlineError,
+  Input,
+  Textarea,
+} from '../../components/ui/index.jsx'
 
 function AdminHallOfFameEditPage() {
   const { id } = useParams()
@@ -162,103 +172,169 @@ function AdminHallOfFameEditPage() {
 
   if (isLoading) {
     return (
-      <section>
-        <h2>Edit Hall of Fame Entry</h2>
+      <div className="space-y-6">
+        <header className="space-y-1">
+          <h1 className="text-xl font-semibold md:text-2xl">
+            Edit Hall of Fame Entry
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Update the featured profile and republish.
+          </p>
+        </header>
         <p>Loading...</p>
-      </section>
+      </div>
     )
   }
 
   return (
-    <section>
-      <h2>Edit Hall of Fame Entry</h2>
-      {errorMessage ? <p role="alert">{errorMessage}</p> : null}
+    <div className="space-y-6">
+      <header className="space-y-1">
+        <h1 className="text-xl font-semibold md:text-2xl">
+          Edit Hall of Fame Entry
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Refresh the Hall of Fame story and achievements.
+        </p>
+      </header>
       <form onSubmit={handleSubmit}>
-        <label htmlFor="name">Name</label>
-        <input
-          id="name"
-          name="name"
-          type="text"
-          value={formState.name}
-          onChange={handleChange}
-          required
-        />
+        <Card>
+          <CardContent className="space-y-5 md:space-y-6">
+            <InlineError message={errorMessage} />
+            <FormField label="Name" htmlFor="name" required>
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                value={formState.name}
+                onChange={handleChange}
+                required
+              />
+            </FormField>
 
-        <label htmlFor="title">Title</label>
-        <input
-          id="title"
-          name="title"
-          type="text"
-          value={formState.title}
-          onChange={handleChange}
-          required
-        />
+            <FormField label="Title" htmlFor="title" required>
+              <Input
+                id="title"
+                name="title"
+                type="text"
+                value={formState.title}
+                onChange={handleChange}
+                required
+              />
+            </FormField>
 
-        <label htmlFor="bio">Bio</label>
-        <textarea
-          id="bio"
-          name="bio"
-          value={formState.bio}
-          onChange={handleChange}
-          required
-        />
+            <FormField label="Bio" htmlFor="bio" required>
+              <Textarea
+                id="bio"
+                name="bio"
+                value={formState.bio}
+                onChange={handleChange}
+                required
+              />
+            </FormField>
 
-        <label htmlFor="achievements">Achievements (optional)</label>
-        <textarea
-          id="achievements"
-          name="achievements"
-          value={formState.achievements}
-          onChange={handleChange}
-        />
+            <FormField label="Achievements (optional)" htmlFor="achievements">
+              <Textarea
+                id="achievements"
+                name="achievements"
+                value={formState.achievements}
+                onChange={handleChange}
+              />
+            </FormField>
 
-        <label htmlFor="is_featured">
-          <input
-            id="is_featured"
-            name="is_featured"
-            type="checkbox"
-            checked={formState.is_featured}
-            onChange={handleChange}
-          />
-          Featured
-        </label>
+            <div className="grid gap-5 md:grid-cols-2">
+              <FormField label="Display order (optional)" htmlFor="display_order">
+                <Input
+                  id="display_order"
+                  name="display_order"
+                  type="number"
+                  value={formState.display_order}
+                  onChange={handleChange}
+                />
+              </FormField>
 
-        <label htmlFor="display_order">Display order (optional)</label>
-        <input
-          id="display_order"
-          name="display_order"
-          type="number"
-          value={formState.display_order}
-          onChange={handleChange}
-        />
+              <FormField label="Featured" htmlFor="is_featured">
+                <div className="flex items-center gap-2">
+                  <input
+                    id="is_featured"
+                    name="is_featured"
+                    type="checkbox"
+                    checked={formState.is_featured}
+                    onChange={handleChange}
+                    className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    Highlight this entry on the homepage.
+                  </span>
+                </div>
+              </FormField>
+            </div>
 
-        <label htmlFor="published">
-          <input
-            id="published"
-            name="published"
-            type="checkbox"
-            checked={formState.published}
-            onChange={handleChange}
-            disabled={autoDrafted}
-          />
-          Published
-        </label>
+            <FormField label="Published" htmlFor="published">
+              <div className="flex items-center gap-2">
+                <input
+                  id="published"
+                  name="published"
+                  type="checkbox"
+                  checked={formState.published}
+                  onChange={handleChange}
+                  disabled={autoDrafted}
+                  className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <span className="text-sm text-muted-foreground">
+                  Publishing is enabled after saving changes.
+                </span>
+              </div>
+            </FormField>
 
-        <label htmlFor="image">Replace image (optional)</label>
-        <input id="image" name="image" type="file" onChange={handleFileChange} />
-        {formState.existingImageUrl ? (
-          <p>
-            Current image:{' '}
-            <a href={formState.existingImageUrl} target="_blank" rel="noreferrer">
-              View
-            </a>
-          </p>
-        ) : null}
-
-        <button type="submit" disabled={isSubmitting || !hasChanges}>
-          {isSubmitting ? 'Saving...' : 'Save changes'}
-        </button>
+            <FormField
+              label="Replace image (optional)"
+              htmlFor="image"
+              helpText={
+                formState.existingImageUrl ? (
+                  <span>
+                    Current image:{' '}
+                    <a
+                      href={formState.existingImageUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary underline-offset-4 hover:underline"
+                    >
+                      View
+                    </a>
+                  </span>
+                ) : null
+              }
+            >
+              <div className="rounded-lg border border-border bg-background p-4">
+                <Input
+                  id="image"
+                  name="image"
+                  type="file"
+                  onChange={handleFileChange}
+                />
+              </div>
+            </FormField>
+          </CardContent>
+          <CardFooter>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => navigate('/admin/hall-of-fame')}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              type="submit"
+              loading={isSubmitting}
+              disabled={!hasChanges}
+            >
+              {isSubmitting ? 'Saving...' : 'Save changes'}
+            </Button>
+          </CardFooter>
+        </Card>
       </form>
-    </section>
+    </div>
   )
 }
 
