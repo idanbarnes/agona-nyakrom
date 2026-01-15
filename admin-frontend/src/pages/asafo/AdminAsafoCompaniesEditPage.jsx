@@ -5,6 +5,16 @@ import {
   updateAsafoCompany,
 } from '../../services/api/adminAsafoApi.js'
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardFooter,
+  FormField,
+  InlineError,
+  Input,
+  Textarea,
+} from '../../components/ui/index.jsx'
 
 function AdminAsafoCompaniesEditPage() {
   const { id } = useParams()
@@ -153,82 +163,140 @@ function AdminAsafoCompaniesEditPage() {
 
   if (isLoading) {
     return (
-      <section>
-        <h2>Edit Asafo Company</h2>
+      <div className="space-y-6">
+        <header className="space-y-1">
+          <h1 className="text-xl font-semibold md:text-2xl">
+            Edit Asafo Company
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Adjust the company details before republishing.
+          </p>
+        </header>
         <p>Loading...</p>
-      </section>
+      </div>
     )
   }
 
   return (
-    <section>
-      <h2>Edit Asafo Company</h2>
-      {errorMessage ? <p role="alert">{errorMessage}</p> : null}
+    <div className="space-y-6">
+      <header className="space-y-1">
+        <h1 className="text-xl font-semibold md:text-2xl">
+          Edit Asafo Company
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Refresh the Asafo company story and media.
+        </p>
+      </header>
       <form onSubmit={handleSubmit}>
-        <label htmlFor="name">Name</label>
-        <input
-          id="name"
-          name="name"
-          type="text"
-          value={formState.name}
-          onChange={handleChange}
-          required
-        />
+        <Card>
+          <CardContent className="space-y-5 md:space-y-6">
+            <InlineError message={errorMessage} />
+            <FormField label="Name" htmlFor="name" required>
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                value={formState.name}
+                onChange={handleChange}
+                required
+              />
+            </FormField>
 
-        <label htmlFor="history">History</label>
-        <textarea
-          id="history"
-          name="history"
-          value={formState.history}
-          onChange={handleChange}
-          required
-        />
+            <FormField label="History" htmlFor="history" required>
+              <Textarea
+                id="history"
+                name="history"
+                value={formState.history}
+                onChange={handleChange}
+                required
+              />
+            </FormField>
 
-        <label htmlFor="description">Description</label>
-        <textarea
-          id="description"
-          name="description"
-          value={formState.description}
-          onChange={handleChange}
-          required
-        />
+            <FormField label="Description" htmlFor="description" required>
+              <Textarea
+                id="description"
+                name="description"
+                value={formState.description}
+                onChange={handleChange}
+                required
+              />
+            </FormField>
 
-        <label htmlFor="events">Events (optional)</label>
-        <textarea
-          id="events"
-          name="events"
-          value={formState.events}
-          onChange={handleChange}
-        />
+            <FormField label="Events (optional)" htmlFor="events">
+              <Textarea
+                id="events"
+                name="events"
+                value={formState.events}
+                onChange={handleChange}
+              />
+            </FormField>
 
-        <label htmlFor="published">
-          <input
-            id="published"
-            name="published"
-            type="checkbox"
-            checked={formState.published}
-            onChange={handleChange}
-            disabled={autoDrafted}
-          />
-          Published
-        </label>
+            <FormField label="Published" htmlFor="published">
+              <div className="flex items-center gap-2">
+                <input
+                  id="published"
+                  name="published"
+                  type="checkbox"
+                  checked={formState.published}
+                  onChange={handleChange}
+                  disabled={autoDrafted}
+                  className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <span className="text-sm text-muted-foreground">
+                  Publishing is enabled after saving changes.
+                </span>
+              </div>
+            </FormField>
 
-        <label htmlFor="image">Replace image (optional)</label>
-        <input id="image" name="image" type="file" onChange={handleFileChange} />
-        {formState.existingImageUrl ? (
-          <p>
-            Current image:{' '}
-            <a href={formState.existingImageUrl} target="_blank" rel="noreferrer">
-              View
-            </a>
-          </p>
-        ) : null}
-
-        <button type="submit" disabled={isSubmitting || !hasChanges}>
-          {isSubmitting ? 'Saving...' : 'Save changes'}
-        </button>
+            <FormField
+              label="Replace image (optional)"
+              htmlFor="image"
+              helpText={
+                formState.existingImageUrl ? (
+                  <span>
+                    Current image:{' '}
+                    <a
+                      href={formState.existingImageUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary underline-offset-4 hover:underline"
+                    >
+                      View
+                    </a>
+                  </span>
+                ) : null
+              }
+            >
+              <div className="rounded-lg border border-border bg-background p-4">
+                <Input
+                  id="image"
+                  name="image"
+                  type="file"
+                  onChange={handleFileChange}
+                />
+              </div>
+            </FormField>
+          </CardContent>
+          <CardFooter>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => navigate('/admin/asafo-companies')}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              type="submit"
+              loading={isSubmitting}
+              disabled={!hasChanges}
+            >
+              {isSubmitting ? 'Saving...' : 'Save changes'}
+            </Button>
+          </CardFooter>
+        </Card>
       </form>
-    </section>
+    </div>
   )
 }
 

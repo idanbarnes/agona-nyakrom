@@ -5,6 +5,16 @@ import {
   updateLandmark,
 } from '../../services/api/adminLandmarksApi.js'
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardFooter,
+  FormField,
+  InlineError,
+  Input,
+  Textarea,
+} from '../../components/ui/index.jsx'
 
 function AdminLandmarksEditPage() {
   const { id } = useParams()
@@ -170,99 +180,155 @@ function AdminLandmarksEditPage() {
 
   if (isLoading) {
     return (
-      <section>
-        <h2>Edit Landmark</h2>
+      <div className="space-y-6">
+        <header className="space-y-1">
+          <h1 className="text-xl font-semibold md:text-2xl">Edit Landmark</h1>
+          <p className="text-sm text-muted-foreground">
+            Update landmark information and republish when ready.
+          </p>
+        </header>
         <p>Loading...</p>
-      </section>
+      </div>
     )
   }
 
   return (
-    <section>
-      <h2>Edit Landmark</h2>
-      {errorMessage ? <p role="alert">{errorMessage}</p> : null}
+    <div className="space-y-6">
+      <header className="space-y-1">
+        <h1 className="text-xl font-semibold md:text-2xl">Edit Landmark</h1>
+        <p className="text-sm text-muted-foreground">
+          Adjust the landmark details and media as needed.
+        </p>
+      </header>
       <form onSubmit={handleSubmit}>
-        <label htmlFor="name">Name</label>
-        <input
-          id="name"
-          name="name"
-          type="text"
-          value={formState.name}
-          onChange={handleChange}
-        />
+        <Card>
+          <CardContent className="space-y-5 md:space-y-6">
+            <InlineError message={errorMessage} />
+            <FormField label="Name" htmlFor="name">
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                value={formState.name}
+                onChange={handleChange}
+              />
+            </FormField>
 
-        <label htmlFor="title">Title</label>
-        <input
-          id="title"
-          name="title"
-          type="text"
-          value={formState.title}
-          onChange={handleChange}
-        />
+            <FormField label="Title" htmlFor="title">
+              <Input
+                id="title"
+                name="title"
+                type="text"
+                value={formState.title}
+                onChange={handleChange}
+              />
+            </FormField>
 
-        <label htmlFor="description">Description</label>
-        <textarea
-          id="description"
-          name="description"
-          value={formState.description}
-          onChange={handleChange}
-        />
+            <FormField label="Description" htmlFor="description">
+              <Textarea
+                id="description"
+                name="description"
+                value={formState.description}
+                onChange={handleChange}
+              />
+            </FormField>
 
-        <label htmlFor="location">Location</label>
-        <input
-          id="location"
-          name="location"
-          type="text"
-          value={formState.location}
-          onChange={handleChange}
-        />
+            <FormField label="Location" htmlFor="location">
+              <Input
+                id="location"
+                name="location"
+                type="text"
+                value={formState.location}
+                onChange={handleChange}
+              />
+            </FormField>
 
-        <label htmlFor="google_map_link">Google map link</label>
-        <input
-          id="google_map_link"
-          name="google_map_link"
-          type="url"
-          value={formState.google_map_link}
-          onChange={handleChange}
-        />
+            <FormField label="Google map link" htmlFor="google_map_link">
+              <Input
+                id="google_map_link"
+                name="google_map_link"
+                type="url"
+                value={formState.google_map_link}
+                onChange={handleChange}
+              />
+            </FormField>
 
-        <label htmlFor="category">Category</label>
-        <input
-          id="category"
-          name="category"
-          type="text"
-          value={formState.category}
-          onChange={handleChange}
-        />
+            <FormField label="Category" htmlFor="category">
+              <Input
+                id="category"
+                name="category"
+                type="text"
+                value={formState.category}
+                onChange={handleChange}
+              />
+            </FormField>
 
-        <label htmlFor="published">
-          <input
-            id="published"
-            name="published"
-            type="checkbox"
-            checked={formState.published}
-            onChange={handleChange}
-            disabled={autoDrafted}
-          />
-          Published
-        </label>
+            <FormField label="Published" htmlFor="published">
+              <div className="flex items-center gap-2">
+                <input
+                  id="published"
+                  name="published"
+                  type="checkbox"
+                  checked={formState.published}
+                  onChange={handleChange}
+                  disabled={autoDrafted}
+                  className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <span className="text-sm text-muted-foreground">
+                  Publishing is enabled after saving changes.
+                </span>
+              </div>
+            </FormField>
 
-        <label htmlFor="image">Replace image (optional)</label>
-        <input id="image" name="image" type="file" onChange={handleFileChange} />
-        {formState.existingImageUrl ? (
-          <p>
-            Current image:{' '}
-            <a href={formState.existingImageUrl} target="_blank" rel="noreferrer">
-              View
-            </a>
-          </p>
-        ) : null}
-
-        <button type="submit" disabled={isSubmitting || !hasChanges}>
-          {isSubmitting ? 'Saving...' : 'Save changes'}
-        </button>
+            <FormField
+              label="Replace image (optional)"
+              htmlFor="image"
+              helpText={
+                formState.existingImageUrl ? (
+                  <span>
+                    Current image:{' '}
+                    <a
+                      href={formState.existingImageUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary underline-offset-4 hover:underline"
+                    >
+                      View
+                    </a>
+                  </span>
+                ) : null
+              }
+            >
+              <div className="rounded-lg border border-border bg-background p-4">
+                <Input
+                  id="image"
+                  name="image"
+                  type="file"
+                  onChange={handleFileChange}
+                />
+              </div>
+            </FormField>
+          </CardContent>
+          <CardFooter>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => navigate('/admin/landmarks')}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              type="submit"
+              loading={isSubmitting}
+              disabled={!hasChanges}
+            >
+              {isSubmitting ? 'Saving...' : 'Save changes'}
+            </Button>
+          </CardFooter>
+        </Card>
       </form>
-    </section>
+    </div>
   )
 }
 

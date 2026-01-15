@@ -6,6 +6,16 @@ import {
   updateClan,
 } from '../../services/api/adminClansApi.js'
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardFooter,
+  FormField,
+  InlineError,
+  Input,
+  Textarea,
+} from '../../components/ui/index.jsx'
 
 // Local-only leader draft for inline creation.
 const createEmptyLeader = (type) => ({
@@ -229,180 +239,292 @@ function AdminClansCreatePage() {
   }
 
   return (
-    <section>
-      <h2>Create Family Clan</h2>
-      {errorMessage ? <p role="alert">{errorMessage}</p> : null}
+    <div className="space-y-6">
+      <header className="space-y-1">
+        <h1 className="text-xl font-semibold md:text-2xl">
+          Create Family Clan
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Add clan details, leaders, and publishing preferences.
+        </p>
+      </header>
       <form onSubmit={handleSubmit}>
-        <label htmlFor="name">Name</label>
-        <input
-          id="name"
-          name="name"
-          type="text"
-          value={formState.name}
-          onChange={handleChange}
-          required
-        />
-
-        <label htmlFor="intro">Intro</label>
-        <textarea
-          id="intro"
-          name="intro"
-          value={formState.intro}
-          onChange={handleChange}
-          required
-        />
-
-        <label htmlFor="history">History</label>
-        <textarea
-          id="history"
-          name="history"
-          value={formState.history}
-          onChange={handleChange}
-          required
-        />
-
-        <label htmlFor="key_contributions">Key contributions (optional)</label>
-        <textarea
-          id="key_contributions"
-          name="key_contributions"
-          value={formState.key_contributions}
-          onChange={handleChange}
-        />
-
-        <label htmlFor="published">
-          <input
-            id="published"
-            name="published"
-            type="checkbox"
-            checked={formState.published}
-            onChange={handleChange}
-          />
-          Published
-        </label>
-
-        <label htmlFor="image">Image (optional)</label>
-        <input id="image" name="image" type="file" onChange={handleFileChange} />
-
-        <section>
-          <h3>Current Leaders</h3>
-          <button type="button" onClick={() => addLeader('current')}>
-            Add leader
-          </button>
-          {leaders.current.map((leader) => (
-            <div key={leader.id}>
-              <label>Name (optional)</label>
-              <input
+        <Card>
+          <CardContent className="space-y-5 md:space-y-6">
+            <InlineError message={errorMessage} />
+            <FormField label="Name" htmlFor="name" required>
+              <Input
+                id="name"
+                name="name"
                 type="text"
-                value={leader.name}
-                onChange={(event) =>
-                  updateLeader('current', leader.id, {
-                    name: event.target.value,
-                  })
-                }
-              />
-              <label>Title (optional)</label>
-              <input
-                type="text"
-                value={leader.title}
-                onChange={(event) =>
-                  updateLeader('current', leader.id, {
-                    title: event.target.value,
-                  })
-                }
-              />
-              <label>Position</label>
-              <input
-                type="text"
-                value={leader.position}
-                onChange={(event) =>
-                  updateLeader('current', leader.id, {
-                    position: event.target.value,
-                    error: '',
-                  })
-                }
+                value={formState.name}
+                onChange={handleChange}
                 required
               />
-              {leader.error ? <p role="alert">{leader.error}</p> : null}
-              <label>Image (optional)</label>
-              <input
-                type="file"
-                onChange={(event) =>
-                  updateLeader('current', leader.id, {
-                    image: event.target.files?.[0] || null,
-                  })
-                }
-              />
-              <button
-                type="button"
-                onClick={() => removeLeader('current', leader.id)}
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </section>
+            </FormField>
 
-        <section>
-          <h3>Past Leaders</h3>
-          <button type="button" onClick={() => addLeader('past')}>
-            Add leader
-          </button>
-          {leaders.past.map((leader) => (
-            <div key={leader.id}>
-              <label>Name (optional)</label>
-              <input
-                type="text"
-                value={leader.name}
-                onChange={(event) =>
-                  updateLeader('past', leader.id, {
-                    name: event.target.value,
-                  })
-                }
-              />
-              <label>Title (optional)</label>
-              <input
-                type="text"
-                value={leader.title}
-                onChange={(event) =>
-                  updateLeader('past', leader.id, {
-                    title: event.target.value,
-                  })
-                }
-              />
-              <label>Position</label>
-              <input
-                type="text"
-                value={leader.position}
-                onChange={(event) =>
-                  updateLeader('past', leader.id, {
-                    position: event.target.value,
-                    error: '',
-                  })
-                }
+            <FormField label="Intro" htmlFor="intro" required>
+              <Textarea
+                id="intro"
+                name="intro"
+                value={formState.intro}
+                onChange={handleChange}
                 required
               />
-              {leader.error ? <p role="alert">{leader.error}</p> : null}
-              <label>Image (optional)</label>
-              <input
-                type="file"
-                onChange={(event) =>
-                  updateLeader('past', leader.id, {
-                    image: event.target.files?.[0] || null,
-                  })
-                }
-              />
-              <button type="button" onClick={() => removeLeader('past', leader.id)}>
-                Remove
-              </button>
-            </div>
-          ))}
-        </section>
+            </FormField>
 
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating...' : 'Create clan'}
-        </button>
+            <FormField label="History" htmlFor="history" required>
+              <Textarea
+                id="history"
+                name="history"
+                value={formState.history}
+                onChange={handleChange}
+                required
+              />
+            </FormField>
+
+            <FormField
+              label="Key contributions (optional)"
+              htmlFor="key_contributions"
+            >
+              <Textarea
+                id="key_contributions"
+                name="key_contributions"
+                value={formState.key_contributions}
+                onChange={handleChange}
+              />
+            </FormField>
+
+            <FormField label="Published" htmlFor="published">
+              <div className="flex items-center gap-2">
+                <input
+                  id="published"
+                  name="published"
+                  type="checkbox"
+                  checked={formState.published}
+                  onChange={handleChange}
+                  className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <span className="text-sm text-muted-foreground">
+                  Publish this clan profile immediately.
+                </span>
+              </div>
+            </FormField>
+
+            <FormField label="Image (optional)" htmlFor="image">
+              <div className="rounded-lg border border-border bg-background p-4">
+                <Input
+                  id="image"
+                  name="image"
+                  type="file"
+                  onChange={handleFileChange}
+                />
+              </div>
+            </FormField>
+
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-semibold">Current Leaders</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Add current leadership details in order of display.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => addLeader('current')}
+                >
+                  Add leader
+                </Button>
+              </div>
+              <div className="space-y-4">
+                {leaders.current.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No current leaders added yet.
+                  </p>
+                ) : null}
+                {leaders.current.map((leader, index) => (
+                  <div
+                    key={leader.id}
+                    className="space-y-4 rounded-lg border border-border bg-background p-4"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-sm font-semibold">
+                        Leader {index + 1}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="danger"
+                        size="sm"
+                        onClick={() => removeLeader('current', leader.id)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <FormField label="Name (optional)">
+                        <Input
+                          type="text"
+                          value={leader.name}
+                          onChange={(event) =>
+                            updateLeader('current', leader.id, {
+                              name: event.target.value,
+                            })
+                          }
+                        />
+                      </FormField>
+                      <FormField label="Title (optional)">
+                        <Input
+                          type="text"
+                          value={leader.title}
+                          onChange={(event) =>
+                            updateLeader('current', leader.id, {
+                              title: event.target.value,
+                            })
+                          }
+                        />
+                      </FormField>
+                    </div>
+                    <FormField label="Position" errorText={leader.error} required>
+                      <Input
+                        type="text"
+                        value={leader.position}
+                        onChange={(event) =>
+                          updateLeader('current', leader.id, {
+                            position: event.target.value,
+                            error: '',
+                          })
+                        }
+                        required
+                      />
+                    </FormField>
+                    <FormField label="Image (optional)">
+                      <div className="rounded-lg border border-border bg-background p-4">
+                        <Input
+                          type="file"
+                          onChange={(event) =>
+                            updateLeader('current', leader.id, {
+                              image: event.target.files?.[0] || null,
+                            })
+                          }
+                        />
+                      </div>
+                    </FormField>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-semibold">Past Leaders</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Add historical leadership details and images.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => addLeader('past')}
+                >
+                  Add leader
+                </Button>
+              </div>
+              <div className="space-y-4">
+                {leaders.past.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No past leaders added yet.
+                  </p>
+                ) : null}
+                {leaders.past.map((leader, index) => (
+                  <div
+                    key={leader.id}
+                    className="space-y-4 rounded-lg border border-border bg-background p-4"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-sm font-semibold">
+                        Leader {index + 1}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="danger"
+                        size="sm"
+                        onClick={() => removeLeader('past', leader.id)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <FormField label="Name (optional)">
+                        <Input
+                          type="text"
+                          value={leader.name}
+                          onChange={(event) =>
+                            updateLeader('past', leader.id, {
+                              name: event.target.value,
+                            })
+                          }
+                        />
+                      </FormField>
+                      <FormField label="Title (optional)">
+                        <Input
+                          type="text"
+                          value={leader.title}
+                          onChange={(event) =>
+                            updateLeader('past', leader.id, {
+                              title: event.target.value,
+                            })
+                          }
+                        />
+                      </FormField>
+                    </div>
+                    <FormField label="Position" errorText={leader.error} required>
+                      <Input
+                        type="text"
+                        value={leader.position}
+                        onChange={(event) =>
+                          updateLeader('past', leader.id, {
+                            position: event.target.value,
+                            error: '',
+                          })
+                        }
+                        required
+                      />
+                    </FormField>
+                    <FormField label="Image (optional)">
+                      <div className="rounded-lg border border-border bg-background p-4">
+                        <Input
+                          type="file"
+                          onChange={(event) =>
+                            updateLeader('past', leader.id, {
+                              image: event.target.files?.[0] || null,
+                            })
+                          }
+                        />
+                      </div>
+                    </FormField>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => navigate('/admin/clans')}
+            >
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" loading={isSubmitting}>
+              {isSubmitting ? 'Creating...' : 'Create clan'}
+            </Button>
+          </CardFooter>
+        </Card>
       </form>
-    </section>
+    </div>
   )
 }
 
