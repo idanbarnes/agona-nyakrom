@@ -21,14 +21,6 @@ import NotFound from './pages/NotFound.jsx'
 function App() {
   return (
     <BrowserRouter>
-      {/* Tailwind proof test (remove after verification) */}
-      <div className="text-red-600 font-semibold">Tailwind test</div>
-      {/* Container standard example (keep/remove later as needed) */}
-      <div className="container">
-        <div className="py-2 text-sm text-muted-foreground">
-          Container standard active
-        </div>
-      </div>
       <Routes>
         <Route path="/" element={<Layout />}>
           {/* <Route element={<DevApiTest />} /> Dev-only API test component */}
