@@ -139,12 +139,7 @@ function Layout() {
           <Navbar settings={settings} loading={loading} error={error} />
         </div>
         <main className="flex-1">
-          {/* Enforce consistent page width and padding. */}
-          <div className="container py-6 md:py-10">
-            <div className="space-y-8 md:space-y-12">
-              <Outlet />
-            </div>
-          </div>
+          <Outlet />
         </main>
         <div className="mt-auto border-t border-border bg-surface">
           <div className="container py-10">
