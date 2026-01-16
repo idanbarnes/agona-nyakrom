@@ -456,7 +456,7 @@ function AdminClansEditPage() {
     return (
       <div className="space-y-6">
         <header className="space-y-1">
-          <h1 className="text-xl font-semibold md:text-2xl">
+          <h1 className="text-xl font-semibold break-words md:text-2xl">
             Edit Family Clan
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -471,7 +471,7 @@ function AdminClansEditPage() {
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="text-xl font-semibold md:text-2xl">Edit Family Clan</h1>
+        <h1 className="text-xl font-semibold break-words md:text-2xl">Edit Family Clan</h1>
         <p className="text-sm text-muted-foreground">
           Manage clan details, leaders, and publishing status.
         </p>

@@ -107,7 +107,7 @@ function HallOfFameDetail() {
                 fallbackText="No image"
               />
               <div>
-                <h1 className="text-2xl font-semibold leading-tight text-foreground md:text-4xl">
+                <h1 className="text-2xl font-semibold leading-tight text-foreground break-words md:text-4xl">
                   {item?.full_name || item?.name || 'Hall of Fame'}
                 </h1>
                 {role ? (

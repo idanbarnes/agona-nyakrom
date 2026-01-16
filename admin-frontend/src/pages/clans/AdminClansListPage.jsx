@@ -150,7 +150,7 @@ function AdminClansListPage() {
   return (
     <section className="space-y-4 md:space-y-6">
       <div className="space-y-1">
-        <h2 className="text-xl font-semibold md:text-2xl">Family Clans</h2>
+        <h2 className="text-xl font-semibold break-words md:text-2xl">Family Clans</h2>
         {total !== null ? (
           <p className="text-sm text-muted-foreground">Total: {total}</p>
         ) : null}

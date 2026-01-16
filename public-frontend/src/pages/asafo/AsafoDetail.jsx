@@ -54,9 +54,13 @@ function AsafoDetail() {
 
   if (loading) {
     return (
-      <section>
-        <h1>Asafo Company</h1>
-        <p>Loading asafo company...</p>
+      <section className="container space-y-4 py-6 md:py-10">
+        <h1 className="text-2xl font-semibold text-foreground break-words md:text-4xl">
+          Asafo Company
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Loading asafo company...
+        </p>
       </section>
     )
   }
@@ -64,19 +68,27 @@ function AsafoDetail() {
   if (error) {
     const notFound = error?.status === 404
     return (
-      <section>
-        <h1>Asafo Company</h1>
+      <section className="container space-y-4 py-6 md:py-10">
+        <h1 className="text-2xl font-semibold text-foreground break-words md:text-4xl">
+          Asafo Company
+        </h1>
         {notFound ? (
           <>
-            <p>Sorry, that asafo company was not found.</p>
-            <p>
+            <p className="text-sm text-muted-foreground">
+              Sorry, that asafo company was not found.
+            </p>
+            <p className="text-sm text-muted-foreground">
               <Link to="/asafo-companies">Back to asafo companies</Link>
             </p>
           </>
         ) : (
           <>
-            <p>Unable to load this asafo company.</p>
-            <pre>{error?.message || String(error)}</pre>
+            <p className="text-sm text-muted-foreground">
+              Unable to load this asafo company.
+            </p>
+            <pre className="text-sm text-muted-foreground">
+              {error?.message || String(error)}
+            </pre>
           </>
         )}
       </section>
@@ -84,14 +96,30 @@ function AsafoDetail() {
   }
 
   return (
-    <section>
-      <h1>{item?.name || 'Asafo Company'}</h1>
+    <section className="container space-y-6 py-6 md:py-10">
+      <h1 className="text-2xl font-semibold text-foreground break-words md:text-4xl">
+        {item?.name || 'Asafo Company'}
+      </h1>
       {imageUrl && (
-        <img src={imageUrl} alt={item?.name || 'Asafo company'} />
+        <img
+          src={imageUrl}
+          alt={item?.name || 'Asafo company'}
+          className="h-56 w-full rounded-xl border border-border object-cover md:h-80"
+        />
       )}
-      {item?.history ? <p>{item.history}</p> : <p>No history available.</p>}
-      {item?.description && <p>{item.description}</p>}
-      {item?.events ? <p>{item.events}</p> : <p>No events listed.</p>}
+      {item?.history ? (
+        <p className="leading-7 text-foreground">{item.history}</p>
+      ) : (
+        <p className="text-sm text-muted-foreground">No history available.</p>
+      )}
+      {item?.description && (
+        <p className="leading-7 text-foreground">{item.description}</p>
+      )}
+      {item?.events ? (
+        <p className="leading-7 text-foreground">{item.events}</p>
+      ) : (
+        <p className="text-sm text-muted-foreground">No events listed.</p>
+      )}
     </section>
   )
 }

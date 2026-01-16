@@ -94,12 +94,15 @@ function History() {
   )
   const heroImagePath = selectHeroImage(history)
   const heroImageUrl = heroImagePath ? resolveAssetUrl(heroImagePath) : ''
+  const sectionClassName = 'container space-y-4 py-6 md:py-10'
+  const titleClassName =
+    'text-2xl font-semibold text-foreground break-words md:text-3xl'
 
   if (loading) {
     return (
-      <section>
-        <h1>History</h1>
-        <p>Loading history...</p>
+      <section className={sectionClassName}>
+        <h1 className={titleClassName}>History</h1>
+        <p className="text-sm text-muted-foreground">Loading history...</p>
       </section>
     )
   }
@@ -107,27 +110,35 @@ function History() {
   if (error) {
     if (error?.status === 404) {
       return (
-        <section>
-          <h1>History</h1>
-          <p>History content not available yet.</p>
+        <section className={sectionClassName}>
+          <h1 className={titleClassName}>History</h1>
+          <p className="text-sm text-muted-foreground">
+            History content not available yet.
+          </p>
         </section>
       )
     }
 
     return (
-      <section>
-        <h1>History</h1>
-        <p>Unable to load history content.</p>
-        <pre>{error?.message || String(error)}</pre>
+      <section className={sectionClassName}>
+        <h1 className={titleClassName}>History</h1>
+        <p className="text-sm text-muted-foreground">
+          Unable to load history content.
+        </p>
+        <pre className="text-sm text-muted-foreground">
+          {error?.message || String(error)}
+        </pre>
       </section>
     )
   }
 
   if (!history || isUnpublished(history)) {
     return (
-      <section>
-        <h1>History</h1>
-        <p>History content not available yet.</p>
+      <section className={sectionClassName}>
+        <h1 className={titleClassName}>History</h1>
+        <p className="text-sm text-muted-foreground">
+          History content not available yet.
+        </p>
       </section>
     )
   }
@@ -137,19 +148,34 @@ function History() {
   const content = history?.content || history?.body || history?.description
 
   return (
-    <section>
-      <h1>{title}</h1>
-      {subtitle && <p>{subtitle}</p>}
-      {heroImageUrl && <img src={heroImageUrl} alt={title} />}
+    <section className={sectionClassName}>
+      <h1 className={titleClassName}>{title}</h1>
+      {subtitle && (
+        <p className="text-sm text-muted-foreground">{subtitle}</p>
+      )}
+      {heroImageUrl && (
+        <img
+          src={heroImageUrl}
+          alt={title}
+          className="w-full rounded-xl border border-border object-cover"
+        />
+      )}
       {content ? (
-        <p style={{ whiteSpace: 'pre-line' }}>{content}</p>
+        <p
+          className="leading-7 text-foreground"
+          style={{ whiteSpace: 'pre-line' }}
+        >
+          {content}
+        </p>
       ) : (
-        <p>No history content available.</p>
+        <p className="text-sm text-muted-foreground">
+          No history content available.
+        </p>
       )}
       {highlights.length > 0 && (
-        <section>
-          <h2>Highlights</h2>
-          <ul>
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold text-foreground">Highlights</h2>
+          <ul className="space-y-1 text-sm text-muted-foreground">
             {highlights.map((item, index) => {
               if (typeof item === 'string') {
                 return <li key={item}>{item}</li>

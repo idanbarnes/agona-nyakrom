@@ -224,7 +224,7 @@ function AdminObituariesEditPage() {
     return (
       <div className="space-y-6">
         <header className="space-y-1">
-          <h1 className="text-xl font-semibold md:text-2xl">Edit Obituary</h1>
+          <h1 className="text-xl font-semibold break-words md:text-2xl">Edit Obituary</h1>
           <p className="text-sm text-muted-foreground">
             Update obituary details and republish when ready.
           </p>
@@ -237,7 +237,7 @@ function AdminObituariesEditPage() {
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="text-xl font-semibold md:text-2xl">Edit Obituary</h1>
+        <h1 className="text-xl font-semibold break-words md:text-2xl">Edit Obituary</h1>
         <p className="text-sm text-muted-foreground">
           Keep the memorial information accurate and up to date.
         </p>

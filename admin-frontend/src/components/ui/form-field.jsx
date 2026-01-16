@@ -48,7 +48,7 @@ export function FormField({
         </p>
       ) : null}
       {errorText ? (
-        <p id={errorId} className="text-xs text-danger">
+        <p id={errorId} className="text-sm text-danger">
           {errorText}
         </p>
       ) : null}

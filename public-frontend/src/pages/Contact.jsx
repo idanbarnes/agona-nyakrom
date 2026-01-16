@@ -49,6 +49,9 @@ function isUnpublished(settings) {
 
 function Contact() {
   const { settings, loading, error } = usePublicSettings()
+  const sectionClassName = 'container space-y-4 py-6 md:py-10'
+  const titleClassName =
+    'text-2xl font-semibold text-foreground break-words md:text-3xl'
 
   const socialLinks = useMemo(
     () => normalizeSocialLinks(settings?.social_links || settings?.socialLinks),
@@ -57,9 +60,11 @@ function Contact() {
 
   if (loading) {
     return (
-      <section>
-        <h1>Contact</h1>
-        <p>Loading contact information...</p>
+      <section className={sectionClassName}>
+        <h1 className={titleClassName}>Contact</h1>
+        <p className="text-sm text-muted-foreground">
+          Loading contact information...
+        </p>
       </section>
     )
   }
@@ -67,27 +72,35 @@ function Contact() {
   if (error) {
     if (error?.status === 404) {
       return (
-        <section>
-          <h1>Contact</h1>
-          <p>Contact details are not available yet.</p>
+        <section className={sectionClassName}>
+          <h1 className={titleClassName}>Contact</h1>
+          <p className="text-sm text-muted-foreground">
+            Contact details are not available yet.
+          </p>
         </section>
       )
     }
 
     return (
-      <section>
-        <h1>Contact</h1>
-        <p>Unable to load contact information.</p>
-        <pre>{error?.message || String(error)}</pre>
+      <section className={sectionClassName}>
+        <h1 className={titleClassName}>Contact</h1>
+        <p className="text-sm text-muted-foreground">
+          Unable to load contact information.
+        </p>
+        <pre className="text-sm text-muted-foreground">
+          {error?.message || String(error)}
+        </pre>
       </section>
     )
   }
 
   if (!settings || isUnpublished(settings)) {
     return (
-      <section>
-        <h1>Contact</h1>
-        <p>Contact details are not available yet.</p>
+      <section className={sectionClassName}>
+        <h1 className={titleClassName}>Contact</h1>
+        <p className="text-sm text-muted-foreground">
+          Contact details are not available yet.
+        </p>
       </section>
     )
   }
@@ -98,34 +111,36 @@ function Contact() {
   const address = settings?.address
 
   return (
-    <section>
-      <h1>Contact</h1>
+    <section className={sectionClassName}>
+      <h1 className={titleClassName}>Contact</h1>
       {siteName && (
-        <p>
+        <p className="text-sm text-muted-foreground">
           <strong>Site:</strong> {siteName}
         </p>
       )}
       {contactEmail && (
-        <p>
+        <p className="text-sm text-muted-foreground">
           <strong>Email:</strong>{' '}
           <a href={`mailto:${contactEmail}`}>{contactEmail}</a>
         </p>
       )}
       {contactPhone && (
-        <p>
+        <p className="text-sm text-muted-foreground">
           <strong>Phone:</strong>{' '}
           <a href={`tel:${contactPhone}`}>{contactPhone}</a>
         </p>
       )}
       {address && (
-        <p>
+        <p className="text-sm text-muted-foreground">
           <strong>Address:</strong> {address}
         </p>
       )}
       {socialLinks.length > 0 ? (
-        <section>
-          <h2>Social Links</h2>
-          <ul>
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold text-foreground">
+            Social Links
+          </h2>
+          <ul className="space-y-1 text-sm text-muted-foreground">
             {socialLinks.map((link, index) => (
               <li key={link.url || index}>
                 <a
@@ -140,7 +155,9 @@ function Contact() {
           </ul>
         </section>
       ) : (
-        <p>No social links available.</p>
+        <p className="text-sm text-muted-foreground">
+          No social links available.
+        </p>
       )}
     </section>
   )
