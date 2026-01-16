@@ -117,7 +117,7 @@ function NewsDetail() {
       >
         <div className="space-y-6">
           <header className="space-y-3">
-            <h1 className="text-2xl font-semibold leading-tight text-foreground md:text-4xl">
+            <h1 className="text-2xl font-semibold leading-tight text-foreground break-words md:text-4xl">
               {item?.title || 'News Detail'}
             </h1>
             {metaItems.length > 0 ? (

@@ -92,7 +92,7 @@ function AdminLandmarksCreatePage() {
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="text-xl font-semibold md:text-2xl">Create Landmark</h1>
+        <h1 className="text-xl font-semibold break-words md:text-2xl">Create Landmark</h1>
         <p className="text-sm text-muted-foreground">
           Provide location details, descriptions, and imagery for the landmark.
         </p>

@@ -182,7 +182,7 @@ function AdminLandmarksEditPage() {
     return (
       <div className="space-y-6">
         <header className="space-y-1">
-          <h1 className="text-xl font-semibold md:text-2xl">Edit Landmark</h1>
+          <h1 className="text-xl font-semibold break-words md:text-2xl">Edit Landmark</h1>
           <p className="text-sm text-muted-foreground">
             Update landmark information and republish when ready.
           </p>
@@ -195,7 +195,7 @@ function AdminLandmarksEditPage() {
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="text-xl font-semibold md:text-2xl">Edit Landmark</h1>
+        <h1 className="text-xl font-semibold break-words md:text-2xl">Edit Landmark</h1>
         <p className="text-sm text-muted-foreground">
           Adjust the landmark details and media as needed.
         </p>

@@ -80,44 +80,62 @@ function AsafoList() {
 
   if (loading) {
     return (
-      <section>
-        <h1>Asafo Companies</h1>
-        <p>Loading asafo companies...</p>
+      <section className="container space-y-4 py-6 md:py-10">
+        <h1 className="text-2xl font-semibold text-foreground break-words md:text-3xl">
+          Asafo Companies
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Loading asafo companies...
+        </p>
       </section>
     )
   }
 
   if (error) {
     return (
-      <section>
-        <h1>Asafo Companies</h1>
-        <p>Unable to load asafo companies.</p>
-        <pre>{error?.message || String(error)}</pre>
+      <section className="container space-y-4 py-6 md:py-10">
+        <h1 className="text-2xl font-semibold text-foreground break-words md:text-3xl">
+          Asafo Companies
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Unable to load asafo companies.
+        </p>
+        <pre className="text-sm text-muted-foreground">
+          {error?.message || String(error)}
+        </pre>
       </section>
     )
   }
 
   return (
-    <section>
-      <h1>Asafo Companies</h1>
+    <section className="container space-y-6 py-6 md:py-10">
+      <h1 className="text-2xl font-semibold text-foreground break-words md:text-3xl">
+        Asafo Companies
+      </h1>
       {items.length === 0 ? (
-        <p>No asafo companies available.</p>
+        <p className="text-sm text-muted-foreground">
+          No asafo companies available.
+        </p>
       ) : (
-        <ul>
+        <ul className="space-y-6">
           {items.map((item) => {
             const thumbnail = item?.images?.thumbnail || item?.thumbnail
             const slug = item?.slug
             const description = getShortDescription(item)
 
             return (
-              <li key={item?.id || slug || item?.name}>
+              <li
+                key={item?.id || slug || item?.name}
+                className="space-y-3 rounded-xl border border-border bg-surface p-4"
+              >
                 {thumbnail && (
                   <img
                     src={resolveAssetUrl(thumbnail)}
                     alt={item?.name || 'Asafo company thumbnail'}
+                    className="h-40 w-full rounded-lg object-cover"
                   />
                 )}
-                <h2>
+                <h2 className="text-lg font-semibold text-foreground break-words">
                   {slug ? (
                     <Link to={`/asafo-companies/${slug}`}>
                       {item?.name || 'Unnamed company'}
@@ -126,7 +144,11 @@ function AsafoList() {
                     item?.name || 'Unnamed company'
                   )}
                 </h2>
-                {description && <p>{description}</p>}
+                {description && (
+                  <p className="text-sm text-muted-foreground">
+                    {description}
+                  </p>
+                )}
               </li>
             )
           })}

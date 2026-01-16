@@ -223,19 +223,29 @@ function Home() {
 
   if (loading) {
     return (
-      <section>
-        <h1>Home</h1>
-        <p>Loading homepage data...</p>
+      <section className="container space-y-3 py-6 md:py-10">
+        <h1 className="text-2xl font-semibold text-foreground break-words md:text-3xl">
+          Home
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Loading homepage data...
+        </p>
       </section>
     )
   }
 
   if (error) {
     return (
-      <section>
-        <h1>Home</h1>
-        <p>Unable to load homepage data.</p>
-        <pre>{error?.message || String(error)}</pre>
+      <section className="container space-y-3 py-6 md:py-10">
+        <h1 className="text-2xl font-semibold text-foreground break-words md:text-3xl">
+          Home
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Unable to load homepage data.
+        </p>
+        <pre className="text-sm text-muted-foreground">
+          {error?.message || String(error)}
+        </pre>
       </section>
     )
   }
@@ -270,7 +280,7 @@ function Home() {
             <div className="absolute inset-0 flex items-end">
               <div className="max-w-xl space-y-3 p-6 text-white md:p-10">
                 {slideTitle && (
-                  <h2 className="text-2xl font-semibold leading-tight md:text-4xl">
+                  <h2 className="text-2xl font-semibold leading-tight break-words md:text-4xl">
                     {slideTitle}
                   </h2>
                 )}
@@ -337,7 +347,7 @@ function Home() {
                   key={slide?.id || slide?.slug || index}
                   type="button"
                   onClick={() => setActiveSlide(index)}
-                  className="flex h-8 w-8 items-center justify-center"
+                  className="flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/40"
                   aria-label={`Go to slide ${index + 1}`}
                   aria-current={index === activeSlide ? 'true' : undefined}
                 >
@@ -364,7 +374,7 @@ function Home() {
         <div className="container">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <h2 className="text-xl font-semibold md:text-2xl">
+              <h2 className="text-2xl font-semibold break-words md:text-4xl">
                 {heroTitle || 'Home'}
               </h2>
               {heroSubtitle && (
@@ -413,7 +423,7 @@ function Home() {
                 <div className="container">
                   <div className="flex items-end justify-between gap-4">
                     <div>
-                      <h2 className="text-xl font-semibold md:text-2xl">
+                      <h2 className="text-xl font-semibold break-words md:text-2xl">
                         {sectionTitle}
                       </h2>
                       {sectionSubtitle && (
@@ -461,7 +471,7 @@ function Home() {
                 <div className="container">
                   <div className="flex items-end justify-between gap-4">
                     <div>
-                      <h2 className="text-xl font-semibold md:text-2xl">
+                      <h2 className="text-xl font-semibold break-words md:text-2xl">
                         {blockTitle}
                       </h2>
                       {blockSubtitle && (

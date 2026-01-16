@@ -153,7 +153,7 @@ function AdminNewsEditPage() {
     return (
       <div className="space-y-6">
         <header className="space-y-1">
-          <h1 className="text-xl font-semibold md:text-2xl">Edit News</h1>
+          <h1 className="text-xl font-semibold break-words md:text-2xl">Edit News</h1>
           <p className="text-sm text-muted-foreground">
             Update the news content and republish when ready.
           </p>
@@ -166,7 +166,7 @@ function AdminNewsEditPage() {
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="text-xl font-semibold md:text-2xl">Edit News</h1>
+        <h1 className="text-xl font-semibold break-words md:text-2xl">Edit News</h1>
         <p className="text-sm text-muted-foreground">
           Review the changes before publishing the updated news item.
         </p>
