@@ -69,9 +69,6 @@ function Navbar({ settings, loading }) {
         <div className="container flex h-16 items-center justify-between">
           {/* Placeholder for future logo support. */}
           <div className="flex items-center gap-3">
-            <span aria-hidden="true" className="text-muted-foreground">
-              □
-            </span>
             <NavLink to="/" className="text-sm font-semibold text-foreground">
               {siteName}
             </NavLink>

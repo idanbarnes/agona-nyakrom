@@ -60,6 +60,20 @@ function selectSlideImage(slide) {
   )
 }
 
+function selectSectionImage(section) {
+  const images = section?.images || {}
+
+  return (
+    images.large ||
+    images.medium ||
+    images.thumbnail ||
+    images.original ||
+    section?.image ||
+    section?.image_url ||
+    ''
+  )
+}
+
 function formatItemLabel(item) {
   if (!item) {
     return ''
@@ -127,7 +141,7 @@ function Home() {
       }
 
       if (homepageResult.status === 'fulfilled') {
-        setHomepage(homepageResult.value)
+        setHomepage(homepageResult.value?.data ?? homepageResult.value)
       } else {
         setError(homepageResult.reason)
       }
@@ -154,6 +168,18 @@ function Home() {
       setActiveSlide(0)
     }
   }, [activeSlide, slides.length])
+
+  useEffect(() => {
+    if (slides.length < 2) {
+      return undefined
+    }
+
+    const timer = window.setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % slides.length)
+    }, 7000)
+
+    return () => window.clearInterval(timer)
+  }, [slides.length])
 
   const hero = homepage?.hero || homepage?.heroSection || {}
   const heroTitle = pickFirstString(
@@ -221,12 +247,15 @@ function Home() {
     ? resolveAssetUrl(slideImagePath)
     : ''
 
+  const showHero =
+    heroTitle ||
+    heroSubtitle ||
+    (heroCtaText && heroCtaLink) ||
+    settings?.siteName
+
   if (loading) {
     return (
       <section className="container space-y-3 py-6 md:py-10">
-        <h1 className="text-2xl font-semibold text-foreground break-words md:text-3xl">
-          Home
-        </h1>
         <p className="text-sm text-muted-foreground">
           Loading homepage data...
         </p>
@@ -237,9 +266,6 @@ function Home() {
   if (error) {
     return (
       <section className="container space-y-3 py-6 md:py-10">
-        <h1 className="text-2xl font-semibold text-foreground break-words md:text-3xl">
-          Home
-        </h1>
         <p className="text-sm text-muted-foreground">
           Unable to load homepage data.
         </p>
@@ -251,11 +277,10 @@ function Home() {
   }
 
   return (
-    <section>
-      <section>
-        <h1 className="text-lg font-semibold text-foreground">Carousel</h1>
+    <section className="space-y-12 md:space-y-16">
+      <section className="container">
         {carouselLoading ? (
-          <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-surface">
+          <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-sm">
             <div className="flex h-[360px] flex-col justify-end p-6 md:h-[560px] md:p-10">
               <div className="space-y-4">
                 <Skeleton className="h-6 w-2/3 bg-muted/70" />
@@ -265,20 +290,20 @@ function Home() {
             </div>
           </div>
         ) : slides.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-dashed border-border bg-muted/40 px-6 py-10 text-center text-sm text-muted-foreground">
+          <div className="rounded-2xl border border-dashed border-border bg-muted/40 px-6 py-10 text-center text-sm text-muted-foreground">
             No slides available.
           </div>
         ) : (
-          <article className="relative mt-4 h-[360px] overflow-hidden rounded-2xl border border-border bg-surface md:h-[560px]">
+          <article className="relative h-[360px] overflow-hidden rounded-3xl border border-border bg-surface shadow-xl shadow-primary/10 md:h-[560px]">
             <ImageWithFallback
               src={slideImageUrl}
               alt={slideTitle || 'Carousel slide'}
               fallbackText="No image"
               className="h-full w-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/30 to-transparent" />
             <div className="absolute inset-0 flex items-end">
-              <div className="max-w-xl space-y-3 p-6 text-white md:p-10">
+              <div className="max-w-xl space-y-4 p-6 text-white md:p-10">
                 {slideTitle && (
                   <h2 className="text-2xl font-semibold leading-tight break-words md:text-4xl">
                     {slideTitle}
@@ -305,7 +330,7 @@ function Home() {
             </div>
             <nav
               aria-label="Carousel controls"
-              className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4"
+              className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4 md:px-6"
             >
               <Button
                 type="button"
@@ -317,14 +342,16 @@ function Home() {
                   )
                 }
                 disabled={slides.length < 2}
-                className="h-11 w-11 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60"
+                className="group h-12 w-12 rounded-full border border-white/40 bg-black/35 text-white shadow-lg shadow-black/25 backdrop-blur transition hover:bg-black/55 disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Previous slide"
               >
-                <span aria-hidden="true">‹</span>
+                <span
+                  aria-hidden="true"
+                  className="text-xl transition group-hover:-translate-x-0.5"
+                >
+                  ‹
+                </span>
               </Button>
-              <div className="hidden text-sm text-white/80 md:block">
-                Slide {activeSlide + 1} of {slides.length}
-              </div>
               <Button
                 type="button"
                 variant="ghost"
@@ -335,25 +362,30 @@ function Home() {
                   )
                 }
                 disabled={slides.length < 2}
-                className="h-11 w-11 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60"
+                className="group h-12 w-12 rounded-full border border-white/40 bg-black/35 text-white shadow-lg shadow-black/25 backdrop-blur transition hover:bg-black/55 disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Next slide"
               >
-                <span aria-hidden="true">›</span>
+                <span
+                  aria-hidden="true"
+                  className="text-xl transition group-hover:translate-x-0.5"
+                >
+                  ›
+                </span>
               </Button>
             </nav>
-            <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2">
+            <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-full border border-white/20 bg-black/35 px-4 py-2 backdrop-blur">
               {slides.map((slide, index) => (
                 <button
                   key={slide?.id || slide?.slug || index}
                   type="button"
                   onClick={() => setActiveSlide(index)}
-                  className="flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/40"
+                  className="flex h-6 w-10 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/40"
                   aria-label={`Go to slide ${index + 1}`}
                   aria-current={index === activeSlide ? 'true' : undefined}
                 >
                   <span
-                    className={`h-2.5 w-2.5 rounded-full transition ${
-                      index === activeSlide ? 'bg-white' : 'bg-white/60'
+                    className={`h-2 w-full rounded-full transition ${
+                      index === activeSlide ? 'bg-white' : 'bg-white/50'
                     }`}
                   />
                 </button>
@@ -370,36 +402,40 @@ function Home() {
         )}
       </section>
 
-      <section className="py-8 md:py-12">
-        <div className="container">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-semibold break-words md:text-4xl">
-                {heroTitle || 'Home'}
-              </h2>
-              {heroSubtitle && (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {heroSubtitle}
-                </p>
+      {showHero && (
+        <section className="py-8 md:py-12">
+          <div className="container">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                {heroTitle && (
+                  <h2 className="text-2xl font-semibold break-words md:text-4xl">
+                    {heroTitle}
+                  </h2>
+                )}
+                {heroSubtitle && (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {heroSubtitle}
+                  </p>
+                )}
+              </div>
+              {heroCtaText && heroCtaLink && (
+                <Button as="a" href={heroCtaLink} variant="ghost">
+                  {heroCtaText}
+                </Button>
               )}
             </div>
-            {heroCtaText && heroCtaLink && (
-              <Button as="a" href={heroCtaLink} variant="ghost">
-                {heroCtaText}
-              </Button>
+            {settings?.siteName && (
+              <p className="mt-4 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Site:</span>{' '}
+                {settings.siteName}
+              </p>
             )}
           </div>
-          {settings?.siteName && (
-            <p className="mt-4 text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Site:</span>{' '}
-              {settings.siteName}
-            </p>
-          )}
-        </div>
-      </section>
+        </section>
+      )}
 
       {sections.length > 0 && (
-        <section>
+        <section className="space-y-8 md:space-y-12">
           {sections.map((section, index) => {
             const sectionTitle = pickFirstString(
               section?.title,
@@ -414,6 +450,10 @@ function Home() {
               section?.content,
               section?.description,
             )
+            const sectionImage = selectSectionImage(section)
+            const sectionImageUrl = sectionImage
+              ? resolveAssetUrl(sectionImage)
+              : ''
 
             return (
               <section
@@ -421,29 +461,47 @@ function Home() {
                 className="border-t border-border py-8 md:py-12"
               >
                 <div className="container">
-                  <div className="flex items-end justify-between gap-4">
-                    <div>
-                      <h2 className="text-xl font-semibold break-words md:text-2xl">
-                        {sectionTitle}
-                      </h2>
-                      {sectionSubtitle && (
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {sectionSubtitle}
-                        </p>
+                  <div className="grid gap-6 lg:grid-cols-[minmax(0,_1.1fr)_minmax(0,_0.9fr)] lg:items-start">
+                    <div className="space-y-3">
+                      <div>
+                        <h2 className="text-xl font-semibold break-words md:text-2xl">
+                          {sectionTitle}
+                        </h2>
+                        {sectionSubtitle && (
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {sectionSubtitle}
+                          </p>
+                        )}
+                      </div>
+                      {sectionBody && (
+                        <Card className="border border-border/70 bg-surface/90">
+                          <CardContent className="space-y-2">
+                            <p className="text-sm text-muted-foreground">
+                              {sectionBody}
+                            </p>
+                          </CardContent>
+                        </Card>
                       )}
                     </div>
-                  </div>
-                  {sectionBody && (
-                    <div className="mt-6">
-                      <Card>
-                        <CardContent className="space-y-2">
-                          <p className="text-sm text-muted-foreground">
-                            {sectionBody}
-                          </p>
-                        </CardContent>
+                    <div>
+                      <Card className="overflow-hidden border border-border/70 bg-surface/90 shadow-sm">
+                        {sectionImageUrl ? (
+                          <div className="aspect-[4/3] w-full overflow-hidden bg-muted/40">
+                            <ImageWithFallback
+                              src={sectionImageUrl}
+                              alt={sectionTitle}
+                              fallbackText="No image"
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex h-full min-h-[220px] items-center justify-center bg-muted/40 text-sm text-muted-foreground">
+                            No image available
+                          </div>
+                        )}
                       </Card>
                     </div>
-                  )}
+                  </div>
                 </div>
               </section>
             )
