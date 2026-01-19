@@ -3,9 +3,9 @@ const mediaService = require('../../services/mediaService');
 const { getPaginationParams } = require('../../utils/pagination');
 const { success, error } = require('../../utils/response');
 
-const processImageIfPresent = async (file, uniqueId) => {
+const processImageIfPresent = async (file, uniqueId, crop) => {
   if (!file) return {};
-  return mediaService.processImage(file, 'carousel', uniqueId);
+  return mediaService.processCarouselImage(file, uniqueId, crop);
 };
 
 // Support multer uploads and base64 data URI strings in req.body.image
@@ -28,6 +28,28 @@ const extractImageFromRequest = (req) => {
   };
 };
 
+const parseCropData = (body) => {
+  if (!body) return null;
+  const cropX = Number.parseFloat(body.crop_x);
+  const cropY = Number.parseFloat(body.crop_y);
+  const cropW = Number.parseFloat(body.crop_w);
+  const cropH = Number.parseFloat(body.crop_h);
+
+  const values = [cropX, cropY, cropW, cropH];
+  const hasAllValues = values.every((value) => Number.isFinite(value));
+
+  if (!hasAllValues) {
+    return null;
+  }
+
+  return {
+    x: cropX,
+    y: cropY,
+    w: cropW,
+    h: cropH,
+  };
+};
+
 // POST /create
 const createCarouselSlide = async (req, res) => {
   try {
@@ -46,8 +68,13 @@ const createCarouselSlide = async (req, res) => {
       return error(res, 'Image is required to create a slide.', 400);
     }
 
+    const crop = parseCropData(req.body);
+    if (!crop) {
+      return error(res, 'Please crop the image to continue.', 400);
+    }
+
     const imageKey = `slide-${Date.now()}`;
-    const images = await processImageIfPresent(imageFile, imageKey);
+    const images = await processImageIfPresent(imageFile, imageKey, crop);
 
     const created = await carouselAdminService.create({
       title,
@@ -58,6 +85,7 @@ const createCarouselSlide = async (req, res) => {
       display_order,
       published,
       images,
+      crop,
     });
 
     return success(res, created, 'Carousel slide created successfully', 201);
@@ -101,8 +129,26 @@ const updateCarouselSlide = async (req, res) => {
       return error(res, 'Carousel slide not found', 404);
     }
 
+    const crop = parseCropData(req.body);
     const imageFile = extractImageFromRequest(req);
-    const images = await processImageIfPresent(imageFile, existing.id);
+    if (imageFile && !crop) {
+      return error(res, 'Please crop the image to continue.', 400);
+    }
+
+    const hasExistingCrop =
+      existing?.crop &&
+      Number.isFinite(existing.crop.x) &&
+      Number.isFinite(existing.crop.y) &&
+      Number.isFinite(existing.crop.w) &&
+      Number.isFinite(existing.crop.h);
+
+    if (published === 'true' || published === true) {
+      if (!crop && !hasExistingCrop) {
+        return error(res, 'Please crop the image to continue.', 400);
+      }
+    }
+
+    const images = await processImageIfPresent(imageFile, existing.id, crop);
 
     const updated = await carouselAdminService.update(id, {
       title,
@@ -113,6 +159,7 @@ const updateCarouselSlide = async (req, res) => {
       display_order,
       published,
       images,
+      crop,
     });
 
     return success(res, updated, 'Carousel slide updated successfully');

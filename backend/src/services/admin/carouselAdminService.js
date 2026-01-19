@@ -11,6 +11,10 @@ const baseSelect = `
   large_image_path,
   medium_image_path,
   thumbnail_image_path,
+  crop_x,
+  crop_y,
+  crop_w,
+  crop_h,
   display_order,
   published,
   created_at,
@@ -31,6 +35,10 @@ const mapSlide = (row) => {
     large_image_path,
     medium_image_path,
     thumbnail_image_path,
+    crop_x,
+    crop_y,
+    crop_w,
+    crop_h,
     display_order,
     published,
     created_at,
@@ -49,7 +57,22 @@ const mapSlide = (row) => {
       large: large_image_path,
       medium: medium_image_path,
       thumbnail: thumbnail_image_path,
+      desktop: large_image_path,
+      tablet: medium_image_path,
+      mobile: thumbnail_image_path,
     },
+    crop:
+      crop_x !== null &&
+      crop_y !== null &&
+      crop_w !== null &&
+      crop_h !== null
+        ? {
+            x: Number(crop_x),
+            y: Number(crop_y),
+            w: Number(crop_w),
+            h: Number(crop_h),
+          }
+        : null,
     display_order,
     published,
     created_at,
@@ -65,19 +88,25 @@ const create = async (data) => {
     cta_text = null,
     cta_url = null,
     images = {},
+    crop = null,
     display_order = 0,
     published = false,
   } = data;
 
   const { original, large, medium, thumbnail } = images;
+  const cropX = crop?.x ?? null;
+  const cropY = crop?.y ?? null;
+  const cropW = crop?.w ?? null;
+  const cropH = crop?.h ?? null;
 
   const query = `
     INSERT INTO carousel_slides
       (title, subtitle, caption, cta_text, cta_url,
        original_image_path, large_image_path, medium_image_path, thumbnail_image_path,
+       crop_x, crop_y, crop_w, crop_h,
        display_order, published, created_at, updated_at)
     VALUES
-      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
     RETURNING ${baseSelect}
   `;
 
@@ -91,6 +120,10 @@ const create = async (data) => {
     large || null,
     medium || null,
     thumbnail || null,
+    cropX,
+    cropY,
+    cropW,
+    cropH,
     display_order,
     published,
   ];
@@ -124,6 +157,14 @@ const update = async (id, data) => {
     if (large !== undefined) setField('large_image_path', large);
     if (medium !== undefined) setField('medium_image_path', medium);
     if (thumbnail !== undefined) setField('thumbnail_image_path', thumbnail);
+  }
+
+  if (data.crop) {
+    const { x, y, w, h } = data.crop;
+    if (x !== undefined) setField('crop_x', x);
+    if (y !== undefined) setField('crop_y', y);
+    if (w !== undefined) setField('crop_w', w);
+    if (h !== undefined) setField('crop_h', h);
   }
 
   if (!fields.length) {
