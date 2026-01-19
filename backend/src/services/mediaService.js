@@ -26,6 +26,12 @@ const variants = [
   { key: 'thumbnail', width: 400 },
 ];
 
+const carouselVariants = [
+  { key: 'desktop', width: 1920, height: 800 },
+  { key: 'tablet', width: 1280, height: 533 },
+  { key: 'mobile', width: 768, height: 320 },
+];
+
 const uploadsRoot = path.join(process.cwd(), 'uploads');
 
 const ensureDir = async (dir) => {
@@ -70,6 +76,114 @@ const saveVariant = async (buffer, dir, filename, width) => {
   return path.join('uploads', path.basename(dir), filename).replace(/\\+/g, '/');
 };
 
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+const getCarouselCropRect = ({ crop, width, height, uniqueId }) => {
+  if (
+    crop &&
+    Number.isFinite(crop.x) &&
+    Number.isFinite(crop.y) &&
+    Number.isFinite(crop.w) &&
+    Number.isFinite(crop.h)
+  ) {
+    const cropWidth = Math.round(clamp(crop.w, 0, 1) * width);
+    const cropHeight = Math.round(clamp(crop.h, 0, 1) * height);
+    const left = Math.round(clamp(crop.x, 0, 1) * width);
+    const top = Math.round(clamp(crop.y, 0, 1) * height);
+
+    const safeLeft = clamp(left, 0, Math.max(0, width - 1));
+    const safeTop = clamp(top, 0, Math.max(0, height - 1));
+    const safeWidth = clamp(cropWidth, 1, width - safeLeft);
+    const safeHeight = clamp(cropHeight, 1, height - safeTop);
+
+    return {
+      left: safeLeft,
+      top: safeTop,
+      width: safeWidth,
+      height: safeHeight,
+    };
+  }
+
+  const targetRatio = carouselVariants[0].width / carouselVariants[0].height;
+  const imageRatio = width / height;
+  let cropWidth = width;
+  let cropHeight = height;
+  let left = 0;
+  let top = 0;
+
+  if (imageRatio > targetRatio) {
+    cropWidth = Math.round(height * targetRatio);
+    left = Math.round((width - cropWidth) / 2);
+  } else if (imageRatio < targetRatio) {
+    cropHeight = Math.round(width / targetRatio);
+    top = Math.round((height - cropHeight) / 2);
+  }
+
+  console.warn(
+    `Carousel image ${uniqueId} missing crop data. Applying centered ${targetRatio.toFixed(2)} crop.`
+  );
+
+  const safeLeft = clamp(left, 0, Math.max(0, width - 1));
+  const safeTop = clamp(top, 0, Math.max(0, height - 1));
+  const safeWidth = clamp(cropWidth, 1, width - safeLeft);
+  const safeHeight = clamp(cropHeight, 1, height - safeTop);
+
+  return {
+    left: safeLeft,
+    top: safeTop,
+    width: safeWidth,
+    height: safeHeight,
+  };
+};
+
+const processCarouselImage = async (file, uniqueId, crop) => {
+  validateInput(file, 'carousel', uniqueId);
+
+  const buffer = await getFileBuffer(file);
+  const sectionDir = SECTION_DIRS.carousel;
+  const targetDir = path.join(uploadsRoot, sectionDir);
+
+  await ensureDir(targetDir);
+
+  const base = sharp(buffer).rotate();
+  const metadata = await base.metadata();
+  if (!metadata.width || !metadata.height) {
+    throw new Error('Unable to read image dimensions.');
+  }
+
+  const cropRect = getCarouselCropRect({
+    crop,
+    width: metadata.width,
+    height: metadata.height,
+    uniqueId,
+  });
+
+  const results = {};
+
+  for (const { key, width, height } of carouselVariants) {
+    const filename = buildFilename('carousel', uniqueId, key);
+    const outputPath = path.join(targetDir, filename);
+
+    await base
+      .clone()
+      .extract(cropRect)
+      .resize({ width, height, fit: 'cover' })
+      .webp({ quality: 82 })
+      .toFile(outputPath);
+
+    results[key] = path
+      .join('uploads', path.basename(targetDir), filename)
+      .replace(/\\+/g, '/');
+  }
+
+  results.large = results.desktop;
+  results.medium = results.tablet;
+  results.thumbnail = results.mobile;
+  results.original = results.desktop;
+
+  return results;
+};
+
 /**
  * Process an uploaded image into multiple optimized variants.
  * @param {Object} file - Uploaded file (expects buffer/mimetype/size; path supported).
@@ -98,4 +212,5 @@ const processImage = async (file, section, uniqueId) => {
 
 module.exports = {
   processImage,
+  processCarouselImage,
 };

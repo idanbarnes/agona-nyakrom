@@ -45,19 +45,36 @@ function normalizeSlides(payload) {
   return data?.items || data?.slides || []
 }
 
-// Prefer large images, falling back through common image sizes.
-function selectSlideImage(slide) {
+// Prefer processed banner variants, falling back through common image sizes.
+function selectSlideImages(slide) {
   const images = slide?.images || {}
 
-  return (
+  const desktop =
+    images.desktop ||
     images.large ||
-    images.medium ||
-    images.thumbnail ||
     images.original ||
     slide?.image ||
     slide?.image_url ||
     ''
-  )
+  const tablet =
+    images.tablet ||
+    images.medium ||
+    images.large ||
+    images.original ||
+    slide?.image ||
+    slide?.image_url ||
+    ''
+  const mobile =
+    images.mobile ||
+    images.thumbnail ||
+    images.medium ||
+    images.large ||
+    images.original ||
+    slide?.image ||
+    slide?.image_url ||
+    ''
+
+  return { desktop, tablet, mobile }
 }
 
 function selectSectionImage(section) {
@@ -242,10 +259,17 @@ function Home() {
     activeSlideData?.cta_url,
     activeSlideData?.ctaUrl,
   )
-  const slideImagePath = selectSlideImage(activeSlideData)
-  const slideImageUrl = slideImagePath
-    ? resolveAssetUrl(slideImagePath)
-    : ''
+  const slideImages = selectSlideImages(activeSlideData)
+  const primarySlideImage =
+    slideImages.desktop || slideImages.tablet || slideImages.mobile
+  const slideImageUrl = primarySlideImage ? resolveAssetUrl(primarySlideImage) : ''
+  const slideSrcSet = [
+    slideImages.mobile ? `${resolveAssetUrl(slideImages.mobile)} 768w` : null,
+    slideImages.tablet ? `${resolveAssetUrl(slideImages.tablet)} 1280w` : null,
+    slideImages.desktop ? `${resolveAssetUrl(slideImages.desktop)} 1920w` : null,
+  ]
+    .filter(Boolean)
+    .join(', ')
 
   const showHero =
     heroTitle ||
@@ -281,7 +305,7 @@ function Home() {
       <section className="container">
         {carouselLoading ? (
           <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-sm">
-            <div className="flex h-[360px] flex-col justify-end p-6 md:h-[560px] md:p-10">
+            <div className="flex h-[55vh] flex-col justify-end p-6 md:h-[65vh] md:p-10 lg:h-[80vh]">
               <div className="space-y-4">
                 <Skeleton className="h-6 w-2/3 bg-muted/70" />
                 <Skeleton className="h-4 w-1/2 bg-muted/70" />
@@ -294,11 +318,13 @@ function Home() {
             No slides available.
           </div>
         ) : (
-          <article className="relative h-[360px] overflow-hidden rounded-3xl border border-border bg-surface shadow-xl shadow-primary/10 md:h-[560px]">
+          <article className="relative h-[55vh] overflow-hidden rounded-3xl border border-border bg-surface shadow-xl shadow-primary/10 md:h-[65vh] lg:h-[80vh]">
             <ImageWithFallback
               src={slideImageUrl}
               alt={slideTitle || 'Carousel slide'}
               fallbackText="No image"
+              srcSet={slideSrcSet || undefined}
+              sizes="(max-width: 768px) 768px, (max-width: 1024px) 1280px, 1920px"
               className="h-full w-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/30 to-transparent" />

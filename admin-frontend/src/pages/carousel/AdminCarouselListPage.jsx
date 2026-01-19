@@ -198,7 +198,14 @@ function AdminCarouselListPage() {
   }
 
   const imageFromSlide = (slide) =>
-    slide?.image_url || slide?.imageUrl || slide?.image || ''
+    slide?.images?.thumbnail ||
+    slide?.images?.mobile ||
+    slide?.images?.medium ||
+    slide?.images?.large ||
+    slide?.image_url ||
+    slide?.imageUrl ||
+    slide?.image ||
+    ''
 
   const totalPages =
     total !== null ? Math.max(1, Math.ceil(total / limit)) : isLastPage ? page : page + 1
