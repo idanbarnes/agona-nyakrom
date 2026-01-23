@@ -14,3 +14,9 @@ It includes a public visitor-facing site, a custom backend API, and an admin pan
 To create a dynamic, content-driven community platform where admins can manage
 history, clans, news, obituaries, landmarks, hall of fame, homepage settings,
 and more through a secure custom admin panel.
+
+## Homepage Blocks
+The public homepage is powered by `GET /api/public/homepage`, which now returns an
+ordered `blocks` array used to render the redesigned sections. Administrators
+manage these blocks from the admin “Homepage Settings” screen (`/admin/homepage-sections`)
+to control ordering, content, and publishing status.

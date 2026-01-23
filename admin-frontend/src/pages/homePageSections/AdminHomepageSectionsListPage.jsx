@@ -1,10 +1,11 @@
+// Admin homepage settings page manages homepage blocks that power GET /api/public/homepage.
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
-  deleteSection,
-  getAllSections,
-  updateSection,
-} from '../../services/api/adminHomepageSectionsApi.js'
+  deleteBlock,
+  getAllBlocks,
+  updateBlock,
+} from '../../services/api/adminHomepageBlocksApi.js'
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
 import {
   Button,
@@ -35,12 +36,21 @@ function formatDate(value) {
   return date.toLocaleDateString()
 }
 
+const BLOCK_TYPE_LABELS = {
+  editorial_feature: 'Editorial Feature',
+  hall_of_fame_spotlight: 'Hall of Fame Spotlight',
+  news_highlight: 'News Highlight',
+  cultural_break: 'Cultural Break',
+  gateway_links: 'Gateway Links',
+}
+
 function AdminHomepageSectionsListPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const [items, setItems] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [isReordering, setIsReordering] = useState(false)
+  const [isPublishing, setIsPublishing] = useState(null)
   const [error, setError] = useState(null)
   const [successMessage, setSuccessMessage] = useState(
     location.state?.successMessage || ''
@@ -51,26 +61,25 @@ function AdminHomepageSectionsListPage() {
 
   const sortedItems = useMemo(() => {
     return [...items].sort((left, right) => {
-      const leftOrder = Number(left.display_order ?? left.displayOrder ?? 0)
-      const rightOrder = Number(right.display_order ?? right.displayOrder ?? 0)
+      const leftOrder = Number(left.display_order ?? 0)
+      const rightOrder = Number(right.display_order ?? 0)
       return leftOrder - rightOrder
     })
   }, [items])
   const isEmpty = !isLoading && !error && sortedItems.length === 0
 
-  const fetchSections = useCallback(async () => {
+  const fetchBlocks = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     setSuccessMessage('')
 
     try {
-      const payload = await getAllSections()
+      const payload = await getAllBlocks()
       const data = payload?.data ?? payload
-      const list = Array.isArray(data) ? data : data?.items || data?.sections || []
+      const list = Array.isArray(data) ? data : data?.items || data?.blocks || []
       setItems(list)
     } catch (error) {
       if (error.status === 401) {
-        // Session expired or invalid; force re-authentication.
         clearAuthToken()
         navigate('/login', { replace: true })
         return
@@ -84,26 +93,25 @@ function AdminHomepageSectionsListPage() {
 
   useEffect(() => {
     if (!getAuthToken()) {
-      // Prevent unauthenticated access to admin resources.
       navigate('/login', { replace: true })
       return
     }
 
-    fetchSections()
-  }, [fetchSections, navigate])
+    fetchBlocks()
+  }, [fetchBlocks, navigate])
 
   const handleDelete = async (id) => {
     setError(null)
     setSuccessMessage('')
 
     try {
-      const response = await deleteSection(id)
+      const response = await deleteBlock(id)
       if (response?.success === false) {
-        throw new Error(response?.message || 'Unable to delete section.')
+        throw new Error(response?.message || 'Unable to delete block.')
       }
-      window.alert('Homepage section deleted successfully')
-      setSuccessMessage('Section deleted.')
-      fetchSections()
+      window.alert('Homepage block deleted successfully')
+      setSuccessMessage('Block deleted.')
+      fetchBlocks()
     } catch (error) {
       if (error.status === 401) {
         clearAuthToken()
@@ -111,7 +119,7 @@ function AdminHomepageSectionsListPage() {
         return
       }
 
-      const message = error.message || 'Unable to delete section.'
+      const message = error.message || 'Unable to delete block.'
       setError(message)
       window.alert(message)
     }
@@ -146,19 +154,19 @@ function AdminHomepageSectionsListPage() {
     setSuccessMessage('')
     setIsReordering(true)
 
-    const currentOrder = Number(current.display_order ?? current.displayOrder ?? 0)
-    const targetOrder = Number(target.display_order ?? target.displayOrder ?? 0)
+    const currentOrder = Number(current.display_order ?? 0)
+    const targetOrder = Number(target.display_order ?? 0)
 
     try {
       const [currentResponse, targetResponse] = await Promise.all([
-        updateSection(current.id || current._id, { display_order: targetOrder }),
-        updateSection(target.id || target._id, { display_order: currentOrder }),
+        updateBlock(current.id, { display_order: targetOrder }),
+        updateBlock(target.id, { display_order: currentOrder }),
       ])
       if (currentResponse?.success === false || targetResponse?.success === false) {
-        throw new Error('Unable to update section order.')
+        throw new Error('Unable to update block order.')
       }
-      setSuccessMessage('Section order updated.')
-      fetchSections()
+      setSuccessMessage('Block order updated.')
+      fetchBlocks()
     } catch (error) {
       if (error.status === 401) {
         clearAuthToken()
@@ -166,11 +174,42 @@ function AdminHomepageSectionsListPage() {
         return
       }
 
-      const message = error.message || 'Unable to update section order.'
+      const message = error.message || 'Unable to update block order.'
       setError(message)
       window.alert(message)
     } finally {
       setIsReordering(false)
+    }
+  }
+
+  const handleTogglePublish = async (block) => {
+    setError(null)
+    setSuccessMessage('')
+    setIsPublishing(block.id)
+
+    try {
+      const response = await updateBlock(block.id, {
+        is_published: !block.is_published,
+      })
+      if (response?.success === false) {
+        throw new Error(response?.message || 'Unable to update publish status.')
+      }
+      setSuccessMessage(
+        block.is_published ? 'Block unpublished.' : 'Block published.'
+      )
+      fetchBlocks()
+    } catch (error) {
+      if (error.status === 401) {
+        clearAuthToken()
+        navigate('/login', { replace: true })
+        return
+      }
+
+      const message = error.message || 'Unable to update publish status.'
+      setError(message)
+      window.alert(message)
+    } finally {
+      setIsPublishing(null)
     }
   }
 
@@ -180,9 +219,11 @@ function AdminHomepageSectionsListPage() {
   return (
     <section className="space-y-4 md:space-y-6">
       <div className="space-y-1">
-        <h2 className="text-xl font-semibold break-words md:text-2xl">Homepage Sections</h2>
+        <h2 className="text-xl font-semibold break-words md:text-2xl">
+          Homepage Blocks
+        </h2>
         <p className="text-sm text-muted-foreground">
-          Manage the order and visibility of homepage sections.
+          Manage the order, content, and publishing status of homepage blocks.
         </p>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -192,7 +233,7 @@ function AdminHomepageSectionsListPage() {
           variant="primary"
           onClick={() => navigate('/admin/homepage-sections/create')}
         >
-          Create section
+          Add block
         </Button>
       </div>
       {error ? <ToastMessage type="error" message={errorMessage} /> : null}
@@ -208,21 +249,21 @@ function AdminHomepageSectionsListPage() {
         errorFallback={
           <ErrorState
             message={errorMessage}
-            onRetry={fetchSections}
-            retryLabel="Reload sections"
+            onRetry={fetchBlocks}
+            retryLabel="Reload blocks"
           />
         }
         empty={
           <EmptyState
-            title="No sections found"
-            description="Create a homepage section to organize the layout."
+            title="No blocks found"
+            description="Create a homepage block to organize the layout."
             action={
               <Button
                 type="button"
                 variant="secondary"
                 onClick={() => navigate('/admin/homepage-sections/create')}
               >
-                Create section
+                Add block
               </Button>
             }
           />
@@ -235,7 +276,7 @@ function AdminHomepageSectionsListPage() {
                 Order
               </th>
               <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
-                Section key
+                Block type
               </th>
               <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
                 Title
@@ -253,29 +294,21 @@ function AdminHomepageSectionsListPage() {
           </TableHead>
           <TableBody>
             {sortedItems.map((item, index) => {
-              const id = item.id || item._id
-              const published =
-                typeof item.published === 'boolean'
-                  ? item.published
-                  : item.status === 'published'
+              const id = item.id
 
               return (
                 <TableRow key={id}>
-                  <TableCell>
-                    {item.display_order ?? item.displayOrder ?? '-'}
-                  </TableCell>
+                  <TableCell>{item.display_order ?? '-'}</TableCell>
                   <TableCell className="max-w-xs break-words">
-                    {item.section_key || item.sectionKey || '-'}
+                    {BLOCK_TYPE_LABELS[item.block_type] || item.block_type || '-'}
                   </TableCell>
                   <TableCell className="max-w-xs break-words">
                     {item.title || '-'}
                   </TableCell>
                   <TableCell>
-                    <PublishStatus published={published} />
+                    <PublishStatus published={Boolean(item.is_published)} />
                   </TableCell>
-                  <TableCell>
-                    {formatDate(item.updated_at || item.updatedAt)}
-                  </TableCell>
+                  <TableCell>{formatDate(item.updated_at)}</TableCell>
                   <TableCell className="text-right whitespace-nowrap">
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <Link
@@ -296,6 +329,15 @@ function AdminHomepageSectionsListPage() {
                         type="button"
                         variant="secondary"
                         size="sm"
+                        onClick={() => handleTogglePublish(item)}
+                        disabled={isPublishing === id}
+                      >
+                        {item.is_published ? 'Unpublish' : 'Publish'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
                         onClick={() => handleMove(index, 'up')}
                         disabled={index === 0 || isReordering}
                       >
@@ -306,9 +348,7 @@ function AdminHomepageSectionsListPage() {
                         variant="secondary"
                         size="sm"
                         onClick={() => handleMove(index, 'down')}
-                        disabled={
-                          index === sortedItems.length - 1 || isReordering
-                        }
+                        disabled={index === sortedItems.length - 1 || isReordering}
                       >
                         Move Down
                       </Button>
@@ -323,8 +363,8 @@ function AdminHomepageSectionsListPage() {
 
       <ConfirmDialog
         open={confirmState.open}
-        title="Delete homepage section"
-        description="Delete this section?"
+        title="Delete homepage block"
+        description="Delete this block?"
         confirmLabel="Delete"
         variant="danger"
         onConfirm={handleConfirmDelete}

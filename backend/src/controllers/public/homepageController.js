@@ -1,3 +1,4 @@
+// GET /api/public/homepage powers the public homepage; blocks are managed in /admin/homepage-sections and rendered in public-frontend/src/pages/Home.jsx.
 const homepageService = require('../../services/public/homepageService');
 const { success, error } = require('../../utils/response');
 
