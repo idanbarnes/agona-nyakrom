@@ -65,6 +65,7 @@ function AdminHomepageSectionsEditPage() {
     display_order: '',
     is_published: false,
     media_image_id: '',
+    media_image_file: null,
     media_alt_text: '',
     layout_variant: 'image_right',
     hof_selection_mode: 'random',
@@ -124,6 +125,7 @@ function AdminHomepageSectionsEditPage() {
           display_order: block?.display_order ?? '',
           is_published: Boolean(block?.is_published),
           media_image_id: block?.media_image_id || '',
+          media_image_file: null,
           media_alt_text: block?.media_alt_text || '',
           layout_variant: block?.layout_variant || 'image_right',
           hof_selection_mode: block?.hof_selection_mode || 'random',
@@ -188,6 +190,11 @@ function AdminHomepageSectionsEditPage() {
     const { name, value, type, checked } = event.target
     const nextValue = type === 'checkbox' ? checked : value
     setFormState((current) => ({ ...current, [name]: nextValue }))
+  }
+
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0] || null
+    setFormState((current) => ({ ...current, media_image_file: file }))
   }
 
   const handleSubmit = async (event) => {
@@ -271,9 +278,26 @@ function AdminHomepageSectionsEditPage() {
       gateway_columns_mobile: Number(formState.gateway_columns_mobile),
     }
 
+    const hasFile = Boolean(formState.media_image_file)
+    const formData = new FormData()
+
+    if (hasFile) {
+      Object.entries(payload).forEach(([key, value]) => {
+        if (value === undefined) {
+          return
+        }
+        if (key === 'gateway_items') {
+          formData.append(key, JSON.stringify(value))
+          return
+        }
+        formData.append(key, String(value ?? ''))
+      })
+      formData.append('image', formState.media_image_file)
+    }
+
     setIsSubmitting(true)
     try {
-      const response = await updateBlock(id, payload)
+      const response = await updateBlock(id, hasFile ? formData : payload)
       if (response?.success === false) {
         throw new Error(response?.message || 'Unable to update block.')
       }
@@ -487,14 +511,34 @@ function AdminHomepageSectionsEditPage() {
                   </FormField>
                 </div>
 
-                <FormField label="Image URL" htmlFor="media_image_id">
-                  <Input
-                    id="media_image_id"
-                    name="media_image_id"
-                    type="text"
-                    value={formState.media_image_id}
-                    onChange={handleChange}
-                  />
+                <FormField
+                  label="Image upload"
+                  htmlFor="media_image_file"
+                  helpText={
+                    formState.media_image_id ? (
+                      <span>
+                        Current image:{' '}
+                        <a
+                          href={formState.media_image_id}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary underline-offset-4 hover:underline"
+                        >
+                          View
+                        </a>
+                      </span>
+                    ) : null
+                  }
+                >
+                  <div className="rounded-lg border border-border bg-background p-4">
+                    <Input
+                      id="media_image_file"
+                      name="media_image_file"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
+                  </div>
                 </FormField>
               </div>
             )}

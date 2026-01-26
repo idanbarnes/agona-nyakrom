@@ -61,6 +61,7 @@ function AdminHomepageSectionsCreatePage() {
     display_order: '',
     is_published: false,
     media_image_id: '',
+    media_image_file: null,
     media_alt_text: '',
     layout_variant: 'image_right',
     hof_selection_mode: 'random',
@@ -102,6 +103,11 @@ function AdminHomepageSectionsCreatePage() {
     const { name, value, type, checked } = event.target
     const nextValue = type === 'checkbox' ? checked : value
     setFormState((current) => ({ ...current, [name]: nextValue }))
+  }
+
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0] || null
+    setFormState((current) => ({ ...current, media_image_file: file }))
   }
 
   const handleSubmit = async (event) => {
@@ -185,9 +191,26 @@ function AdminHomepageSectionsCreatePage() {
       gateway_columns_mobile: Number(formState.gateway_columns_mobile),
     }
 
+    const hasFile = Boolean(formState.media_image_file)
+    const formData = new FormData()
+
+    if (hasFile) {
+      Object.entries(payload).forEach(([key, value]) => {
+        if (value === undefined) {
+          return
+        }
+        if (key === 'gateway_items') {
+          formData.append(key, JSON.stringify(value))
+          return
+        }
+        formData.append(key, String(value ?? ''))
+      })
+      formData.append('image', formState.media_image_file)
+    }
+
     setIsSubmitting(true)
     try {
-      const response = await createBlock(payload)
+      const response = await createBlock(hasFile ? formData : payload)
       if (response?.success === false) {
         throw new Error(response?.message || 'Unable to create block.')
       }
@@ -382,14 +405,16 @@ function AdminHomepageSectionsCreatePage() {
                   </FormField>
                 </div>
 
-                <FormField label="Image URL" htmlFor="media_image_id">
-                  <Input
-                    id="media_image_id"
-                    name="media_image_id"
-                    type="text"
-                    value={formState.media_image_id}
-                    onChange={handleChange}
-                  />
+                <FormField label="Image upload" htmlFor="media_image_file">
+                  <div className="rounded-lg border border-border bg-background p-4">
+                    <Input
+                      id="media_image_file"
+                      name="media_image_file"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
+                  </div>
                 </FormField>
               </div>
             )}

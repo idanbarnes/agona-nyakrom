@@ -1,4 +1,6 @@
+const crypto = require('crypto');
 const homepageBlockAdminService = require('../../services/admin/homepageBlockAdminService');
+const mediaService = require('../../services/mediaService');
 const { success, error } = require('../../utils/response');
 
 const allowedBlockTypes = new Set([
@@ -57,6 +59,31 @@ const parseGatewayItems = (value) => {
     return JSON.parse(value);
   }
   return [];
+};
+
+const processImageIfPresent = async (file, uniqueId) => {
+  if (!file) return null;
+  return mediaService.processImage(file, 'homepage', uniqueId);
+};
+
+// Support multer uploads and base64 data URIs
+const extractImageFromRequest = (req) => {
+  if (req.file) return req.file;
+
+  const rawImage = req.body?.image;
+  if (typeof rawImage !== 'string') return null;
+
+  const match = rawImage.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) return null;
+
+  const [, mimetype, base64Payload] = match;
+  const buffer = Buffer.from(base64Payload, 'base64');
+
+  return {
+    buffer,
+    mimetype,
+    size: buffer.length,
+  };
 };
 
 const normalizeBlockPayload = (payload, { mode = 'create' } = {}) => {
@@ -311,6 +338,12 @@ const preparePublishState = (data, existing) => {
 const createHomepageBlock = async (req, res) => {
   try {
     const payload = normalizeBlockPayload(req.body || {}, { mode: 'create' });
+    const imageFile = extractImageFromRequest(req);
+    if (imageFile) {
+      const uniqueId = crypto.randomUUID();
+      const images = await processImageIfPresent(imageFile, uniqueId);
+      payload.media_image_id = images?.original || null;
+    }
 
     const validationErrors = validateBlock(payload);
     const publishErrors = validatePublishedRequirements(payload);
@@ -346,6 +379,12 @@ const updateHomepageBlock = async (req, res) => {
     }
 
     const payload = normalizeBlockPayload(req.body || {}, { mode: 'update' });
+    const imageFile = extractImageFromRequest(req);
+    if (imageFile) {
+      const uniqueId = existing?.id || crypto.randomUUID();
+      const images = await processImageIfPresent(imageFile, uniqueId);
+      payload.media_image_id = images?.original || null;
+    }
     const merged = { ...existing, ...payload };
 
     const validationErrors = validateBlock(merged, { allowMissingType: true });

@@ -43,6 +43,10 @@ async function parseJsonResponse(response) {
   return payload
 }
 
+function isFormDataPayload(payloadOrFormData) {
+  return typeof FormData !== 'undefined' && payloadOrFormData instanceof FormData
+}
+
 export async function getAllBlocks() {
   const response = await fetch(buildUrl('/api/admin/homepage-blocks'), {
     method: 'GET',
@@ -68,28 +72,30 @@ export async function getSingleBlock(id) {
 }
 
 export async function createBlock(payload) {
+  const isFormData = isFormDataPayload(payload)
   const response = await fetch(buildUrl('/api/admin/homepage-blocks'), {
     method: 'POST',
     headers: {
       Accept: 'application/json',
-      'Content-Type': 'application/json',
       ...buildAuthHeaders(),
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     },
-    body: JSON.stringify(payload),
+    body: isFormData ? payload : JSON.stringify(payload),
   })
 
   return parseJsonResponse(response)
 }
 
 export async function updateBlock(id, payload) {
+  const isFormData = isFormDataPayload(payload)
   const response = await fetch(buildUrl(`/api/admin/homepage-blocks/${id}`), {
     method: 'PUT',
     headers: {
       Accept: 'application/json',
-      'Content-Type': 'application/json',
       ...buildAuthHeaders(),
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     },
-    body: JSON.stringify(payload),
+    body: isFormData ? payload : JSON.stringify(payload),
   })
 
   return parseJsonResponse(response)
