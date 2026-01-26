@@ -91,102 +91,25 @@ const mapBlock = (row) => {
 };
 
 const create = async (data) => {
+  const cleanedEntries = Object.entries(data).filter(
+    ([, value]) => value !== undefined && value !== null
+  );
+
+  if (!cleanedEntries.length) {
+    throw new Error('No fields provided to create.');
+  }
+
+  const columns = cleanedEntries.map(([key]) => key);
+  const values = cleanedEntries.map(([, value]) => value);
+  const placeholders = values.map((_, index) => `$${index + 1}`).join(', ');
+
   const query = `
     INSERT INTO homepage_blocks
-      (
-        title,
-        block_type,
-        display_order,
-        is_published,
-        published_at,
-        subtitle,
-        body,
-        cta_label,
-        cta_href,
-        theme_variant,
-        container_width,
-        media_image_id,
-        media_alt_text,
-        layout_variant,
-        hof_selection_mode,
-        hof_items_count,
-        hof_manual_item_ids,
-        hof_filter_tag,
-        hof_show_cta,
-        hof_cta_label,
-        hof_cta_href,
-        news_source,
-        news_feature_mode,
-        news_featured_item_id,
-        news_list_count,
-        news_show_dates,
-        news_cta_label,
-        news_cta_href,
-        quote_text,
-        quote_author,
-        background_style,
-        background_image_id,
-        background_overlay_strength,
-        gateway_items,
-        gateway_columns_desktop,
-        gateway_columns_tablet,
-        gateway_columns_mobile,
-        created_at,
-        updated_at
-      )
+      (${columns.join(', ')}, created_at, updated_at)
     VALUES
-      (
-        $1, $2, $3, $4, $5,
-        $6, $7, $8, $9, $10, $11,
-        $12, $13, $14,
-        $15, $16, $17, $18, $19, $20, $21,
-        $22, $23, $24, $25, $26, $27, $28,
-        $29, $30, $31, $32, $33,
-        $34, $35, $36,
-        NOW(), NOW()
-      )
+      (${placeholders}, NOW(), NOW())
     RETURNING ${baseSelect}
   `;
-
-  const values = [
-    data.title,
-    data.block_type,
-    data.display_order,
-    data.is_published,
-    data.published_at,
-    data.subtitle,
-    data.body,
-    data.cta_label,
-    data.cta_href,
-    data.theme_variant,
-    data.container_width,
-    data.media_image_id,
-    data.media_alt_text,
-    data.layout_variant,
-    data.hof_selection_mode,
-    data.hof_items_count,
-    data.hof_manual_item_ids,
-    data.hof_filter_tag,
-    data.hof_show_cta,
-    data.hof_cta_label,
-    data.hof_cta_href,
-    data.news_source,
-    data.news_feature_mode,
-    data.news_featured_item_id,
-    data.news_list_count,
-    data.news_show_dates,
-    data.news_cta_label,
-    data.news_cta_href,
-    data.quote_text,
-    data.quote_author,
-    data.background_style,
-    data.background_image_id,
-    data.background_overlay_strength,
-    data.gateway_items,
-    data.gateway_columns_desktop,
-    data.gateway_columns_tablet,
-    data.gateway_columns_mobile,
-  ];
 
   const { rows } = await pool.query(query, values);
   return mapBlock(rows[0]);

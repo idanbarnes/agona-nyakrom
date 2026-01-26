@@ -325,6 +325,9 @@ const createHomepageBlock = async (req, res) => {
     return success(res, created, 'Homepage block created successfully', 201);
   } catch (err) {
     console.error('Error creating homepage block:', err.message);
+    if (err.message === 'No fields provided to create.') {
+      return error(res, err.message, 400);
+    }
     if (err.message.includes('JSON')) {
       return error(res, 'Invalid gateway_items JSON payload.', 400);
     }
