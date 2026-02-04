@@ -16,6 +16,12 @@ import {
   Select,
   Textarea,
 } from '../../components/ui/index.jsx'
+import GatewayCardsManager from './GatewayCardsManager.jsx'
+import {
+  buildPayload,
+  resetTypeSpecificFields,
+  validateByType,
+} from './homepageBlockFormUtils.js'
 
 const BLOCK_TYPE_OPTIONS = [
   { value: 'editorial_feature', label: 'Editorial Feature' },
@@ -38,17 +44,6 @@ const CONTAINER_WIDTHS = [
   { value: 'full_bleed', label: 'Full Bleed' },
 ]
 
-const parseIdList = (value) => {
-  if (!value) {
-    return []
-  }
-
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
-}
-
 function AdminHomepageSectionsEditPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -70,7 +65,7 @@ function AdminHomepageSectionsEditPage() {
     layout_variant: 'image_right',
     hof_selection_mode: 'random',
     hof_items_count: 3,
-    hof_manual_item_ids: '',
+    hof_manual_item_ids: [],
     hof_filter_tag: '',
     hof_show_cta: true,
     hof_cta_label: 'View Hall of Fame',
@@ -87,7 +82,7 @@ function AdminHomepageSectionsEditPage() {
     background_style: 'solid',
     background_image_id: '',
     background_overlay_strength: 'medium',
-    gateway_items: '[]',
+    gateway_items: [],
     gateway_columns_desktop: 3,
     gateway_columns_tablet: 2,
     gateway_columns_mobile: 1,
@@ -130,7 +125,7 @@ function AdminHomepageSectionsEditPage() {
           layout_variant: block?.layout_variant || 'image_right',
           hof_selection_mode: block?.hof_selection_mode || 'random',
           hof_items_count: block?.hof_items_count ?? 3,
-          hof_manual_item_ids: (block?.hof_manual_item_ids || []).join(', '),
+          hof_manual_item_ids: block?.hof_manual_item_ids || [],
           hof_filter_tag: block?.hof_filter_tag || '',
           hof_show_cta: block?.hof_show_cta ?? true,
           hof_cta_label: block?.hof_cta_label || 'View Hall of Fame',
@@ -148,7 +143,7 @@ function AdminHomepageSectionsEditPage() {
           background_image_id: block?.background_image_id || '',
           background_overlay_strength:
             block?.background_overlay_strength || 'medium',
-          gateway_items: JSON.stringify(gatewayItems, null, 2),
+          gateway_items: gatewayItems,
           gateway_columns_desktop: block?.gateway_columns_desktop ?? 3,
           gateway_columns_tablet: block?.gateway_columns_tablet ?? 2,
           gateway_columns_mobile: block?.gateway_columns_mobile ?? 1,
@@ -189,6 +184,45 @@ function AdminHomepageSectionsEditPage() {
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target
     const nextValue = type === 'checkbox' ? checked : value
+    if (name === 'block_type') {
+      setFormState((current) =>
+        resetTypeSpecificFields({ ...current, [name]: nextValue }, nextValue)
+      )
+      return
+    }
+    if (name === 'hof_selection_mode' && nextValue !== 'manual') {
+      setFormState((current) => ({
+        ...current,
+        hof_selection_mode: nextValue,
+        hof_manual_item_ids: [],
+      }))
+      return
+    }
+    if (name === 'news_feature_mode' && nextValue !== 'manual') {
+      setFormState((current) => ({
+        ...current,
+        news_feature_mode: nextValue,
+        news_featured_item_id: '',
+      }))
+      return
+    }
+    if (name === 'background_style' && nextValue !== 'image') {
+      setFormState((current) => ({
+        ...current,
+        background_style: nextValue,
+        background_image_id: '',
+      }))
+      return
+    }
+    if (name === 'hof_show_cta' && !nextValue) {
+      setFormState((current) => ({
+        ...current,
+        hof_show_cta: false,
+        hof_cta_label: '',
+        hof_cta_href: '',
+      }))
+      return
+    }
     setFormState((current) => ({ ...current, [name]: nextValue }))
   }
 
@@ -206,79 +240,20 @@ function AdminHomepageSectionsEditPage() {
       return
     }
 
-    if (!formState.block_type) {
-      setErrorMessage('Block type is required.')
+    const errors = validateByType(formState, formState.block_type)
+    if (errors.length > 0) {
+      setErrorMessage(errors.join(' '))
       return
-    }
-
-    if (
-      formState.display_order === '' ||
-      Number.isNaN(Number(formState.display_order))
-    ) {
-      setErrorMessage('Display order is required.')
-      return
-    }
-
-    if (formState.block_type === 'cultural_break' && !formState.quote_text.trim()) {
-      setErrorMessage('Quote text is required for a cultural break.')
-      return
-    }
-
-    let parsedGatewayItems = []
-    if (formState.block_type === 'gateway_links') {
-      try {
-        parsedGatewayItems = JSON.parse(formState.gateway_items || '[]')
-        if (!Array.isArray(parsedGatewayItems) || parsedGatewayItems.length === 0) {
-          setErrorMessage('Gateway links require at least one item.')
-          return
-        }
-      } catch (error) {
-        setErrorMessage('Gateway items must be valid JSON.')
-        return
-      }
     }
 
     const payload = {
-      block_type: formState.block_type,
-      title: formState.title.trim(),
-      subtitle: formState.subtitle.trim(),
-      body: formState.body.trim(),
-      cta_label: formState.cta_label.trim(),
-      cta_href: formState.cta_href.trim(),
-      theme_variant: formState.theme_variant,
-      container_width: formState.container_width,
-      display_order: Number(formState.display_order),
+      ...buildPayload(formState, formState.block_type),
       is_published: true,
-      media_image_id: formState.media_image_id.trim(),
-      media_alt_text: formState.media_alt_text.trim(),
-      layout_variant: formState.layout_variant,
-      hof_selection_mode: formState.hof_selection_mode,
-      hof_items_count: Number(formState.hof_items_count),
-      hof_manual_item_ids: parseIdList(formState.hof_manual_item_ids),
-      hof_filter_tag: formState.hof_filter_tag.trim(),
-      hof_show_cta: formState.hof_show_cta,
-      hof_cta_label: formState.hof_cta_label.trim(),
-      hof_cta_href: formState.hof_cta_href.trim(),
-      news_source: formState.news_source,
-      news_feature_mode: formState.news_feature_mode,
-      news_featured_item_id: formState.news_featured_item_id.trim(),
-      news_list_count: Number(formState.news_list_count),
-      news_show_dates: formState.news_show_dates,
-      news_cta_label: formState.news_cta_label.trim(),
-      news_cta_href: formState.news_cta_href.trim(),
-      quote_text: formState.quote_text.trim(),
-      quote_author: formState.quote_author.trim(),
-      background_style: formState.background_style,
-      background_image_id: formState.background_image_id.trim(),
-      background_overlay_strength: formState.background_overlay_strength,
-      gateway_items:
-        formState.block_type === 'gateway_links' ? parsedGatewayItems : undefined,
-      gateway_columns_desktop: Number(formState.gateway_columns_desktop),
-      gateway_columns_tablet: Number(formState.gateway_columns_tablet),
-      gateway_columns_mobile: Number(formState.gateway_columns_mobile),
     }
 
-    const hasFile = Boolean(formState.media_image_file)
+    const hasFile =
+      formState.block_type === 'editorial_feature' &&
+      Boolean(formState.media_image_file)
     const formData = new FormData()
 
     if (hasFile) {
@@ -401,36 +376,40 @@ function AdminHomepageSectionsEditPage() {
               </FormField>
             </div>
 
-            <FormField label="Body" htmlFor="body">
-              <Textarea
-                id="body"
-                name="body"
-                value={formState.body}
-                onChange={handleChange}
-              />
-            </FormField>
+            {formState.block_type === 'editorial_feature' && (
+              <>
+                <FormField label="Body" htmlFor="body" required>
+                  <Textarea
+                    id="body"
+                    name="body"
+                    value={formState.body}
+                    onChange={handleChange}
+                  />
+                </FormField>
 
-            <div className="grid gap-5 md:grid-cols-2">
-              <FormField label="CTA label" htmlFor="cta_label">
-                <Input
-                  id="cta_label"
-                  name="cta_label"
-                  type="text"
-                  value={formState.cta_label}
-                  onChange={handleChange}
-                />
-              </FormField>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <FormField label="CTA label" htmlFor="cta_label">
+                    <Input
+                      id="cta_label"
+                      name="cta_label"
+                      type="text"
+                      value={formState.cta_label}
+                      onChange={handleChange}
+                    />
+                  </FormField>
 
-              <FormField label="CTA link" htmlFor="cta_href">
-                <Input
-                  id="cta_href"
-                  name="cta_href"
-                  type="text"
-                  value={formState.cta_href}
-                  onChange={handleChange}
-                />
-              </FormField>
-            </div>
+                  <FormField label="CTA link" htmlFor="cta_href">
+                    <Input
+                      id="cta_href"
+                      name="cta_href"
+                      type="text"
+                      value={formState.cta_href}
+                      onChange={handleChange}
+                    />
+                  </FormField>
+                </div>
+              </>
+            )}
 
             <div className="grid gap-5 md:grid-cols-3">
               <FormField label="Theme variant" htmlFor="theme_variant">
@@ -586,19 +565,29 @@ function AdminHomepageSectionsEditPage() {
                   </FormField>
                 </div>
 
-                <FormField
-                  label="Manual item IDs (comma separated)"
-                  htmlFor="hof_manual_item_ids"
-                >
-                  <Input
-                    id="hof_manual_item_ids"
-                    name="hof_manual_item_ids"
-                    type="text"
-                    value={formState.hof_manual_item_ids}
-                    onChange={handleChange}
-                    placeholder="uuid-1, uuid-2"
-                  />
-                </FormField>
+                {formState.hof_selection_mode === 'manual' && (
+                  <FormField
+                    label="Manual item IDs (comma separated)"
+                    htmlFor="hof_manual_item_ids"
+                  >
+                    <Input
+                      id="hof_manual_item_ids"
+                      name="hof_manual_item_ids"
+                      type="text"
+                      value={formState.hof_manual_item_ids.join(', ')}
+                      onChange={(event) =>
+                        setFormState((current) => ({
+                          ...current,
+                          hof_manual_item_ids: event.target.value
+                            .split(',')
+                            .map((item) => item.trim())
+                            .filter(Boolean),
+                        }))
+                      }
+                      placeholder="uuid-1, uuid-2"
+                    />
+                  </FormField>
+                )}
 
                 <div className="grid gap-5 md:grid-cols-2">
                   <FormField label="Show CTA" htmlFor="hof_show_cta">
@@ -617,26 +606,30 @@ function AdminHomepageSectionsEditPage() {
                     </div>
                   </FormField>
 
-                  <FormField label="CTA label" htmlFor="hof_cta_label">
+                  {formState.hof_show_cta && (
+                    <FormField label="CTA label" htmlFor="hof_cta_label">
+                      <Input
+                        id="hof_cta_label"
+                        name="hof_cta_label"
+                        type="text"
+                        value={formState.hof_cta_label}
+                        onChange={handleChange}
+                      />
+                    </FormField>
+                  )}
+                </div>
+
+                {formState.hof_show_cta && (
+                  <FormField label="CTA link" htmlFor="hof_cta_href">
                     <Input
-                      id="hof_cta_label"
-                      name="hof_cta_label"
+                      id="hof_cta_href"
+                      name="hof_cta_href"
                       type="text"
-                      value={formState.hof_cta_label}
+                      value={formState.hof_cta_href}
                       onChange={handleChange}
                     />
                   </FormField>
-                </div>
-
-                <FormField label="CTA link" htmlFor="hof_cta_href">
-                  <Input
-                    id="hof_cta_href"
-                    name="hof_cta_href"
-                    type="text"
-                    value={formState.hof_cta_href}
-                    onChange={handleChange}
-                  />
-                </FormField>
+                )}
               </div>
             )}
 
@@ -685,19 +678,21 @@ function AdminHomepageSectionsEditPage() {
                   </FormField>
                 </div>
 
-                <FormField
-                  label="Featured item ID"
-                  htmlFor="news_featured_item_id"
-                >
-                  <Input
-                    id="news_featured_item_id"
-                    name="news_featured_item_id"
-                    type="text"
-                    value={formState.news_featured_item_id}
-                    onChange={handleChange}
-                    placeholder="uuid"
-                  />
-                </FormField>
+                {formState.news_feature_mode === 'manual' && (
+                  <FormField
+                    label="Featured item ID"
+                    htmlFor="news_featured_item_id"
+                  >
+                    <Input
+                      id="news_featured_item_id"
+                      name="news_featured_item_id"
+                      type="text"
+                      value={formState.news_featured_item_id}
+                      onChange={handleChange}
+                      placeholder="uuid"
+                    />
+                  </FormField>
+                )}
 
                 <div className="grid gap-5 md:grid-cols-2">
                   <FormField label="Show dates" htmlFor="news_show_dates">
@@ -797,15 +792,20 @@ function AdminHomepageSectionsEditPage() {
                     </Select>
                   </FormField>
 
-                  <FormField label="Background image URL" htmlFor="background_image_id">
-                    <Input
-                      id="background_image_id"
-                      name="background_image_id"
-                      type="text"
-                      value={formState.background_image_id}
-                      onChange={handleChange}
-                    />
-                  </FormField>
+                  {formState.background_style === 'image' && (
+                    <FormField
+                      label="Background image URL"
+                      htmlFor="background_image_id"
+                    >
+                      <Input
+                        id="background_image_id"
+                        name="background_image_id"
+                        type="text"
+                        value={formState.background_image_id}
+                        onChange={handleChange}
+                      />
+                    </FormField>
+                  )}
                 </div>
               </div>
             )}
@@ -815,20 +815,13 @@ function AdminHomepageSectionsEditPage() {
                 <p className="text-sm font-medium text-foreground">
                   Gateway Links Settings
                 </p>
-                <FormField
-                  label="Gateway items (JSON array)"
-                  htmlFor="gateway_items"
-                  required
-                >
-                  <Textarea
-                    id="gateway_items"
-                    name="gateway_items"
-                    value={formState.gateway_items}
-                    onChange={handleChange}
-                    rows={6}
-                    required
-                  />
-                </FormField>
+
+                <GatewayCardsManager
+                  items={formState.gateway_items}
+                  onChange={(items) =>
+                    setFormState((current) => ({ ...current, gateway_items: items }))
+                  }
+                />
 
                 <div className="grid gap-5 md:grid-cols-3">
                   <FormField
