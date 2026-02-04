@@ -241,7 +241,7 @@ function AdminLayout() {
               to="/admin/homepage-sections"
               end
             >
-              Homepage Sections
+              Homepage Settings
             </NavLink>
             <NavLink
               className={({ isActive }) =>

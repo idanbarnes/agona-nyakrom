@@ -1,3 +1,4 @@
+// Public homepage blocks are rendered here from GET /api/public/homepage; admin controls blocks via /admin/homepage-sections.
 import { useEffect, useMemo, useState } from 'react'
 import { getCarousel, getHomepage } from '../api/endpoints.js'
 import {
@@ -129,6 +130,75 @@ function selectItemImage(item) {
   )
 }
 
+const BLOCK_VARIANT_CLASSES = {
+  default: 'bg-background',
+  muted: 'bg-muted/40',
+  accent: 'bg-accent/20',
+  image_bg: 'bg-muted/30',
+}
+
+const CONTAINER_WIDTH_CLASSES = {
+  standard: 'container',
+  wide: 'mx-auto w-full max-w-6xl px-4 md:px-6',
+  full_bleed: 'w-full px-4 md:px-10',
+}
+
+const GATEWAY_GRID_MOBILE = {
+  1: 'grid-cols-1',
+  2: 'grid-cols-2',
+  3: 'grid-cols-3',
+  4: 'grid-cols-4',
+}
+
+const GATEWAY_GRID_TABLET = {
+  1: 'md:grid-cols-1',
+  2: 'md:grid-cols-2',
+  3: 'md:grid-cols-3',
+  4: 'md:grid-cols-4',
+}
+
+const GATEWAY_GRID_DESKTOP = {
+  1: 'lg:grid-cols-1',
+  2: 'lg:grid-cols-2',
+  3: 'lg:grid-cols-3',
+  4: 'lg:grid-cols-4',
+}
+
+function formatDate(value) {
+  if (!value) {
+    return ''
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return String(value)
+  }
+
+  return date.toLocaleDateString()
+}
+
+function resolveGatewayIcon(item) {
+  if (!item) {
+    return '➜'
+  }
+
+  const key = item.icon_key || item.iconKey || ''
+  const normalized = String(key).toLowerCase()
+  const mapping = {
+    history: '🏛️',
+    clans: '🧬',
+    clan: '🧬',
+    asafo: '🛡️',
+    obituaries: '🕊️',
+    hall_of_fame: '🏆',
+    hall: '🏆',
+    news: '📰',
+    updates: '📰',
+  }
+
+  return mapping[normalized] || item.badge || '➜'
+}
+
 function Home() {
   const [homepage, setHomepage] = useState(null)
   const [slides, setSlides] = useState([])
@@ -231,6 +301,11 @@ function Home() {
       []
 
     return Array.isArray(rawSections) ? rawSections : []
+  }, [homepage])
+
+  const blocks = useMemo(() => {
+    const rawBlocks = homepage?.blocks || homepage?.homepageBlocks || []
+    return Array.isArray(rawBlocks) ? rawBlocks : []
   }, [homepage])
 
   const featuredBlocks = useMemo(() => {
@@ -460,7 +535,408 @@ function Home() {
         </section>
       )}
 
-      {sections.length > 0 && (
+      {blocks.length > 0 && (
+        <section className="space-y-0">
+          {blocks.map((block) => {
+            const variantClass =
+              BLOCK_VARIANT_CLASSES[block.theme_variant] ||
+              BLOCK_VARIANT_CLASSES.default
+            const containerClass =
+              CONTAINER_WIDTH_CLASSES[block.container_width] ||
+              CONTAINER_WIDTH_CLASSES.standard
+
+            const sectionTitle = pickFirstString(block.title, '')
+            const sectionSubtitle = pickFirstString(block.subtitle, '')
+            const sectionBody = pickFirstString(block.body, '')
+            const ctaLabel = pickFirstString(block.cta_label, '')
+            const ctaHref = pickFirstString(block.cta_href, '')
+
+            if (block.block_type === 'editorial_feature') {
+              const imageUrl = block.media_image_id
+                ? resolveAssetUrl(block.media_image_id)
+                : ''
+              const hasImage = Boolean(imageUrl) && block.layout_variant !== 'text_only'
+              const imagePositionClass =
+                block.layout_variant === 'image_left'
+                  ? 'lg:flex-row-reverse'
+                  : 'lg:flex-row'
+
+              return (
+                <section
+                  key={block.id}
+                  className={`${variantClass} py-10 md:py-16`}
+                >
+                  <div className={containerClass}>
+                    <div
+                      className={`flex flex-col gap-8 ${imagePositionClass} ${
+                        hasImage ? 'lg:items-center' : ''
+                      }`}
+                    >
+                      <div className="flex-1 space-y-4">
+                        <div className="space-y-2">
+                          <h2 className="text-2xl font-semibold break-words md:text-3xl">
+                            {sectionTitle || 'Editorial Feature'}
+                          </h2>
+                          {sectionSubtitle && (
+                            <p className="text-sm text-muted-foreground md:text-base">
+                              {sectionSubtitle}
+                            </p>
+                          )}
+                        </div>
+                        {sectionBody && (
+                          <p className="text-sm text-muted-foreground md:text-base">
+                            {sectionBody}
+                          </p>
+                        )}
+                        {ctaLabel && ctaHref && (
+                          <Button as="a" href={ctaHref} variant="primary">
+                            {ctaLabel}
+                          </Button>
+                        )}
+                      </div>
+                      {hasImage && (
+                        <div className="flex-1">
+                          <div className="aspect-[4/3] w-full overflow-hidden rounded-2xl border border-border bg-muted/30">
+                            <ImageWithFallback
+                              src={imageUrl}
+                              alt={block.media_alt_text || sectionTitle || 'Editorial image'}
+                              fallbackText="No image"
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </section>
+              )
+            }
+
+            if (block.block_type === 'hall_of_fame_spotlight') {
+              const items = Array.isArray(block.hof_items) ? block.hof_items : []
+              const showCta = block.hof_show_cta !== false
+
+              return (
+                <section key={block.id} className={`${variantClass} py-10 md:py-16`}>
+                  <div className={containerClass}>
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                      <div>
+                        <h2 className="text-2xl font-semibold break-words md:text-3xl">
+                          {sectionTitle || 'Hall of Fame'}
+                        </h2>
+                        {sectionSubtitle && (
+                          <p className="mt-2 text-sm text-muted-foreground md:text-base">
+                            {sectionSubtitle}
+                          </p>
+                        )}
+                      </div>
+                      {showCta && (
+                        <Button
+                          as="a"
+                          href={block.hof_cta_href || '/hall-of-fame'}
+                          variant="ghost"
+                        >
+                          {block.hof_cta_label || 'View Hall of Fame'}
+                        </Button>
+                      )}
+                    </div>
+                    <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {items.map((item, index) => {
+                        const imagePath = selectItemImage(item)
+                        const imageUrl = imagePath ? resolveAssetUrl(imagePath) : ''
+                        return (
+                          <a
+                            key={item?.id || item?.href || index}
+                            href={item?.href || '/hall-of-fame'}
+                            className="group rounded-2xl border border-border bg-surface/90 shadow-sm transition hover:-translate-y-1 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <div className="aspect-[4/3] w-full overflow-hidden rounded-2xl bg-muted/40">
+                              {imageUrl ? (
+                                <ImageWithFallback
+                                  src={imageUrl}
+                                  alt={item?.name || item?.title || 'Hall of Fame entry'}
+                                  fallbackText="No image"
+                                  className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                                />
+                              ) : (
+                                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                                  No image
+                                </div>
+                              )}
+                            </div>
+                            <div className="space-y-1 p-4">
+                              <p className="text-sm font-semibold text-foreground">
+                                {item?.name || item?.title || 'Honoree'}
+                              </p>
+                              {item?.label && (
+                                <p className="text-xs text-muted-foreground">
+                                  {item.label}
+                                </p>
+                              )}
+                            </div>
+                          </a>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </section>
+              )
+            }
+
+            if (block.block_type === 'news_highlight') {
+              const featured = block.news_featured_item
+              const items = Array.isArray(block.news_items) ? block.news_items : []
+              const featuredImage = selectItemImage(featured)
+              const featuredImageUrl = featuredImage
+                ? resolveAssetUrl(featuredImage)
+                : ''
+
+              return (
+                <section key={block.id} className={`${variantClass} py-10 md:py-16`}>
+                  <div className={containerClass}>
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                      <div>
+                        <h2 className="text-2xl font-semibold break-words md:text-3xl">
+                          {sectionTitle || 'News & Announcements'}
+                        </h2>
+                        {sectionSubtitle && (
+                          <p className="mt-2 text-sm text-muted-foreground md:text-base">
+                            {sectionSubtitle}
+                          </p>
+                        )}
+                      </div>
+                      {(block.news_cta_label || block.news_cta_href) && (
+                        <Button
+                          as="a"
+                          href={block.news_cta_href || '/updates'}
+                          variant="ghost"
+                        >
+                          {block.news_cta_label || 'View Updates'}
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,_1.1fr)_minmax(0,_0.9fr)]">
+                      <Card className="overflow-hidden border border-border/70 bg-surface/90">
+                        {featuredImageUrl ? (
+                          <div className="aspect-[16/9] w-full overflow-hidden bg-muted/40">
+                            <ImageWithFallback
+                              src={featuredImageUrl}
+                              alt={featured?.title || 'Featured news'}
+                              fallbackText="No image"
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex h-[200px] items-center justify-center bg-muted/30 text-sm text-muted-foreground">
+                            No image available
+                          </div>
+                        )}
+                        <CardContent className="space-y-2">
+                          {block.news_show_dates && featured?.published_at && (
+                            <p className="text-xs text-muted-foreground">
+                              {formatDate(featured.published_at)}
+                            </p>
+                          )}
+                          <h3 className="text-lg font-semibold break-words">
+                            {featured?.title || 'Latest update'}
+                          </h3>
+                          {featured?.excerpt && (
+                            <p className="text-sm text-muted-foreground">
+                              {featured.excerpt}
+                            </p>
+                          )}
+                          {featured?.href && (
+                            <Button as="a" href={featured.href} variant="secondary">
+                              Read more
+                            </Button>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      <div className="space-y-4">
+                        {items.map((item, index) => (
+                          <a
+                            key={item?.id || item?.href || index}
+                            href={item?.href || '/news'}
+                            className="flex items-start justify-between gap-4 rounded-xl border border-border/60 bg-surface/80 px-4 py-3 text-sm transition hover:border-primary/40 hover:bg-surface/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <div>
+                              <p className="font-medium text-foreground">
+                                {item?.title || 'Update'}
+                              </p>
+                              {block.news_show_dates && (
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  {formatDate(item?.published_at)}
+                                </p>
+                              )}
+                            </div>
+                            <span className="text-muted-foreground">→</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              )
+            }
+
+            if (block.block_type === 'cultural_break') {
+              const backgroundImage = block.background_image_id
+                ? resolveAssetUrl(block.background_image_id)
+                : ''
+              const overlayStrength = block.background_overlay_strength || 'medium'
+              const overlayClass =
+                overlayStrength === 'high'
+                  ? 'bg-black/60'
+                  : overlayStrength === 'low'
+                    ? 'bg-black/25'
+                    : 'bg-black/40'
+
+              const backgroundClass =
+                block.background_style === 'gradient'
+                  ? 'bg-gradient-to-r from-primary/10 via-primary/20 to-primary/5'
+                  : 'bg-muted/50'
+
+              return (
+                <section key={block.id} className="py-10 md:py-16">
+                  <div className={containerClass}>
+                    <div
+                      className={`relative overflow-hidden rounded-3xl border border-border/60 ${
+                        block.background_style === 'image' && backgroundImage
+                          ? 'bg-cover bg-center'
+                          : backgroundClass
+                      }`}
+                      style={
+                        block.background_style === 'image' && backgroundImage
+                          ? { backgroundImage: `url(${backgroundImage})` }
+                          : undefined
+                      }
+                    >
+                      {block.background_style === 'image' && backgroundImage && (
+                        <div className={`absolute inset-0 ${overlayClass}`} />
+                      )}
+                      <div
+                        className={`relative space-y-4 px-6 py-10 text-center md:px-12 md:py-14 ${
+                          block.background_style === 'image' ? 'text-white' : 'text-foreground'
+                        }`}
+                      >
+                        <p className="text-xl font-semibold md:text-3xl">
+                          “{block.quote_text}”
+                        </p>
+                        {block.quote_author && (
+                          <p
+                            className={`text-sm md:text-base ${
+                              block.background_style === 'image'
+                                ? 'text-white/80'
+                                : 'text-muted-foreground'
+                            }`}
+                          >
+                            — {block.quote_author}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              )
+            }
+
+            if (block.block_type === 'gateway_links') {
+              const items = Array.isArray(block.gateway_items)
+                ? block.gateway_items
+                : []
+              const mobileClass =
+                GATEWAY_GRID_MOBILE[block.gateway_columns_mobile] ||
+                GATEWAY_GRID_MOBILE[1]
+              const tabletClass =
+                GATEWAY_GRID_TABLET[block.gateway_columns_tablet] ||
+                GATEWAY_GRID_TABLET[2]
+              const desktopClass =
+                GATEWAY_GRID_DESKTOP[block.gateway_columns_desktop] ||
+                GATEWAY_GRID_DESKTOP[3]
+
+              return (
+                <section key={block.id} className={`${variantClass} py-10 md:py-16`}>
+                  <div className={containerClass}>
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                      <div>
+                        <h2 className="text-2xl font-semibold break-words md:text-3xl">
+                          {sectionTitle || 'Explore Nyakrom'}
+                        </h2>
+                        {sectionSubtitle && (
+                          <p className="mt-2 text-sm text-muted-foreground md:text-base">
+                            {sectionSubtitle}
+                          </p>
+                        )}
+                      </div>
+                      {ctaLabel && ctaHref && (
+                        <Button as="a" href={ctaHref} variant="ghost">
+                          {ctaLabel}
+                        </Button>
+                      )}
+                    </div>
+
+                    <div
+                      className={`mt-6 grid gap-4 ${mobileClass} ${tabletClass} ${desktopClass}`}
+                    >
+                      {items.map((item, index) => {
+                        const imageUrl = item?.image_id
+                          ? resolveAssetUrl(item.image_id)
+                          : ''
+                        return (
+                          <a
+                            key={item?.href || index}
+                            href={item?.href || '#'}
+                            className="group flex h-full flex-col justify-between rounded-2xl border border-border/60 bg-surface/90 p-4 transition hover:-translate-y-1 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-xl">
+                                {imageUrl ? (
+                                  <ImageWithFallback
+                                    src={imageUrl}
+                                    alt={item?.label || 'Gateway link'}
+                                    fallbackText=""
+                                    className="h-full w-full rounded-xl object-cover"
+                                  />
+                                ) : (
+                                  <span>{resolveGatewayIcon(item)}</span>
+                                )}
+                              </div>
+                              {item?.badge && (
+                                <span className="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
+                                  {item.badge}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-4 space-y-1">
+                              <p className="text-sm font-semibold text-foreground">
+                                {item?.label || 'Explore'}
+                              </p>
+                              {item?.description && (
+                                <p className="text-xs text-muted-foreground">
+                                  {item.description}
+                                </p>
+                              )}
+                            </div>
+                            <div className="mt-4 text-xs font-medium text-primary transition group-hover:translate-x-1">
+                              Learn more →
+                            </div>
+                          </a>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </section>
+              )
+            }
+
+            return null
+          })}
+        </section>
+      )}
+
+      {blocks.length === 0 && sections.length > 0 && (
         <section className="space-y-8 md:space-y-12">
           {sections.map((section, index) => {
             const sectionTitle = pickFirstString(

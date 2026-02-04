@@ -25,6 +25,7 @@ const landmarkAdminRoutes = require('./src/routes/admin/landmarkAdminRoutes');
 const carouselAdminRoutes = require('./src/routes/admin/carouselAdminRoutes');
 const adminGlobalSettingsRoutes = require('./src/routes/admin/globalSettingsRoutes');
 const homepageSectionAdminRoutes = require('./src/routes/admin/homepageSectionAdminRoutes');
+const homepageBlockAdminRoutes = require('./src/routes/admin/homepageBlockAdminRoutes');
 const historyPageAdminRoutes = require('./src/routes/admin/historyPageRoutes');
 
 // for handling public endpoints routing
@@ -66,6 +67,7 @@ app.use('/api/admin/landmarks', landmarkAdminRoutes);
 app.use('/api/admin/carousel', carouselAdminRoutes);
 app.use('/api/admin/global-settings', adminGlobalSettingsRoutes);
 app.use('/api/admin/homepage-sections', homepageSectionAdminRoutes);
+app.use('/api/admin/homepage-blocks', homepageBlockAdminRoutes);
 app.use('/api/admin/history', historyPageAdminRoutes);
 
 //for handling public endpoints (registerd)
