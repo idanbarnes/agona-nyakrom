@@ -723,68 +723,70 @@ function Home() {
                 )}
               </div>
             </div>
-            <nav
-              aria-label="Carousel controls"
-              className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4 md:px-6"
-            >
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() =>
-                  setActiveSlide((prev) =>
-                    slides.length ? (prev - 1 + slides.length) % slides.length : 0,
-                  )
-                }
-                disabled={slides.length < 2}
-                className="group h-12 w-12 rounded-full border border-white/40 bg-black/35 text-white shadow-lg shadow-black/25 backdrop-blur transition hover:bg-black/55 disabled:cursor-not-allowed disabled:opacity-40"
-                aria-label="Previous slide"
+            <div className="pointer-events-none absolute inset-x-0 bottom-2 z-20 px-3 md:bottom-4 md:px-5 lg:bottom-5">
+              <nav
+                aria-label="Carousel controls"
+                className="mx-auto flex w-full max-w-xs items-center justify-between gap-2 rounded-full border border-white/15 bg-black/15 px-2 py-1.5 shadow-md shadow-black/15 backdrop-blur-sm md:max-w-sm md:gap-3 md:bg-black/20 md:px-3"
               >
-                <span
-                  aria-hidden="true"
-                  className="text-xl transition group-hover:-translate-x-0.5"
-                >
-                  &lt;
-                </span>
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() =>
-                  setActiveSlide((prev) =>
-                    slides.length ? (prev + 1) % slides.length : 0,
-                  )
-                }
-                disabled={slides.length < 2}
-                className="group h-12 w-12 rounded-full border border-white/40 bg-black/35 text-white shadow-lg shadow-black/25 backdrop-blur transition hover:bg-black/55 disabled:cursor-not-allowed disabled:opacity-40"
-                aria-label="Next slide"
-              >
-                <span
-                  aria-hidden="true"
-                  className="text-xl transition group-hover:translate-x-0.5"
-                >
-                  &gt;
-                </span>
-              </Button>
-            </nav>
-            <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-full border border-white/20 bg-black/35 px-4 py-2 backdrop-blur">
-              {slides.map((slide, index) => (
-                <button
-                  key={slide?.id || slide?.slug || index}
+                <Button
                   type="button"
-                  onClick={() => setActiveSlide(index)}
-                  className="flex h-6 w-10 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/40"
-                  aria-label={`Go to slide ${index + 1}`}
-                  aria-current={index === activeSlide ? 'true' : undefined}
+                  variant="ghost"
+                  size="icon"
+                  onClick={() =>
+                    setActiveSlide((prev) =>
+                      slides.length ? (prev - 1 + slides.length) % slides.length : 0,
+                    )
+                  }
+                  disabled={slides.length < 2}
+                  className="pointer-events-auto group h-9 w-9 rounded-full border border-white/35 bg-black/20 text-white shadow shadow-black/20 backdrop-blur-sm transition hover:bg-black/40 disabled:cursor-not-allowed disabled:opacity-40 md:h-10 md:w-10"
+                  aria-label="Previous slide"
                 >
                   <span
-                    className={`h-2 w-full rounded-full transition ${
-                      index === activeSlide ? 'bg-white' : 'bg-white/50'
-                    }`}
-                  />
-                </button>
-              ))}
+                    aria-hidden="true"
+                    className="text-base transition group-hover:-translate-x-0.5 md:text-lg"
+                  >
+                    &lt;
+                  </span>
+                </Button>
+                <div className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-white/15 bg-black/20 px-2.5 py-1 md:gap-2 md:px-3 md:py-1.5">
+                  {slides.map((slide, index) => (
+                    <button
+                      key={slide?.id || slide?.slug || index}
+                      type="button"
+                      onClick={() => setActiveSlide(index)}
+                      className="flex h-5 w-7 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/40 md:h-5 md:w-8"
+                      aria-label={`Go to slide ${index + 1}`}
+                      aria-current={index === activeSlide ? 'true' : undefined}
+                    >
+                      <span
+                        className={`h-1.5 w-full rounded-full transition ${
+                          index === activeSlide ? 'bg-white' : 'bg-white/55'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() =>
+                    setActiveSlide((prev) =>
+                      slides.length ? (prev + 1) % slides.length : 0,
+                    )
+                  }
+                  disabled={slides.length < 2}
+                  className="pointer-events-auto group h-9 w-9 rounded-full border border-white/35 bg-black/20 text-white shadow shadow-black/20 backdrop-blur-sm transition hover:bg-black/40 disabled:cursor-not-allowed disabled:opacity-40 md:h-10 md:w-10"
+                  aria-label="Next slide"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="text-base transition group-hover:translate-x-0.5 md:text-lg"
+                  >
+                    &gt;
+                  </span>
+                </Button>
+              </nav>
             </div>
           </article>
         )}
