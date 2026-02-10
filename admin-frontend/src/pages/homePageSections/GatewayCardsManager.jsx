@@ -222,7 +222,7 @@ function GatewayCardsManager({ items, onChange }) {
                 onChange={(event) => updateDraft('href', event.target.value)}
               >
                 {internalOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
+                  <option key={`${option.value}-${option.label}`} value={option.value}>
                     {option.label}
                   </option>
                 ))}

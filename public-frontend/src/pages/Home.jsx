@@ -406,8 +406,11 @@ function resolveGatewayIcon(item) {
     obituaries: '🕊️',
     hall_of_fame: '🏆',
     hall: '🏆',
+    landmarks: '📍',
     news: '📰',
     updates: '📰',
+    announcements: '📣',
+    events: '📅',
   }
 
   return mapping[normalized] || item.badge || '➜'

@@ -4,8 +4,11 @@ const INTERNAL_LINK_OPTIONS = [
   { value: '/asafo-companies', label: 'Asafo Companies' },
   { value: '/obituaries', label: 'Obituaries' },
   { value: '/hall-of-fame', label: 'Hall of Fame' },
+  { value: '/landmarks', label: 'Landmarks' },
   { value: '/news', label: 'News' },
-  { value: '/updates', label: 'Updates' },
+  { value: '/news', label: 'Updates' },
+  { value: '/announcements-events', label: 'Announcements' },
+  { value: '/announcements-events', label: 'Events' },
 ]
 
 export const ICON_KEY_OPTIONS = [
@@ -15,8 +18,11 @@ export const ICON_KEY_OPTIONS = [
   { value: 'asafo', label: 'Asafo Companies' },
   { value: 'obituaries', label: 'Obituaries' },
   { value: 'hall_of_fame', label: 'Hall of Fame' },
+  { value: 'landmarks', label: 'Landmarks' },
   { value: 'news', label: 'News' },
   { value: 'updates', label: 'Updates' },
+  { value: 'announcements', label: 'Announcements' },
+  { value: 'events', label: 'Events' },
 ]
 
 export const COMMON_FIELDS = [

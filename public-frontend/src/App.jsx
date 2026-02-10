@@ -31,6 +31,7 @@ function App() {
           {/* <Route element={<DevApiTest />} /> Dev-only API test component */}
           <Route index element={<Home />} />
           <Route path="news" element={<NewsList />} />
+          <Route path="updates" element={<NewsList />} />
           <Route path="news/:slug" element={<NewsDetail />} />
           <Route path="obituaries" element={<ObituaryList />} />
           <Route path="obituaries/:slug" element={<ObituaryDetail />} />
