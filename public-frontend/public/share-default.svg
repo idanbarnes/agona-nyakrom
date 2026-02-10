@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#e9f0f6" />
+      <stop offset="100%" stop-color="#d8e5f2" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <rect x="80" y="80" width="1040" height="470" rx="28" fill="#ffffff" opacity="0.92" />
+  <circle cx="200" cy="220" r="52" fill="#2b4b6f" opacity="0.12" />
+  <circle cx="260" cy="200" r="26" fill="#2b4b6f" opacity="0.2" />
+  <text x="160" y="360" font-family="Arial, sans-serif" font-size="52" fill="#1f2a38">
+    Agona Nyakrom
+  </text>
+  <text x="160" y="420" font-family="Arial, sans-serif" font-size="28" fill="#516173">
+    Community Updates & Events
+  </text>
+</svg>

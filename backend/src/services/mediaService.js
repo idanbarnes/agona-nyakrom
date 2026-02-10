@@ -17,6 +17,8 @@ const SECTION_DIRS = {
   carousel: 'carousel',
   history: 'history',
   homepage: 'homepage',
+  events: 'events',
+  announcements: 'announcements',
 };
 
 const variants = [

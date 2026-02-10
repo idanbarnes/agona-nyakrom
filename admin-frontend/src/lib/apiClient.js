@@ -17,6 +17,10 @@ function buildUrl(path) {
   return `${base}${normalizedPath}`
 }
 
+export function buildApiUrl(path) {
+  return buildUrl(path)
+}
+
 export async function apiRequest(path, options = {}) {
   const { method = 'GET', body } = options
   const headers = {
@@ -54,7 +58,9 @@ export async function apiRequest(path, options = {}) {
   }
 
   if (!response.ok || !payload?.success) {
-    throw new Error(payload?.message || 'Request failed.')
+    const error = new Error(payload?.message || 'Request failed.')
+    error.status = response.status
+    throw error
   }
 
   return payload.data
@@ -62,4 +68,42 @@ export async function apiRequest(path, options = {}) {
 
 export function postJson(path, body) {
   return apiRequest(path, { method: 'POST', body })
+}
+
+export async function apiRequestFormData(path, formData, options = {}) {
+  const { method = 'POST' } = options
+  const headers = {
+    Accept: 'application/json',
+  }
+
+  const token = getAuthToken()
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  let response
+  try {
+    response = await fetch(buildUrl(path), {
+      method,
+      headers,
+      body: formData,
+    })
+  } catch (error) {
+    throw new Error('Unable to reach the server. Please try again.')
+  }
+
+  let payload
+  try {
+    payload = await response.json()
+  } catch (error) {
+    throw new Error('Unexpected server response.')
+  }
+
+  if (!response.ok || !payload?.success) {
+    const error = new Error(payload?.message || 'Request failed.')
+    error.status = response.status
+    throw error
+  }
+
+  return payload.data ?? payload
 }

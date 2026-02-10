@@ -90,6 +90,14 @@ const mapBlock = (row) => {
   };
 };
 
+const serializeForDb = (key, value) => {
+  if (key === 'gateway_items') {
+    return JSON.stringify(Array.isArray(value) ? value : []);
+  }
+
+  return value;
+};
+
 const create = async (data) => {
   const cleanedEntries = Object.entries(data).filter(
     ([, value]) => value !== undefined && value !== null
@@ -100,7 +108,7 @@ const create = async (data) => {
   }
 
   const columns = cleanedEntries.map(([key]) => key);
-  const values = cleanedEntries.map(([, value]) => value);
+  const values = cleanedEntries.map(([key, value]) => serializeForDb(key, value));
   const placeholders = values.map((_, index) => `$${index + 1}`).join(', ');
 
   const query = `
@@ -176,7 +184,7 @@ const update = async (id, data) => {
       return;
     }
 
-    setField(column, value);
+    setField(column, serializeForDb(key, value));
   });
 
   if (!fields.length) {

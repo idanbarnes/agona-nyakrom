@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Layout from './layouts/Layout.jsx'
+import ScrollToTop from './components/ScrollToTop.jsx'
 import Home from './pages/Home.jsx'
 import NewsList from './pages/news/NewsList.jsx'
 import NewsDetail from './pages/news/NewsDetail.jsx'
@@ -15,12 +16,16 @@ import Contact from './pages/Contact.jsx'
 import LandmarksList from './pages/landmarks/LandmarksList.jsx'
 import LandmarksDetail from './pages/landmarks/LandmarksDetail.jsx'
 import History from './pages/about/History.jsx'
+import AnnouncementsEventsPage from './pages/AnnouncementsEventsPage.jsx'
+import EventDetail from './pages/events/EventDetail.jsx'
+import AnnouncementDetail from './pages/announcements/AnnouncementDetail.jsx'
 import NotFound from './pages/NotFound.jsx'
 // import DevApiTest from './dev/DevApiTest.jsx' //For Dev-only API test component
 
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Layout />}>
           {/* <Route element={<DevApiTest />} /> Dev-only API test component */}
@@ -37,7 +42,13 @@ function App() {
           <Route path="hall-of-fame/:slug" element={<HallOfFameDetail />} />
           <Route path="landmarks" element={<LandmarksList />} />
           <Route path="landmarks/:slug" element={<LandmarksDetail />} />
-          <Route path="about/history" element={<History />} />
+          <Route path="history" element={<History />} />
+          <Route
+            path="announcements-events"
+            element={<AnnouncementsEventsPage />}
+          />
+          <Route path="events/:slug" element={<EventDetail />} />
+          <Route path="announcements/:slug" element={<AnnouncementDetail />} />
           <Route path="contact" element={<Contact />} />
           <Route path="*" element={<NotFound />} />
         </Route>

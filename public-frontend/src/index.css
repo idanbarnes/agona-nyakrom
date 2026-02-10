@@ -7,21 +7,21 @@
    Design Tokens (CSS Vars)
    ========================= */
 :root {
-  --background: 28 60% 97%;
-  --foreground: 222 35% 16%;
+  --background: 38 44% 96%;
+  --foreground: 210 24% 16%;
   --surface: 0 0% 100%;
-  --surface-foreground: 222 35% 16%;
-  --muted: 28 35% 92%;
-  --muted-foreground: 215 18% 38%;
-  --border: 28 28% 86%;
-  --primary: 24 80% 52%;
+  --surface-foreground: 210 24% 16%;
+  --muted: 33 29% 87%;
+  --muted-foreground: 220 9% 46%;
+  --border: 33 29% 87%;
+  --primary: 32 95% 44%;
   --primary-foreground: 0 0% 100%;
-  --accent: 190 70% 40%;
-  --accent-foreground: 0 0% 100%;
+  --accent: 33 91% 91%;
+  --accent-foreground: 210 24% 16%;
   --danger: 0 84% 60%;
   --warning: 36 92% 50%;
   --success: 148 60% 42%;
-  --ring: 24 80% 52%;
+  --ring: 32 95% 44%;
   --radius: 0.75rem;
 }
 

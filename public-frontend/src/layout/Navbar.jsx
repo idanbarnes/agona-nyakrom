@@ -4,13 +4,14 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 // Shared nav items for desktop and mobile menus.
 const navItems = [
   { label: 'Home', to: '/' },
-  { label: 'History', to: '/about/history' },
+  { label: 'History', to: '/history' },
   { label: 'Clans', to: '/clans' },
   { label: 'Asafo Companies', to: '/asafo-companies' },
   { label: 'Hall of Fame', to: '/hall-of-fame' },
   { label: 'Landmarks', to: '/landmarks' },
   { label: 'Obituaries', to: '/obituaries' },
   { label: 'News', to: '/news' },
+  { label: 'Announcements & Events', to: '/announcements-events' },
   { label: 'Contact Us', to: '/contact' },
 ]
 

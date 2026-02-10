@@ -206,8 +206,13 @@ function NewsList() {
                   </CardContent>
                   <CardFooter className="justify-start">
                     {slug ? (
-                      <Button asChild variant="ghost" size="sm">
-                        <Link to={`/news/${slug}`}>Read more</Link>
+                      <Button
+                        as={Link}
+                        to={`/news/${slug}`}
+                        variant="ghost"
+                        size="sm"
+                      >
+                        Read more
                       </Button>
                     ) : null}
                   </CardFooter>

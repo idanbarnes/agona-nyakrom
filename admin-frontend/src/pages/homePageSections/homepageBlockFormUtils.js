@@ -311,7 +311,7 @@ export const validateByType = (formState, blockType) => {
         if (!item.label || !item.href) {
           errors.push(`Gateway card ${index + 1} requires a label and link.`)
         }
-        if (!/^https?:\\/\\//.test(item.href) && !item.href.startsWith('/')) {
+        if (!/^https?:\/\//.test(item.href) && !item.href.startsWith('/')) {
           errors.push(`Gateway card ${index + 1} link must start with / or http(s).`)
         }
       })

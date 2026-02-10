@@ -361,7 +361,7 @@ const createHomepageBlock = async (req, res) => {
     if (err.message === 'No fields provided to create.') {
       return error(res, err.message, 400);
     }
-    if (err.message.includes('JSON')) {
+    if (err.message.toLowerCase().includes('json')) {
       return error(res, 'Invalid gateway_items JSON payload.', 400);
     }
     return error(res, 'Failed to create homepage block', 500);
@@ -403,7 +403,7 @@ const updateHomepageBlock = async (req, res) => {
     if (err.message === 'No fields provided to update.') {
       return error(res, err.message, 400);
     }
-    if (err.message.includes('JSON')) {
+    if (err.message.toLowerCase().includes('json')) {
       return error(res, 'Invalid gateway_items JSON payload.', 400);
     }
     return error(res, 'Failed to update homepage block', 500);

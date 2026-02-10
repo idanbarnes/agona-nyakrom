@@ -168,6 +168,34 @@ function AdminLayout() {
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent',
                 ].join(' ')
               }
+              to="/admin/events"
+              end
+            >
+              Events
+            </NavLink>
+            <NavLink
+              className={({ isActive }) =>
+                [
+                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-accent text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
+                ].join(' ')
+              }
+              to="/admin/announcements"
+              end
+            >
+              Announcements
+            </NavLink>
+            <NavLink
+              className={({ isActive }) =>
+                [
+                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-accent text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
+                ].join(' ')
+              }
               to="/admin/obituaries"
               end
             >

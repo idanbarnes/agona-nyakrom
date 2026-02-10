@@ -67,3 +67,65 @@ export const getCarousel = () => request('/api/public/carousel')
 
 // History endpoints.
 export const getHistory = () => request('/api/public/history')
+
+// Announcements & Events endpoints.
+export const getAnnouncementsEvents = (params = {}) => {
+  const query = new URLSearchParams()
+  if (params.events_limit !== undefined) {
+    query.set('events_limit', params.events_limit)
+  }
+  if (params.coming_soon_limit !== undefined) {
+    query.set('coming_soon_limit', params.coming_soon_limit)
+  }
+  if (params.upcoming_limit !== undefined) {
+    query.set('upcoming_limit', params.upcoming_limit)
+  }
+  if (params.past_limit !== undefined) {
+    query.set('past_limit', params.past_limit)
+  }
+  if (params.announcements_limit !== undefined) {
+    query.set('announcements_limit', params.announcements_limit)
+  }
+
+  const queryString = query.toString()
+  return request(
+    `/api/public/announcements-events${queryString ? `?${queryString}` : ''}`,
+  )
+}
+
+export const getPublicEvents = (params = {}) => {
+  const query = new URLSearchParams()
+  if (params.state !== undefined) {
+    query.set('state', params.state)
+  }
+  if (params.page !== undefined) {
+    query.set('page', params.page)
+  }
+  if (params.limit !== undefined) {
+    query.set('limit', params.limit)
+  }
+
+  const queryString = query.toString()
+  return request(`/api/public/events${queryString ? `?${queryString}` : ''}`)
+}
+
+export const getPublicEventDetail = (slug) =>
+  request(`/api/public/events/${slug}`)
+
+export const getPublicAnnouncements = (params = {}) => {
+  const query = new URLSearchParams()
+  if (params.page !== undefined) {
+    query.set('page', params.page)
+  }
+  if (params.limit !== undefined) {
+    query.set('limit', params.limit)
+  }
+
+  const queryString = query.toString()
+  return request(
+    `/api/public/announcements${queryString ? `?${queryString}` : ''}`,
+  )
+}
+
+export const getPublicAnnouncementDetail = (slug) =>
+  request(`/api/public/announcements/${slug}`)

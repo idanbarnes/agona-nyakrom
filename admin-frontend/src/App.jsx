@@ -27,6 +27,10 @@ import AdminCarouselListPage from './pages/carousel/AdminCarouselListPage.jsx'
 import AdminCarouselCreatePage from './pages/carousel/AdminCarouselCreatePage.jsx'
 import AdminCarouselEditPage from './pages/carousel/AdminCarouselEditPage.jsx'
 import AdminHistoryPage from './pages/history/AdminHistoryPage.jsx'
+import AdminEventsListPage from './pages/events/AdminEventsListPage.jsx'
+import AdminEventFormPage from './pages/events/AdminEventFormPage.jsx'
+import AdminAnnouncementsListPage from './pages/announcements/AdminAnnouncementsListPage.jsx'
+import AdminAnnouncementFormPage from './pages/announcements/AdminAnnouncementFormPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import NotFoundPage from './pages/NotFoundPage.jsx'
@@ -114,6 +118,27 @@ function App() {
               element={<AdminCarouselEditPage />}
             />
             <Route path="/admin/history" element={<AdminHistoryPage />} />
+            <Route path="/admin/events" element={<AdminEventsListPage />} />
+            <Route
+              path="/admin/events/new"
+              element={<AdminEventFormPage mode="create" />}
+            />
+            <Route
+              path="/admin/events/:id/edit"
+              element={<AdminEventFormPage mode="edit" />}
+            />
+            <Route
+              path="/admin/announcements"
+              element={<AdminAnnouncementsListPage />}
+            />
+            <Route
+              path="/admin/announcements/new"
+              element={<AdminAnnouncementFormPage mode="create" />}
+            />
+            <Route
+              path="/admin/announcements/:id/edit"
+              element={<AdminAnnouncementFormPage mode="edit" />}
+            />
           </Route>
         </Route>
 
