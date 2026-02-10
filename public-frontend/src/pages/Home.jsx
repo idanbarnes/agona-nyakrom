@@ -698,7 +698,7 @@ function Home() {
             />
             <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/45 to-black/20" />
             <div className="absolute inset-0 flex items-end">
-              <div className="max-w-full space-y-4 p-6 text-white md:max-w-[60%] md:p-10">
+              <div className="max-w-full space-y-4 px-6 pt-6 pb-20 text-white md:max-w-[60%] md:p-10">
                 {slideTitle && (
                   <h1 className="text-4xl font-bold leading-tight break-words md:text-5xl lg:text-[56px]">
                     {slideTitle}
@@ -723,69 +723,29 @@ function Home() {
                 )}
               </div>
             </div>
-            <div className="pointer-events-none absolute inset-x-0 bottom-2 z-20 px-3 md:bottom-4 md:px-5 lg:bottom-5">
+            <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 px-3 md:bottom-4 md:px-5 lg:bottom-5">
               <nav
                 aria-label="Carousel controls"
-                className="mx-auto flex w-full max-w-xs items-center justify-between gap-2 rounded-full border border-white/15 bg-black/15 px-2 py-1.5 shadow-md shadow-black/15 backdrop-blur-sm md:max-w-sm md:gap-3 md:bg-black/20 md:px-3"
+                className="mx-auto flex w-fit items-center justify-center rounded-full border border-white/12 bg-black/12 px-2 py-1 shadow-md shadow-black/10 backdrop-blur-sm md:bg-black/15"
               >
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() =>
-                    setActiveSlide((prev) =>
-                      slides.length ? (prev - 1 + slides.length) % slides.length : 0,
-                    )
-                  }
-                  disabled={slides.length < 2}
-                  className="pointer-events-auto group h-9 w-9 rounded-full border border-white/35 bg-black/20 text-white shadow shadow-black/20 backdrop-blur-sm transition hover:bg-black/40 disabled:cursor-not-allowed disabled:opacity-40 md:h-10 md:w-10"
-                  aria-label="Previous slide"
-                >
-                  <span
-                    aria-hidden="true"
-                    className="text-base transition group-hover:-translate-x-0.5 md:text-lg"
-                  >
-                    &lt;
-                  </span>
-                </Button>
-                <div className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-white/15 bg-black/20 px-2.5 py-1 md:gap-2 md:px-3 md:py-1.5">
+                <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-white/12 bg-black/15 px-2 py-1 md:gap-1.5 md:px-2.5">
                   {slides.map((slide, index) => (
                     <button
                       key={slide?.id || slide?.slug || index}
                       type="button"
                       onClick={() => setActiveSlide(index)}
-                      className="flex h-5 w-7 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/40 md:h-5 md:w-8"
+                      className="flex h-4 w-5 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/40 md:h-4 md:w-6"
                       aria-label={`Go to slide ${index + 1}`}
                       aria-current={index === activeSlide ? 'true' : undefined}
                     >
                       <span
-                        className={`h-1.5 w-full rounded-full transition ${
-                          index === activeSlide ? 'bg-white' : 'bg-white/55'
+                        className={`h-1 w-full rounded-full transition ${
+                          index === activeSlide ? 'bg-white/90' : 'bg-white/40'
                         }`}
                       />
                     </button>
                   ))}
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() =>
-                    setActiveSlide((prev) =>
-                      slides.length ? (prev + 1) % slides.length : 0,
-                    )
-                  }
-                  disabled={slides.length < 2}
-                  className="pointer-events-auto group h-9 w-9 rounded-full border border-white/35 bg-black/20 text-white shadow shadow-black/20 backdrop-blur-sm transition hover:bg-black/40 disabled:cursor-not-allowed disabled:opacity-40 md:h-10 md:w-10"
-                  aria-label="Next slide"
-                >
-                  <span
-                    aria-hidden="true"
-                    className="text-base transition group-hover:translate-x-0.5 md:text-lg"
-                  >
-                    &gt;
-                  </span>
-                </Button>
               </nav>
             </div>
           </article>
