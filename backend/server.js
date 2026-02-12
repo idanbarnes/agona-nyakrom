@@ -29,6 +29,8 @@ const adminGlobalSettingsRoutes = require('./src/routes/admin/globalSettingsRout
 const homepageSectionAdminRoutes = require('./src/routes/admin/homepageSectionAdminRoutes');
 const homepageBlockAdminRoutes = require('./src/routes/admin/homepageBlockAdminRoutes');
 const historyPageAdminRoutes = require('./src/routes/admin/historyPageRoutes');
+const aboutPageAdminRoutes = require('./src/routes/admin/aboutPageRoutes');
+const leadersAdminRoutes = require('./src/routes/admin/leadersAdminRoutes');
 const adminEventsRoutes = require('./src/routes/adminEventsRoutes');
 const adminAnnouncementsRoutes = require('./src/routes/adminAnnouncementsRoutes');
 
@@ -43,6 +45,8 @@ const publicCarouselRoutes = require('./src/routes/public/carouselRoutes');
 const publicGlobalSettingsRoutes = require('./src/routes/public/globalSettingsRoutes');
 const publicHomepageRoutes = require('./src/routes/public/homepageRoutes');
 const publicHistoryPageRoutes = require('./src/routes/public/historyPageRoutes');
+const publicAboutRoutes = require('./src/routes/public/aboutRoutes');
+const publicLeadersRoutes = require('./src/routes/public/leadersRoutes');
 const publicEventsRoutes = require('./src/routes/publicEventsRoutes');
 const publicAnnouncementsRoutes = require('./src/routes/publicAnnouncementsRoutes');
 const publicAnnouncementsEventsRoutes = require('./src/routes/publicAnnouncementsEventsRoutes');
@@ -178,6 +182,8 @@ app.use('/api/admin/global-settings', adminGlobalSettingsRoutes);
 app.use('/api/admin/homepage-sections', homepageSectionAdminRoutes);
 app.use('/api/admin/homepage-blocks', homepageBlockAdminRoutes);
 app.use('/api/admin/history', historyPageAdminRoutes);
+app.use('/api/admin/about-pages', aboutPageAdminRoutes);
+app.use('/api/admin/leaders', leadersAdminRoutes);
 app.use('/api/admin/events', adminEventsRoutes);
 app.use('/api/admin/announcements', adminAnnouncementsRoutes);
 
@@ -192,6 +198,8 @@ app.use('/api/public/carousel', publicCarouselRoutes);
 app.use('/api/public/global-settings', publicGlobalSettingsRoutes);
 app.use('/api/public/homepage', publicHomepageRoutes);
 app.use('/api/public/history', publicHistoryPageRoutes);
+app.use('/api/public/about', publicAboutRoutes);
+app.use('/api/public/leaders', publicLeadersRoutes);
 app.use('/api/public/events', publicEventsRoutes);
 app.use('/api/public/announcements', publicAnnouncementsRoutes);
 app.use('/api/public/announcements-events', publicAnnouncementsEventsRoutes);

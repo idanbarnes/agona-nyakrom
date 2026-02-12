@@ -27,6 +27,8 @@ import AdminCarouselListPage from './pages/carousel/AdminCarouselListPage.jsx'
 import AdminCarouselCreatePage from './pages/carousel/AdminCarouselCreatePage.jsx'
 import AdminCarouselEditPage from './pages/carousel/AdminCarouselEditPage.jsx'
 import AdminHistoryPage from './pages/history/AdminHistoryPage.jsx'
+import AdminAboutPageEditor from './pages/aboutNyakrom/AdminAboutPageEditor.jsx'
+import AdminLeadershipGovernancePage from './pages/aboutNyakrom/AdminLeadershipGovernancePage.jsx'
 import AdminEventsListPage from './pages/events/AdminEventsListPage.jsx'
 import AdminEventFormPage from './pages/events/AdminEventFormPage.jsx'
 import AdminAnnouncementsListPage from './pages/announcements/AdminAnnouncementsListPage.jsx'
@@ -118,6 +120,8 @@ function App() {
               element={<AdminCarouselEditPage />}
             />
             <Route path="/admin/history" element={<AdminHistoryPage />} />
+            <Route path="/admin/about-nyakrom/:slug" element={<AdminAboutPageEditor />} />
+            <Route path="/admin/about-nyakrom/leadership-governance" element={<AdminLeadershipGovernancePage />} />
             <Route path="/admin/events" element={<AdminEventsListPage />} />
             <Route
               path="/admin/events/new"

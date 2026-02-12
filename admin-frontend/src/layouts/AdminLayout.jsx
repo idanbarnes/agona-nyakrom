@@ -313,6 +313,11 @@ function AdminLayout() {
             >
               History
             </NavLink>
+            <div className="px-3 pt-2 text-xs font-semibold uppercase text-muted-foreground">About Nyakrom</div>
+            <NavLink className={({ isActive }) => ['flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',isActive ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent',].join(' ')} to="/admin/about-nyakrom/history" end>History</NavLink>
+            <NavLink className={({ isActive }) => ['flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',isActive ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent',].join(' ')} to="/admin/about-nyakrom/who-we-are" end>Who We Are</NavLink>
+            <NavLink className={({ isActive }) => ['flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',isActive ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent',].join(' ')} to="/admin/about-nyakrom/about-agona-nyakrom-town" end>About Agona Nyakrom Town</NavLink>
+            <NavLink className={({ isActive }) => ['flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',isActive ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent',].join(' ')} to="/admin/about-nyakrom/leadership-governance" end>Leadership & Governance</NavLink>
           </nav>
         </div>
       </aside>

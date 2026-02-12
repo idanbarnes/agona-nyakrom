@@ -67,6 +67,9 @@ export const getCarousel = () => request('/api/public/carousel')
 
 // History endpoints.
 export const getHistory = () => request('/api/public/history')
+export const getAboutPageBySlug = (slug) => request(`/api/public/about/${slug}`)
+export const getPublicLeaders = () => request('/api/public/leaders')
+export const getPublicLeaderBySlug = (slug) => request(`/api/public/leaders/${slug}`)
 
 // Announcements & Events endpoints.
 export const getAnnouncementsEvents = (params = {}) => {

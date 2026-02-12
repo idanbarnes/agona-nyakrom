@@ -74,7 +74,7 @@ function Footer({ settings, loading, error }) {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
-                  to="/history"
+                  to="/about-nyakrom/history"
                   className="text-muted-foreground transition hover:text-foreground hover:underline"
                 >
                   History

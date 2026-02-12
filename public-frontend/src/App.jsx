@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './layouts/Layout.jsx'
 import ScrollToTop from './components/ScrollToTop.jsx'
 import Home from './pages/Home.jsx'
@@ -16,6 +16,9 @@ import Contact from './pages/Contact.jsx'
 import LandmarksList from './pages/landmarks/LandmarksList.jsx'
 import LandmarksDetail from './pages/landmarks/LandmarksDetail.jsx'
 import History from './pages/about/History.jsx'
+import AboutRichPage from './pages/about/AboutRichPage.jsx'
+import LeadershipGovernance from './pages/about/LeadershipGovernance.jsx'
+import LeaderProfile from './pages/about/LeaderProfile.jsx'
 import AnnouncementsEventsPage from './pages/AnnouncementsEventsPage.jsx'
 import EventDetail from './pages/events/EventDetail.jsx'
 import AnnouncementDetail from './pages/announcements/AnnouncementDetail.jsx'
@@ -43,7 +46,10 @@ function App() {
           <Route path="hall-of-fame/:slug" element={<HallOfFameDetail />} />
           <Route path="landmarks" element={<LandmarksList />} />
           <Route path="landmarks/:slug" element={<LandmarksDetail />} />
-          <Route path="history" element={<History />} />
+          <Route path="history" element={<Navigate to="/about-nyakrom/history" replace />} />
+          <Route path="about-nyakrom/:slug" element={<AboutRichPage />} />
+          <Route path="about-nyakrom/leadership-governance" element={<LeadershipGovernance />} />
+          <Route path="about-nyakrom/leadership-governance/:slug" element={<LeaderProfile />} />
           <Route
             path="announcements-events"
             element={<AnnouncementsEventsPage />}
