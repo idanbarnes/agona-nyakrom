@@ -1,9 +1,48 @@
 import { useMemo, useRef, useState } from 'react'
 import ImageLightbox from './ImageLightbox.jsx'
-import { resolveAssetUrl } from '../lib/apiBase.js'
+import { API_BASE_URL } from '../lib/apiBase.js'
 
 const BLOCKED_TAGS = new Set(['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'textarea'])
-const SAFE_URL = /^(https?:|mailto:|tel:|\/|#)/i
+
+const SAFE_IMAGE_SRC = /^(https?:|data:image\/|blob:|\/|\.\/|\.\.\/|[^\s]+$)/i
+const SAFE_LINK_HREF = /^(https?:|mailto:|tel:|\/|#|\.\/|\.\.\/|[^\s]+$)/i
+
+function isAllowedUrl(value = '', type = 'href') {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return false
+  }
+
+  if (/^javascript:/i.test(trimmed)) {
+    return false
+  }
+
+  if (type === 'src') {
+    return SAFE_IMAGE_SRC.test(trimmed)
+  }
+
+  return SAFE_LINK_HREF.test(trimmed)
+}
+
+function normalizeImageSource(src = '') {
+  const rawSrc = src.trim()
+  if (!rawSrc) {
+    return rawSrc
+  }
+
+  if (/^(https?:|data:image\/|blob:)/i.test(rawSrc)) {
+    return rawSrc
+  }
+
+  const normalizedPath = rawSrc.startsWith('/') ? rawSrc : `/${rawSrc}`
+  const base = (API_BASE_URL || '').trim().replace(/\/$/, '')
+
+  if (/^https?:\/\//i.test(base)) {
+    return `${base}${normalizedPath}`
+  }
+
+  return normalizedPath
+}
 
 function sanitizeRichHtml(html = '') {
   if (typeof window === 'undefined') {
@@ -30,7 +69,11 @@ function sanitizeRichHtml(html = '') {
         continue
       }
 
-      if ((name === 'href' || name === 'src') && value && !SAFE_URL.test(value)) {
+      if (name === 'href' && value && !isAllowedUrl(value, 'href')) {
+        node.removeAttribute(attr.name)
+      }
+
+      if (name === 'src' && value && !isAllowedUrl(value, 'src')) {
         node.removeAttribute(attr.name)
       }
 
@@ -59,7 +102,7 @@ function sanitizeRichHtml(html = '') {
       node.setAttribute('loading', 'lazy')
       node.setAttribute('decoding', 'async')
       const rawSrc = node.getAttribute('src') || ''
-      node.setAttribute('src', resolveAssetUrl(rawSrc))
+      node.setAttribute('src', normalizeImageSource(rawSrc))
     }
   })
 
@@ -99,7 +142,7 @@ export default function RichTextRenderer({ html = '' }) {
       return
     }
 
-    const src = imageNode.getAttribute('src')
+    const src = imageNode.currentSrc || imageNode.getAttribute('src')
     if (!src) {
       return
     }
