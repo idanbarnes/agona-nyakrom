@@ -7,6 +7,8 @@ const leadersAdminController = require('../../controllers/admin/leadersAdminCont
 router.get('/', requireAdminAuth, leadersAdminController.listLeaders);
 router.post('/', requireAdminAuth, uploadMiddleware.single('photo'), leadersAdminController.createLeader);
 router.put('/:id', requireAdminAuth, uploadMiddleware.single('photo'), leadersAdminController.updateLeader);
+router.patch('/:id/publish', requireAdminAuth, leadersAdminController.toggleLeaderPublish);
+router.patch('/:id/display-order', requireAdminAuth, leadersAdminController.setLeaderDisplayOrder);
 router.delete('/:id', requireAdminAuth, leadersAdminController.deleteLeader);
 
 module.exports = router;

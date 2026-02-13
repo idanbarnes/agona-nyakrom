@@ -5,9 +5,6 @@ const { success, error } = require('../../utils/response');
 const getAboutPage = async (req, res) => {
   try {
     const page = await aboutPageService.getBySlug(req.params.slug);
-    if (!page) {
-      return error(res, 'About page not found', 404);
-    }
     return success(res, page, 'About page fetched successfully');
   } catch (err) {
     if (err.status === 400) {
@@ -15,6 +12,23 @@ const getAboutPage = async (req, res) => {
     }
     console.error('Error fetching about page (admin):', err.message);
     return error(res, 'Failed to fetch about page', 500);
+  }
+};
+
+const togglePublish = async (req, res) => {
+  try {
+    const current = await aboutPageService.getBySlug(req.params.slug);
+    const page = await aboutPageService.upsertBySlug(req.params.slug, {
+      ...current,
+      published: req.body?.published === true || req.body?.published === 'true',
+    });
+    return success(res, page, 'Publish status updated successfully');
+  } catch (err) {
+    if (err.status === 400) {
+      return error(res, err.message, 400);
+    }
+    console.error('Error toggling about page publish status:', err.message);
+    return error(res, 'Failed to update publish status', 500);
   }
 };
 
@@ -73,5 +87,6 @@ const uploadAboutImage = async (req, res) => {
 module.exports = {
   getAboutPage,
   upsertAboutPage,
+  togglePublish,
   uploadAboutImage,
 };

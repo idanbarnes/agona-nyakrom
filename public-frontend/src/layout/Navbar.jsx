@@ -6,10 +6,10 @@ const navItems = [
   {
     label: 'About Nyakrom',
     children: [
-      { label: 'History', to: '/about-nyakrom/history' },
-      { label: 'Who We Are', to: '/about-nyakrom/who-we-are' },
-      { label: 'About Agona Nyakrom Town', to: '/about-nyakrom/about-agona-nyakrom-town' },
-      { label: 'Leadership & Governance', to: '/about-nyakrom/leadership-governance' },
+      { label: 'History', to: '/about/history' },
+      { label: 'Who We Are', to: '/about/who-we-are' },
+      { label: 'About Agona Nyakrom Town', to: '/about/about-agona-nyakrom-town' },
+      { label: 'Leadership & Governance', to: '/about/leadership-governance' },
     ],
   },
   { label: 'Clans', to: '/clans' },

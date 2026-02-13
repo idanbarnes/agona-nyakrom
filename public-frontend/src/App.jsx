@@ -15,7 +15,6 @@ import HallOfFameDetail from './pages/hallOfFame/HallOfFameDetail.jsx'
 import Contact from './pages/Contact.jsx'
 import LandmarksList from './pages/landmarks/LandmarksList.jsx'
 import LandmarksDetail from './pages/landmarks/LandmarksDetail.jsx'
-import History from './pages/about/History.jsx'
 import AboutRichPage from './pages/about/AboutRichPage.jsx'
 import LeadershipGovernance from './pages/about/LeadershipGovernance.jsx'
 import LeaderProfile from './pages/about/LeaderProfile.jsx'
@@ -46,10 +45,13 @@ function App() {
           <Route path="hall-of-fame/:slug" element={<HallOfFameDetail />} />
           <Route path="landmarks" element={<LandmarksList />} />
           <Route path="landmarks/:slug" element={<LandmarksDetail />} />
-          <Route path="history" element={<Navigate to="/about-nyakrom/history" replace />} />
-          <Route path="about-nyakrom/:slug" element={<AboutRichPage />} />
-          <Route path="about-nyakrom/leadership-governance" element={<LeadershipGovernance />} />
+          <Route path="history" element={<Navigate to="/about/history" replace />} />
+          <Route path="about/leadership-governance" element={<LeadershipGovernance />} />
+          <Route path="about/leadership-governance/:slug" element={<LeaderProfile />} />
+          <Route path="about/:slug" element={<AboutRichPage />} />
+          <Route path="about-nyakrom/leadership-governance" element={<Navigate to="/about/leadership-governance" replace />} />
           <Route path="about-nyakrom/leadership-governance/:slug" element={<LeaderProfile />} />
+          <Route path="about-nyakrom/:slug" element={<AboutRichPage />} />
           <Route
             path="announcements-events"
             element={<AnnouncementsEventsPage />}

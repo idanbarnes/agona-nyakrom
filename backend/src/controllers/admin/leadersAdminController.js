@@ -91,6 +91,48 @@ const updateLeader = async (req, res) => {
   }
 };
 
+
+const toggleLeaderPublish = async (req, res) => {
+  try {
+    const updated = await leaderService.updateLeader(req.params.id, {
+      published: parseBoolean(req.body?.published),
+    });
+
+    if (!updated) {
+      return error(res, 'Leader not found', 404);
+    }
+
+    return success(res, updated, 'Leader publish status updated successfully');
+  } catch (err) {
+    if (err.status === 400) return error(res, err.message, 400);
+    console.error('Error updating leader publish status:', err.message);
+    return error(res, 'Failed to update publish status', 500);
+  }
+};
+
+const setLeaderDisplayOrder = async (req, res) => {
+  try {
+    const displayOrder =
+      req.body?.display_order === '' || req.body?.display_order === undefined
+        ? null
+        : Number(req.body.display_order);
+
+    const updated = await leaderService.updateLeader(req.params.id, {
+      display_order: displayOrder,
+    });
+
+    if (!updated) {
+      return error(res, 'Leader not found', 404);
+    }
+
+    return success(res, updated, 'Leader display order updated successfully');
+  } catch (err) {
+    if (err.status === 400) return error(res, err.message, 400);
+    console.error('Error updating leader display order:', err.message);
+    return error(res, 'Failed to update display order', 500);
+  }
+};
+
 const deleteLeader = async (req, res) => {
   try {
     const removed = await leaderService.deleteLeader(req.params.id);
@@ -108,5 +150,7 @@ module.exports = {
   listLeaders,
   createLeader,
   updateLeader,
+  toggleLeaderPublish,
+  setLeaderDisplayOrder,
   deleteLeader,
 };

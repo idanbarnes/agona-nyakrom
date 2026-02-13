@@ -152,21 +152,47 @@ const deleteLeader = async (id) => {
   return rowCount > 0;
 };
 
-const listPublishedGrouped = async () => {
+const listPublished = async (category) => {
+  assertCategory(category);
+  const values = [];
+  let where = 'WHERE published = true';
+
+  if (category) {
+    values.push(category);
+    where += ' AND category = $1';
+  }
+
   const { rows } = await pool.query(
     `SELECT ${baseSelect}
      FROM leaders
-     WHERE published = true
+     ${where}
      ORDER BY
       category ASC,
       display_order ASC NULLS LAST,
-      created_at ASC`
+      created_at ASC`,
+    values
   );
 
+  return rows.map(mapRow);
+};
+
+const listPublishedGrouped = async () => {
+  const rows = await listPublished();
   return {
     traditional: rows.filter((row) => row.category === 'traditional'),
     community_admin: rows.filter((row) => row.category === 'community_admin'),
   };
+};
+
+const getPublishedById = async (id) => {
+  const { rows } = await pool.query(
+    `SELECT ${baseSelect}
+     FROM leaders
+     WHERE id = $1 AND published = true
+     LIMIT 1`,
+    [id]
+  );
+  return mapRow(rows[0]);
 };
 
 const getPublishedBySlug = async (slug) => {
@@ -187,6 +213,8 @@ module.exports = {
   updateLeader,
   deleteLeader,
   getById,
+  listPublished,
   listPublishedGrouped,
+  getPublishedById,
   getPublishedBySlug,
 };

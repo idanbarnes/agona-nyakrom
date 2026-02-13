@@ -84,3 +84,30 @@ export const deleteLeader = async (id) => {
   })
   return parse(response)
 }
+
+
+export const toggleLeaderPublish = async (id, published) => {
+  const response = await fetch(buildUrl(`/api/admin/leaders/${id}/publish`), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...authHeaders(),
+    },
+    body: JSON.stringify({ published }),
+  })
+  return parse(response)
+}
+
+export const updateLeaderDisplayOrder = async (id, display_order) => {
+  const response = await fetch(buildUrl(`/api/admin/leaders/${id}/display-order`), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...authHeaders(),
+    },
+    body: JSON.stringify({ display_order }),
+  })
+  return parse(response)
+}

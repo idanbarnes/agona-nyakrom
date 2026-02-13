@@ -120,8 +120,8 @@ function App() {
               element={<AdminCarouselEditPage />}
             />
             <Route path="/admin/history" element={<AdminHistoryPage />} />
-            <Route path="/admin/about-nyakrom/:slug" element={<AdminAboutPageEditor />} />
             <Route path="/admin/about-nyakrom/leadership-governance" element={<AdminLeadershipGovernancePage />} />
+            <Route path="/admin/about-nyakrom/:slug" element={<AdminAboutPageEditor />} />
             <Route path="/admin/events" element={<AdminEventsListPage />} />
             <Route
               path="/admin/events/new"

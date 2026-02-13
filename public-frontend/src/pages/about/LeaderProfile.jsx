@@ -10,5 +10,5 @@ export default function LeaderProfile() {
 
   if (!leader) return <section className="container py-10">Profile not available.</section>
 
-  return <section className="container py-10 space-y-3"><Link to="/about-nyakrom/leadership-governance" className="underline">Back to Leadership & Governance</Link>{leader.photo ? <img src={resolveAssetUrl(leader.photo)} className="max-h-96 rounded" /> : null}<h1 className="text-3xl font-semibold">{leader.name}</h1><p>{leader.role_title}</p><p style={{ whiteSpace: 'pre-line' }}>{leader.full_bio}</p></section>
+  return <section className="container py-10 space-y-3"><Link to="/about/leadership-governance" className="underline">Back to Leadership & Governance</Link>{leader.photo ? <img src={resolveAssetUrl(leader.photo)} className="max-h-96 rounded" /> : null}<h1 className="text-3xl font-semibold">{leader.name}</h1><p>{leader.role_title}</p><p style={{ whiteSpace: 'pre-line' }}>{leader.full_bio}</p></section>
 }

@@ -52,6 +52,18 @@ const getBySlug = async (slug) => {
     `SELECT ${baseSelect} FROM about_pages WHERE slug = $1 LIMIT 1`,
     [slug]
   );
+  if (!rows[0]) {
+    return {
+      slug,
+      page_title: '',
+      subtitle: null,
+      body: null,
+      published: false,
+      seo_meta_title: null,
+      seo_meta_description: null,
+      seo_share_image: null,
+    };
+  }
   return mapRow(rows[0]);
 };
 
@@ -119,6 +131,9 @@ const getPublishedBySlug = async (slug) => {
     page_title: page.page_title,
     subtitle: page.subtitle,
     body: page.body,
+    seo_meta_title: page.seo_meta_title,
+    seo_meta_description: page.seo_meta_description,
+    seo_share_image: page.seo_share_image,
     meta_title: page.seo_meta_title || page.page_title,
     meta_description: page.seo_meta_description || null,
     share_image: shareImage,

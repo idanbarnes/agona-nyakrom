@@ -6,6 +6,7 @@ const aboutPageAdminController = require('../../controllers/admin/aboutPageAdmin
 
 router.get('/:slug', requireAdminAuth, aboutPageAdminController.getAboutPage);
 router.put('/:slug', requireAdminAuth, aboutPageAdminController.upsertAboutPage);
+router.patch('/:slug/publish', requireAdminAuth, aboutPageAdminController.togglePublish);
 router.post('/upload-image', requireAdminAuth, uploadMiddleware.single('image'), aboutPageAdminController.uploadAboutImage);
 
 module.exports = router;

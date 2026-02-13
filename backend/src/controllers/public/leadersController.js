@@ -3,6 +3,12 @@ const { success, error } = require('../../utils/response');
 
 const getPublishedLeaders = async (req, res) => {
   try {
+    const { category } = req.query || {};
+    if (category) {
+      const filtered = await leaderService.listPublished(category);
+      return success(res, filtered, 'Leaders fetched successfully');
+    }
+
     const data = await leaderService.listPublishedGrouped();
     return success(res, data, 'Leaders fetched successfully');
   } catch (err) {
@@ -13,7 +19,9 @@ const getPublishedLeaders = async (req, res) => {
 
 const getPublishedLeaderBySlug = async (req, res) => {
   try {
-    const leader = await leaderService.getPublishedBySlug(req.params.slug);
+    const leader =
+      (await leaderService.getPublishedBySlug(req.params.slug)) ||
+      (await leaderService.getPublishedById(req.params.slug));
     if (!leader) {
       return error(res, 'Leader not found', 404);
     }
