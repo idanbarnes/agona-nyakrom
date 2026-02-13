@@ -120,11 +120,12 @@
   }
 
   .rich-text-content figure {
-    @apply my-8;
+    @apply my-8 flex flex-col items-center;
   }
 
   .rich-text-content img {
-    @apply mx-auto block h-auto w-full max-w-[clamp(320px,85vw,820px)] cursor-zoom-in rounded-xl border border-border/80 object-contain shadow-sm;
+    @apply mx-auto block h-auto w-full max-w-[clamp(680px,80vw,900px)] cursor-zoom-in rounded-xl object-contain shadow-[0_10px_30px_rgba(15,23,42,0.08)];
+    border: 1px solid #e7ded3;
   }
 
   .rich-text-content figcaption {
