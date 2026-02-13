@@ -1,5 +1,8 @@
-// Default to proxy-friendly relative base, allow override for direct backend access.
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').trim()
+// Default to backend origin in development, allow explicit override for deployments.
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV ? 'http://localhost:5000' : '')
+).trim()
 
 function resolveAssetUrl(path) {
   if (!path) {
