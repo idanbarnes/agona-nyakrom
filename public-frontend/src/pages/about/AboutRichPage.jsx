@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import ImageLightbox from '../../components/ImageLightbox.jsx'
+import RichTextRenderer from '../../components/RichTextRenderer.jsx'
 import { getAboutPageBySlug } from '../../api/endpoints.js'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
 
@@ -11,11 +11,6 @@ const titles = {
 }
 
 const DEFAULT_SHARE_IMAGE = '/share-default.svg'
-
-const sanitizeHtml = (html = '') =>
-  String(html)
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/\son\w+=("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
 
 const extractFirstImageSrc = (html = '') => {
   const match = String(html).match(/<img[^>]+src=["']([^"']+)["']/i)
@@ -39,40 +34,44 @@ const setMeta = (selector, value, attr = 'content') => {
 export default function AboutRichPage() {
   const { slug } = useParams()
   const [page, setPage] = useState(null)
-  const [lightbox, setLightbox] = useState('')
 
   useEffect(() => {
+    let cancelled = false
+
     if (!titles[slug]) {
-      setPage(null)
-      return
+      Promise.resolve().then(() => {
+        if (!cancelled) {
+          setPage(null)
+        }
+      })
+      return () => {
+        cancelled = true
+      }
     }
+
     getAboutPageBySlug(slug)
-      .then((res) => setPage(res.data || res))
-      .catch(() => setPage(null))
+      .then((res) => {
+        if (!cancelled) {
+          setPage(res.data || res)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPage(null)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [slug])
 
-  const body = useMemo(() => sanitizeHtml(page?.body || ''), [page])
+  const pageTitle = useMemo(
+    () => page?.page_title || titles[slug] || 'About Nyakrom',
+    [page, slug],
+  )
 
   useEffect(() => {
-    const root = document.getElementById('about-rich-content')
-    if (!root) return
-    const images = root.querySelectorAll('img')
-    images.forEach((img) => {
-      img.loading = 'lazy'
-      img.decoding = 'async'
-      img.style.maxWidth = '100%'
-      img.style.height = 'auto'
-      img.style.margin = '1.5rem 0'
-      img.style.cursor = 'zoom-in'
-      img.style.display = 'block'
-      const src = resolveAssetUrl(img.getAttribute('src') || '')
-      img.src = src
-      img.onclick = () => setLightbox(src)
-    })
-  }, [body])
-
-  useEffect(() => {
-    const pageTitle = page?.page_title || titles[slug] || 'About Nyakrom'
     const seoTitle = page?.seo_meta_title || pageTitle
     const seoDescription = page?.seo_meta_description || ''
     const fallbackBodyImage = extractFirstImageSrc(page?.body || '')
@@ -86,32 +85,32 @@ export default function AboutRichPage() {
     setMeta('meta[name="twitter:title"]', seoTitle)
     setMeta('meta[name="twitter:description"]', seoDescription)
     setMeta('meta[name="twitter:image"]', shareImage)
-  }, [page, slug])
+  }, [page, pageTitle])
 
   if (!page) {
     return (
-      <section className="container py-10">
-        <h1 className="text-3xl font-semibold">{titles[slug] || 'About Nyakrom'}</h1>
-        <p>Content not available.</p>
+      <section className="container py-10 sm:py-12 lg:py-16">
+        <h1 className="text-3xl font-semibold md:text-4xl">{pageTitle}</h1>
+        <p className="mt-3 text-muted-foreground">Content not available.</p>
       </section>
     )
   }
 
   return (
-    <section className="container py-10">
-      <h1 className="text-3xl font-semibold">{page.page_title || titles[slug]}</h1>
-      {page.subtitle ? <p className="mt-2 text-muted-foreground">{page.subtitle}</p> : null}
-      <article
-        id="about-rich-content"
-        className="prose mt-6 max-w-none prose-headings:mt-8 prose-headings:mb-3 prose-p:my-4 prose-li:my-1 prose-blockquote:my-6 prose-figure:my-6 prose-figcaption:text-center prose-figcaption:text-sm prose-figcaption:text-muted-foreground"
-        dangerouslySetInnerHTML={{ __html: body }}
-      />
-      <ImageLightbox
-        open={Boolean(lightbox)}
-        onClose={() => setLightbox('')}
-        src={lightbox}
-        alt={page.page_title || titles[slug]}
-      />
+    <section className="bg-background py-10 sm:py-12 lg:py-16">
+      <div className="container max-w-5xl space-y-8">
+        <header className="space-y-3 border-b border-border pb-6 sm:pb-8">
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary/80">About Nyakrom</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">{pageTitle}</h1>
+          {page.subtitle ? (
+            <p className="max-w-3xl text-base leading-7 text-muted-foreground md:text-lg">{page.subtitle}</p>
+          ) : null}
+        </header>
+
+        <div className="rounded-2xl border border-border/70 bg-surface px-5 py-6 shadow-sm sm:px-8 sm:py-9 md:px-12">
+          <RichTextRenderer html={page?.body || ''} />
+        </div>
+      </div>
     </section>
   )
 }

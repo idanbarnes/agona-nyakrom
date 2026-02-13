@@ -80,3 +80,54 @@
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
 }
+
+@layer components {
+  .rich-text-content > * + * {
+    @apply mt-5;
+  }
+
+  .rich-text-content p {
+    @apply text-[1rem] leading-8 text-foreground md:text-[1.05rem];
+  }
+
+  .rich-text-content h2 {
+    @apply mt-10 text-2xl font-semibold tracking-tight text-foreground md:text-3xl;
+  }
+
+  .rich-text-content h3 {
+    @apply mt-8 text-xl font-semibold text-foreground md:text-2xl;
+  }
+
+  .rich-text-content ul,
+  .rich-text-content ol {
+    @apply my-5 space-y-2 pl-6;
+  }
+
+  .rich-text-content ul {
+    @apply list-disc;
+  }
+
+  .rich-text-content ol {
+    @apply list-decimal;
+  }
+
+  .rich-text-content blockquote {
+    @apply my-7 rounded-r-lg border-l-4 border-primary/50 bg-accent/25 px-4 py-3 italic text-foreground/85;
+  }
+
+  .rich-text-content a {
+    @apply text-primary underline-offset-4 transition-colors hover:text-primary/80 hover:underline;
+  }
+
+  .rich-text-content figure {
+    @apply my-8;
+  }
+
+  .rich-text-content img {
+    @apply mx-auto block h-auto w-full max-w-[clamp(320px,85vw,820px)] cursor-zoom-in rounded-xl border border-border/80 object-contain shadow-sm;
+  }
+
+  .rich-text-content figcaption {
+    @apply mt-3 text-center text-sm leading-6 text-muted-foreground;
+  }
+}
