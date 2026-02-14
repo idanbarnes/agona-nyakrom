@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Button } from '../components/ui/index.jsx'
 import { clearAuthToken } from '../lib/auth.js'
 
@@ -27,17 +27,14 @@ const aboutNyakromLinks = [
 function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [isAboutNyakromOpen, setIsAboutNyakromOpen] = useState(false)
+  const [isAboutNyakromOpen, setIsAboutNyakromOpen] = useState(() =>
+    location.pathname.startsWith('/admin/about-nyakrom/'),
+  )
 
   const handleLogout = () => {
     clearAuthToken()
     navigate('/login', { replace: true })
   }
-
-  const isAboutNyakromRoute = useMemo(
-    () => location.pathname.startsWith('/admin/about-nyakrom/'),
-    [location.pathname],
-  )
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
@@ -88,20 +85,18 @@ function AdminLayout() {
               <button
                 type="button"
                 onClick={() => setIsAboutNyakromOpen((current) => !current)}
-                aria-expanded={isAboutNyakromOpen || isAboutNyakromRoute}
+                aria-expanded={isAboutNyakromOpen}
                 className="flex h-10 w-full items-center justify-between rounded-md px-3 text-left text-sm font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 <span>About Nyakrom</span>
                 <span className="text-base leading-none">
-                  {isAboutNyakromOpen || isAboutNyakromRoute ? '▾' : '▸'}
+                  {isAboutNyakromOpen ? '▾' : '▸'}
                 </span>
               </button>
 
               <div
                 className={`space-y-1 overflow-hidden pl-3 transition-all ${
-                  isAboutNyakromOpen || isAboutNyakromRoute
-                    ? 'max-h-80 pt-1'
-                    : 'max-h-0'
+                  isAboutNyakromOpen ? 'max-h-80 pt-1' : 'max-h-0'
                 }`}
               >
                 {aboutNyakromLinks.map((item) => (
