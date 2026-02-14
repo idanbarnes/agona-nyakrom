@@ -1,323 +1,116 @@
-// import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-// import { clearAuthToken } from '../lib/auth.js'
-
-// function AdminLayout() {
-//   const navigate = useNavigate()
-
-//   const handleLogout = () => {
-//     // Clear token and return to login.
-//     clearAuthToken()
-//     navigate('/login', { replace: true })
-//   }
-
-//   return (
-//     <div>
-//       <header>
-//         <h1>Admin</h1>
-//         <nav>
-//           <NavLink
-//             className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-//             to="/dashboard"
-//             end
-//           >
-//             Dashboard
-//           </NavLink>
-//           <NavLink
-//             className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-//             to="/admin/news"
-//             end
-//           >
-//             News
-//           </NavLink>
-//           <NavLink
-//             className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-//             to="/admin/obituaries"
-//             end
-//           >
-//             Obituaries
-//           </NavLink>
-//           <NavLink
-//             className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-//             to="/admin/clans"
-//             end
-//           >
-//             Clans
-//           </NavLink>
-//           <NavLink
-//             className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-//             to="/admin/asafo-companies"
-//             end
-//           >
-//             Asafo Companies
-//           </NavLink>
-//           <NavLink
-//             className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-//             to="/admin/hall-of-fame"
-//             end
-//           >
-//             Hall of Fame
-//           </NavLink>
-//           <NavLink
-//             className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-//             to="/admin/global-settings"
-//             end
-//           >
-//             Global Settings
-//           </NavLink>
-//           <NavLink
-//             className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-//             to="/admin/homepage-sections"
-//             end
-//           >
-//             Homepage Sections
-//           </NavLink>
-//           <NavLink
-//             className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-//             to="/admin/landmarks"
-//             end
-//           >
-//             Landmarks
-//           </NavLink>
-//           <NavLink
-//             className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-//             to="/admin/carousel"
-//             end
-//           >
-//             Carousel
-//           </NavLink>
-//           <NavLink
-//             className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-//             to="/admin/history"
-//             end
-//           >
-//             History
-//           </NavLink>
-//           <button type="button" onClick={handleLogout}>
-//             Logout
-//           </button>
-//         </nav>
-//       </header>
-
-//       <main>
-//         <Outlet />
-//       </main>
-//     </div>
-//   )
-// }
-
-// export default AdminLayout
-
-
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useMemo, useState } from 'react'
 import { Button } from '../components/ui/index.jsx'
 import { clearAuthToken } from '../lib/auth.js'
 
+const navLinkClass = ({ isActive }) =>
+  [
+    'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
+    isActive
+      ? 'bg-accent text-foreground'
+      : 'text-muted-foreground hover:text-foreground hover:bg-accent',
+  ].join(' ')
+
+const aboutNyakromLinks = [
+  { label: 'History', to: '/admin/about-nyakrom/history' },
+  { label: 'Who We Are', to: '/admin/about-nyakrom/who-we-are' },
+  {
+    label: 'About Agona Nyakrom Town',
+    to: '/admin/about-nyakrom/about-agona-nyakrom-town',
+  },
+  {
+    label: 'Leadership & Governance',
+    to: '/admin/about-nyakrom/leadership-governance',
+  },
+]
+
 function AdminLayout() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const [isAboutNyakromOpen, setIsAboutNyakromOpen] = useState(false)
 
   const handleLogout = () => {
-    // Clear token and return to login.
     clearAuthToken()
     navigate('/login', { replace: true })
   }
 
+  const isAboutNyakromRoute = useMemo(
+    () => location.pathname.startsWith('/admin/about-nyakrom/'),
+    [location.pathname],
+  )
+
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
-      {/* Admin shell: fixed sidebar, topbar, and scrollable content */}
       <aside className="w-64 shrink-0 border-r border-border bg-surface">
         <div className="h-full flex flex-col">
           <div className="h-16 flex items-center px-4 border-b border-border">
             <h1 className="text-base font-semibold">Admin</h1>
           </div>
-          {/* Sidebar scrolls independently when menu is long */}
           <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-            <NavLink
-              className={({ isActive }) =>
-                [
-                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-accent text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
-                ].join(' ')
-              }
-              to="/dashboard"
-              end
-            >
+            <NavLink className={navLinkClass} to="/dashboard" end>
               Dashboard
             </NavLink>
-            <NavLink
-              className={({ isActive }) =>
-                [
-                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-accent text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
-                ].join(' ')
-              }
-              to="/admin/news"
-              end
-            >
+            <NavLink className={navLinkClass} to="/admin/news" end>
               News
             </NavLink>
-            <NavLink
-              className={({ isActive }) =>
-                [
-                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-accent text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
-                ].join(' ')
-              }
-              to="/admin/events"
-              end
-            >
+            <NavLink className={navLinkClass} to="/admin/events" end>
               Events
             </NavLink>
-            <NavLink
-              className={({ isActive }) =>
-                [
-                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-accent text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
-                ].join(' ')
-              }
-              to="/admin/announcements"
-              end
-            >
+            <NavLink className={navLinkClass} to="/admin/announcements" end>
               Announcements
             </NavLink>
-            <NavLink
-              className={({ isActive }) =>
-                [
-                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-accent text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
-                ].join(' ')
-              }
-              to="/admin/obituaries"
-              end
-            >
+            <NavLink className={navLinkClass} to="/admin/obituaries" end>
               Obituaries
             </NavLink>
-            <NavLink
-              className={({ isActive }) =>
-                [
-                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-accent text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
-                ].join(' ')
-              }
-              to="/admin/clans"
-              end
-            >
+            <NavLink className={navLinkClass} to="/admin/clans" end>
               Clans
             </NavLink>
-            <NavLink
-              className={({ isActive }) =>
-                [
-                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-accent text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
-                ].join(' ')
-              }
-              to="/admin/asafo-companies"
-              end
-            >
+            <NavLink className={navLinkClass} to="/admin/asafo-companies" end>
               Asafo Companies
             </NavLink>
-            <NavLink
-              className={({ isActive }) =>
-                [
-                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-accent text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
-                ].join(' ')
-              }
-              to="/admin/hall-of-fame"
-              end
-            >
+            <NavLink className={navLinkClass} to="/admin/hall-of-fame" end>
               Hall of Fame
             </NavLink>
-            <NavLink
-              className={({ isActive }) =>
-                [
-                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-accent text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
-                ].join(' ')
-              }
-              to="/admin/global-settings"
-              end
-            >
+            <NavLink className={navLinkClass} to="/admin/global-settings" end>
               Global Settings
             </NavLink>
-            <NavLink
-              className={({ isActive }) =>
-                [
-                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-accent text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
-                ].join(' ')
-              }
-              to="/admin/homepage-sections"
-              end
-            >
+            <NavLink className={navLinkClass} to="/admin/homepage-sections" end>
               Homepage Settings
             </NavLink>
-            <NavLink
-              className={({ isActive }) =>
-                [
-                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-accent text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
-                ].join(' ')
-              }
-              to="/admin/landmarks"
-              end
-            >
+            <NavLink className={navLinkClass} to="/admin/landmarks" end>
               Landmarks
             </NavLink>
-            <NavLink
-              className={({ isActive }) =>
-                [
-                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-accent text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
-                ].join(' ')
-              }
-              to="/admin/carousel"
-              end
-            >
+            <NavLink className={navLinkClass} to="/admin/carousel" end>
               Carousel
             </NavLink>
-            <NavLink
-              className={({ isActive }) =>
-                [
-                  'flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-accent text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent',
-                ].join(' ')
-              }
-              to="/admin/history"
-              end
-            >
-              History
-            </NavLink>
-            <div className="px-3 pt-2 text-xs font-semibold uppercase text-muted-foreground">About Nyakrom</div>
-            <NavLink className={({ isActive }) => ['flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',isActive ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent',].join(' ')} to="/admin/about-nyakrom/history" end>History</NavLink>
-            <NavLink className={({ isActive }) => ['flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',isActive ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent',].join(' ')} to="/admin/about-nyakrom/who-we-are" end>Who We Are</NavLink>
-            <NavLink className={({ isActive }) => ['flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',isActive ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent',].join(' ')} to="/admin/about-nyakrom/about-agona-nyakrom-town" end>About Agona Nyakrom Town</NavLink>
-            <NavLink className={({ isActive }) => ['flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors',isActive ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent',].join(' ')} to="/admin/about-nyakrom/leadership-governance" end>Leadership & Governance</NavLink>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setIsAboutNyakromOpen((current) => !current)}
+                aria-expanded={isAboutNyakromOpen || isAboutNyakromRoute}
+                className="flex h-10 w-full items-center justify-between rounded-md px-3 text-left text-sm font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <span>About Nyakrom</span>
+                <span className="text-base leading-none">
+                  {isAboutNyakromOpen || isAboutNyakromRoute ? '▾' : '▸'}
+                </span>
+              </button>
+
+              <div
+                className={`space-y-1 overflow-hidden pl-3 transition-all ${
+                  isAboutNyakromOpen || isAboutNyakromRoute
+                    ? 'max-h-80 pt-1'
+                    : 'max-h-0'
+                }`}
+              >
+                {aboutNyakromLinks.map((item) => (
+                  <NavLink key={item.to} className={navLinkClass} to={item.to} end>
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           </nav>
         </div>
       </aside>
@@ -329,7 +122,6 @@ function AdminLayout() {
             Logout
           </Button>
         </header>
-        {/* Only content area scrolls */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <Outlet />
         </main>
