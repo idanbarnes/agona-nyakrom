@@ -7,6 +7,8 @@ const variantStyles = {
   warning: 'bg-warning/15 text-warning',
   danger: 'bg-danger/15 text-danger',
   muted: 'bg-muted text-muted-foreground',
+  published: 'bg-emerald-50 text-emerald-700',
+  draft: 'bg-slate-100 text-slate-700',
 }
 
 export function Badge({ variant = 'default', className, ...props }) {
