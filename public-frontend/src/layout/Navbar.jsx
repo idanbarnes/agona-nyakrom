@@ -300,7 +300,7 @@ function Navbar({ settings, loading }) {
           ref={mobileOpenBtnRef}
           type="button"
           onClick={() => setIsMobileOpen(true)}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 lg:hidden"
+          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 lg:hidden"
           aria-label="Open menu"
           aria-expanded={isMobileOpen}
           aria-controls="mobile-navigation-dialog"
