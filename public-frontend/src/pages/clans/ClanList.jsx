@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getClans } from '../../api/endpoints.js'
-import { resolveAssetUrl } from '../../lib/apiBase.js'
+import CmsCardImage from '../../components/media/CmsCardImage.jsx'
 import {
   Card,
   CardContent,
   CardSkeleton,
   EmptyState,
   ErrorState,
-  ImageWithFallback,
   StateGate,
 } from '../../components/ui/index.jsx'
 
@@ -109,11 +108,12 @@ function ClanList() {
                   key={item?.id || slug || item?.name}
                   className="flex h-full flex-col overflow-hidden transition hover:shadow-sm"
                 >
-                  <ImageWithFallback
-                    src={thumbnail ? resolveAssetUrl(thumbnail) : null}
+                  <CmsCardImage
+                    src={thumbnail}
                     alt={item?.name || 'Clan thumbnail'}
-                    className="h-40 w-full object-cover"
-                    fallbackText="No image"
+                    ratio="16/9"
+                    className="rounded-none"
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                   />
                   <CardContent className="space-y-3 pt-4">
                     <div className="space-y-1">
