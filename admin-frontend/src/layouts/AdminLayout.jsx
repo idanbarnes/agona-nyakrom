@@ -42,7 +42,7 @@ function AdminLayout() {
   const sidebar = (
     <div className="flex h-full flex-col bg-white">
       <div className="flex h-16 items-center border-b border-slate-200 px-4">
-        <h1 className="text-base font-semibold text-slate-900">Agona CMS</h1>
+        <h1 className="text-base font-semibold text-slate-900">Agona Nyakrom CMS</h1>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
         <NavLink className={navLinkClass} to="/dashboard" end>
@@ -91,7 +91,7 @@ function AdminLayout() {
           >
             <span>About Nyakrom</span>
             <span className="text-base leading-none" aria-hidden="true">
-              {isAboutNyakromOpen ? '▾' : '▸'}
+              {isAboutNyakromOpen ? '-' : '+'}
             </span>
           </button>
 
