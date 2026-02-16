@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 const navItems = [
   { label: 'Home', to: '/' },
@@ -31,7 +32,7 @@ const navItems = [
 //   New mobile/tablet logic keeps the same information architecture using accordion sections.
 
 const linkBaseClass =
-  'rounded-lg px-3 py-2 text-sm font-medium leading-5 text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2'
+  'whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium leading-5 text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2'
 
 function ChevronIcon({ className = '' }) {
   return (
@@ -261,7 +262,7 @@ function Navbar({ settings, loading }) {
         hasShadow ? 'shadow-sm' : ''
       }`}
     >
-      <nav aria-label="Main navigation" className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 lg:h-16 lg:px-6">
+      <nav aria-label="Main navigation" className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4 lg:h-16 lg:px-6">
         <NavLink
           to="/"
           className="inline-flex items-center gap-2 text-sm font-semibold tracking-tight text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
@@ -269,7 +270,10 @@ function Navbar({ settings, loading }) {
           {siteName}
         </NavLink>
 
-        <ul ref={desktopDropdownRef} className="hidden items-center gap-1 lg:flex">
+        <ul
+          ref={desktopDropdownRef}
+          className="ml-auto hidden items-center justify-end gap-1 lg:flex"
+        >
           {resolvedItems.map((item) =>
             item.children ? (
               <DesktopDropdown
@@ -305,81 +309,84 @@ function Navbar({ settings, loading }) {
         </button>
       </nav>
 
-      {isMobileOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden" aria-hidden={!isMobileOpen}>
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setIsMobileOpen(false)}
-            aria-label="Close menu overlay"
-          />
-
-          <aside
-            id="mobile-navigation-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Mobile navigation menu"
-            ref={mobileDialogRef}
-            className="absolute right-0 top-0 flex h-full w-full max-w-sm flex-col border-l border-gray-200 bg-white shadow-xl"
-          >
-            <div className="flex h-14 items-center justify-between border-b border-gray-200 px-4">
-              <span className="text-sm font-semibold text-gray-900">Menu</span>
+      {isMobileOpen
+        ? createPortal(
+            <div className="fixed inset-0 z-[100] lg:hidden" aria-hidden={!isMobileOpen}>
               <button
                 type="button"
+                className="absolute inset-0 bg-black/40"
                 onClick={() => setIsMobileOpen(false)}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
-                aria-label="Close menu"
+                aria-label="Close menu overlay"
+              />
+
+              <aside
+                id="mobile-navigation-dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Mobile navigation menu"
+                ref={mobileDialogRef}
+                className="absolute inset-y-0 right-0 z-[110] flex h-full w-full max-w-sm flex-col border-l border-gray-200 bg-white shadow-xl"
               >
-                <CloseIcon />
-              </button>
-            </div>
+                <div className="flex h-14 items-center justify-between border-b border-gray-200 px-4">
+                  <span className="text-sm font-semibold text-gray-900">Menu</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileOpen(false)}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+                    aria-label="Close menu"
+                  >
+                    <CloseIcon />
+                  </button>
+                </div>
 
-            <div className="overflow-y-auto px-4 py-4">
-              <ul className="space-y-1">
-                {resolvedItems.map((item, index) => {
-                  if (item.children) {
-                    return (
-                      <MobileAccordionSection
-                        key={item.label}
-                        item={item}
-                        expanded={Boolean(mobileExpanded[item.label])}
-                        onToggle={() =>
-                          setMobileExpanded((prev) => ({
-                            ...prev,
-                            [item.label]: !prev[item.label],
-                          }))
-                        }
-                        onNavigate={() => setIsMobileOpen(false)}
-                      />
-                    )
-                  }
+                <div className="overflow-y-auto px-4 py-4">
+                  <ul className="flex flex-col space-y-1">
+                    {resolvedItems.map((item, index) => {
+                      if (item.children) {
+                        return (
+                          <MobileAccordionSection
+                            key={item.label}
+                            item={item}
+                            expanded={Boolean(mobileExpanded[item.label])}
+                            onToggle={() =>
+                              setMobileExpanded((prev) => ({
+                                ...prev,
+                                [item.label]: !prev[item.label],
+                              }))
+                            }
+                            onNavigate={() => setIsMobileOpen(false)}
+                          />
+                        )
+                      }
 
-                  return (
-                    <li key={item.to}>
-                      <NavLink
-                        to={item.to}
-                        ref={index === 0 ? firstMobileLinkRef : null}
-                        onClick={() => setIsMobileOpen(false)}
-                        className={({ isActive }) =>
-                          `flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 ${
-                            isActive ? 'bg-gray-100 text-gray-900' : ''
-                          }`
-                        }
-                      >
-                        {item.label}
-                      </NavLink>
-                    </li>
-                  )
-                })}
-              </ul>
+                      return (
+                        <li key={item.to}>
+                          <NavLink
+                            to={item.to}
+                            ref={index === 0 ? firstMobileLinkRef : null}
+                            onClick={() => setIsMobileOpen(false)}
+                            className={({ isActive }) =>
+                              `flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 ${
+                                isActive ? 'bg-gray-100 text-gray-900' : ''
+                              }`
+                            }
+                          >
+                            {item.label}
+                          </NavLink>
+                        </li>
+                      )
+                    })}
+                  </ul>
 
-              {loading ? (
-                <p className="mt-3 px-3 text-xs text-gray-500">Loading site settings...</p>
-              ) : null}
-            </div>
-          </aside>
-        </div>
-      ) : null}
+                  {loading ? (
+                    <p className="mt-3 px-3 text-xs text-gray-500">Loading site settings...</p>
+                  ) : null}
+                </div>
+              </aside>
+            </div>,
+            document.body,
+          )
+        : null}
     </header>
   )
 }

@@ -134,10 +134,7 @@ function Layout() {
     <PublicSettingsContext.Provider value={contextValue}>
       {/* Public App Shell wrapper */}
       <div className="min-h-screen flex flex-col bg-background text-foreground">
-        {/* Shell styling only; Navbar handles its own sticky behavior. */}
-        <div className="relative z-50 border-b border-border bg-background/80 backdrop-blur">
-          <Navbar settings={settings} loading={loading} error={error} />
-        </div>
+        <Navbar settings={settings} loading={loading} error={error} />
         <main className="flex-1">
           <Outlet />
         </main>
