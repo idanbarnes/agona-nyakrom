@@ -1,18 +1,22 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { getPublicLeaders } from '../../api/endpoints.js'
-import { resolveAssetUrl } from '../../lib/apiBase.js'
+import CmsCardImage from '../../components/media/CmsCardImage.jsx'
 
 function LeaderCard({ leader, compact = false }) {
+  // Previously this card used direct <img> tags with fixed heights, which caused uneven cropping patterns between uploads.
+  // Use a ratio-locked media frame so unknown CMS image sizes render consistently without layout shift.
   return (
-    <article className={`rounded border p-3 space-y-2 ${compact ? 'text-sm' : ''}`}>
-      {leader.photo ? (
-        <img src={resolveAssetUrl(leader.photo)} alt={leader.name || leader.role_title || 'Leader'} className={`${compact ? 'h-28' : 'h-40'} w-full object-cover rounded`} />
-      ) : null}
+    <article className={`flex h-full flex-col rounded border p-3 space-y-2 ${compact ? 'text-sm' : ''}`}>
+      <CmsCardImage
+        src={leader.photo}
+        alt={leader.name || leader.role_title || 'Leader'}
+        ratio="4/5"
+      />
       <h3 className="font-semibold">{leader.name}</h3>
       <p>{leader.role_title}</p>
       {leader.short_bio_snippet ? <p className="text-muted-foreground">{leader.short_bio_snippet}</p> : null}
-      <Link to={`/about/leadership-governance/${leader.slug || leader.id}`} className="text-sm underline">View Profile</Link>
+      <Link to={`/about/leadership-governance/${leader.slug || leader.id}`} className="mt-auto text-sm underline">View Profile</Link>
     </article>
   )
 }
