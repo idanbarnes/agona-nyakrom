@@ -142,6 +142,9 @@ const getPublishedBySlug = async (slug) => {
 
 module.exports = {
   ALLOWED_SLUGS,
+  DEFAULT_SHARE_IMAGE,
+  sanitizeBody,
+  extractFirstImageSrc,
   getBySlug,
   upsertBySlug,
   getPublishedBySlug,
