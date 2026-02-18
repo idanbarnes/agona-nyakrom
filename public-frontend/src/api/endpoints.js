@@ -42,12 +42,12 @@ export const getClans = () => request('/api/public/clans')
 export const getClanDetail = (slug) =>
   request(`/api/public/clans/${slug}`)
 
-// Asafo companies endpoints.
+// Asafo entries endpoints.
 export const getAsafoCompanies = () =>
-  request('/api/public/asafo-companies')
+  request('/api/public/asafo')
 
 export const getAsafoDetail = (slug) =>
-  request(`/api/public/asafo-companies/${slug}`)
+  request(`/api/public/asafo/${slug}`)
 
 // Hall of Fame endpoints.
 export const getHallOfFame = () => request('/api/public/hall-of-fame')

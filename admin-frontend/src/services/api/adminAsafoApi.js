@@ -4,124 +4,69 @@ const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.DEV ? 'http://localhost:5000' : '')
 
-function buildUrl(path) {
-  if (!API_BASE_URL) {
-    return path
-  }
-
-  const base = API_BASE_URL.endsWith('/')
-    ? API_BASE_URL.slice(0, -1)
-    : API_BASE_URL
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-
-  return `${base}${normalizedPath}`
-}
-
-function buildAuthHeaders() {
+const buildUrl = (path) => `${API_BASE_URL}${path}`
+const authHeaders = () => {
   const token = getAuthToken()
-  if (!token) {
-    return {}
-  }
-
-  return { Authorization: `Bearer ${token}` }
+  return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
-async function parseJsonResponse(response) {
-  let payload
-  try {
-    payload = await response.json()
-  } catch (error) {
-    throw new Error('Unexpected server response.')
-  }
-
+const parse = async (response) => {
+  const payload = await response.json()
   if (!response.ok) {
-    const error = new Error(payload?.message || 'Request failed.')
-    error.status = response.status
-    throw error
+    const err = new Error(payload?.message || 'Request failed')
+    err.status = response.status
+    throw err
   }
-
   return payload
 }
 
-export async function getAllAsafoCompanies(params = {}) {
-  const searchParams = new URLSearchParams()
-  if (params.page !== undefined) {
-    searchParams.set('page', params.page)
-  }
-  if (params.limit !== undefined) {
-    searchParams.set('limit', params.limit)
-  }
-
-  const query = searchParams.toString()
-  const url = buildUrl(
-    `/api/admin/asafo-companies/all${query ? `?${query}` : ''}`
-  )
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Accept: 'application/json',
-      ...buildAuthHeaders(),
-    },
+export const getAllAsafoCompanies = async () => {
+  const response = await fetch(buildUrl('/api/admin/asafo'), {
+    headers: { Accept: 'application/json', ...authHeaders() },
   })
-
-  return parseJsonResponse(response)
+  return parse(response)
 }
 
-export async function getSingleAsafoCompany(id) {
-  const response = await fetch(
-    buildUrl(`/api/admin/asafo-companies/single/${id}`),
-    {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        ...buildAuthHeaders(),
-      },
-    }
-  )
-
-  return parseJsonResponse(response)
+export const getSingleAsafoCompany = async (id) => {
+  const response = await fetch(buildUrl(`/api/admin/asafo/${id}`), {
+    headers: { Accept: 'application/json', ...authHeaders() },
+  })
+  return parse(response)
 }
 
-export async function createAsafoCompany(formData) {
-  const response = await fetch(buildUrl('/api/admin/asafo-companies/create'), {
+export const createAsafoCompany = async (formData) => {
+  const response = await fetch(buildUrl('/api/admin/asafo'), {
     method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      ...buildAuthHeaders(),
-    },
+    headers: { Accept: 'application/json', ...authHeaders() },
     body: formData,
   })
-
-  return parseJsonResponse(response)
+  return parse(response)
 }
 
-export async function updateAsafoCompany(id, formData) {
-  const response = await fetch(
-    buildUrl(`/api/admin/asafo-companies/update/${id}`),
-    {
-      method: 'PUT',
-      headers: {
-        Accept: 'application/json',
-        ...buildAuthHeaders(),
-      },
-      body: formData,
-    }
-  )
-
-  return parseJsonResponse(response)
+export const updateAsafoCompany = async (id, formData) => {
+  const response = await fetch(buildUrl(`/api/admin/asafo/${id}`), {
+    method: 'PUT',
+    headers: { Accept: 'application/json', ...authHeaders() },
+    body: formData,
+  })
+  return parse(response)
 }
 
-export async function deleteAsafoCompany(id) {
-  const response = await fetch(
-    buildUrl(`/api/admin/asafo-companies/delete/${id}`),
-    {
-      method: 'DELETE',
-      headers: {
-        Accept: 'application/json',
-        ...buildAuthHeaders(),
-      },
-    }
-  )
+export const deleteAsafoCompany = async (id) => {
+  const response = await fetch(buildUrl(`/api/admin/asafo/${id}`), {
+    method: 'DELETE',
+    headers: { Accept: 'application/json', ...authHeaders() },
+  })
+  return parse(response)
+}
 
-  return parseJsonResponse(response)
+export const uploadAsafoInlineImage = async (file) => {
+  const formData = new FormData()
+  formData.append('image', file)
+  const response = await fetch(buildUrl('/api/admin/asafo/upload-image'), {
+    method: 'POST',
+    headers: { Accept: 'application/json', ...authHeaders() },
+    body: formData,
+  })
+  return parse(response)
 }

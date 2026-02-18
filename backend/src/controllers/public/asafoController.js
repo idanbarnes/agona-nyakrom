@@ -1,33 +1,27 @@
 const asafoService = require('../../services/public/asafoService');
 const { success, error } = require('../../utils/response');
 
-// GET /api/public/asafo
 const getAllPublishedAsafo = async (req, res) => {
   try {
     const items = await asafoService.findAllPublished();
-    return success(res, items, 'Asafo companies fetched successfully');
+    return success(res, items, 'Asafo entries fetched successfully');
   } catch (err) {
-    console.error('Error fetching asafo companies:', err.message);
-    return error(res, 'Failed to fetch asafo companies', 500);
+    console.error('Error fetching asafo entries:', err.message);
+    return error(res, 'Failed to fetch asafo entries', 500);
   }
 };
 
-// GET /api/public/asafo/:slug
 const getPublishedAsafoBySlug = async (req, res) => {
   try {
-    const { slug } = req.params;
-    const asafo = await asafoService.findBySlug(slug);
+    const asafo = await asafoService.findBySlug(req.params.slug);
     if (!asafo) {
-      return error(res, 'Asafo company not found', 404);
+      return error(res, 'Asafo entry not found', 404);
     }
-    return success(res, asafo, 'Asafo company fetched successfully');
+    return success(res, asafo, 'Asafo entry fetched successfully');
   } catch (err) {
-    console.error('Error fetching asafo company:', err.message);
-    return error(res, 'Failed to fetch asafo company', 500);
+    console.error('Error fetching asafo entry:', err.message);
+    return error(res, 'Failed to fetch asafo entry', 500);
   }
 };
 
-module.exports = {
-  getAllPublishedAsafo,
-  getPublishedAsafoBySlug,
-};
+module.exports = { getAllPublishedAsafo, getPublishedAsafoBySlug };

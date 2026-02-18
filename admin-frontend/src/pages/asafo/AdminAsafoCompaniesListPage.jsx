@@ -1,291 +1,103 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import {
-  deleteAsafoCompany,
-  getAllAsafoCompanies,
-} from '../../services/api/adminAsafoApi.js'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
-import {
-  Button,
-  ConfirmDialog,
-  EmptyState,
-  ErrorState,
-  Pagination,
-  PublishStatus,
-  StateGate,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  TableSkeleton,
-  ToastMessage,
-} from '../../components/ui/index.jsx'
+import { deleteAsafoCompany, getAllAsafoCompanies, updateAsafoCompany } from '../../services/api/adminAsafoApi.js'
 
-const DEFAULT_PAGE = 1
-const DEFAULT_LIMIT = 10
-
-function formatDate(value) {
-  if (!value) {
-    return '-'
-  }
-
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return String(value)
-  }
-
-  return date.toLocaleDateString()
-}
-
-function AdminAsafoCompaniesListPage() {
+export default function AdminAsafoCompaniesListPage() {
   const navigate = useNavigate()
-  const location = useLocation()
-  const [page, setPage] = useState(DEFAULT_PAGE)
-  const [limit] = useState(DEFAULT_LIMIT)
   const [items, setItems] = useState([])
-  const [total, setTotal] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [successMessage, setSuccessMessage] = useState(
-    location.state?.successMessage || ''
-  )
-  const [confirmState, setConfirmState] = useState({ open: false, id: null })
-  const isLastPage =
-    total !== null
-      ? page >= Math.ceil(total / limit)
-      : items.length < limit
-  const errorMessage =
-    typeof error === 'string' ? error : error?.message || 'Failed to load data.'
-  const isEmpty = !isLoading && !error && (!items || items.length === 0)
+  const [error, setError] = useState('')
 
-  const fetchCompanies = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    setSuccessMessage('')
-
+  const load = async () => {
     try {
-      const payload = await getAllAsafoCompanies({ page, limit })
-      // Accept either { data: { items, total } } or a direct array for flexibility.
-      const data = payload?.data ?? payload
-      const list = Array.isArray(data)
-        ? data
-        : data?.items || data?.companies || data?.asafoCompanies || []
-
-      setItems(list)
-      setTotal(data?.total ?? payload?.total ?? null)
-    } catch (error) {
-      if (error.status === 401) {
-        // Session expired or invalid; force re-authentication.
+      const res = await getAllAsafoCompanies()
+      setItems(res?.data || [])
+    } catch (err) {
+      if (err.status === 401) {
         clearAuthToken()
         navigate('/login', { replace: true })
         return
       }
-
-      setError(error)
-    } finally {
-      setIsLoading(false)
+      setError(err.message)
     }
-  }, [limit, navigate, page])
+  }
 
   useEffect(() => {
-    if (!getAuthToken()) {
-      // Prevent unauthenticated access to admin resources.
-      navigate('/login', { replace: true })
-      return
-    }
+    if (!getAuthToken()) return navigate('/login', { replace: true })
+    load()
+  }, [navigate])
 
-    fetchCompanies()
-  }, [fetchCompanies, navigate, page])
-
-  const handleDelete = async (id) => {
-    setError(null)
-    setSuccessMessage('')
-
-    try {
-      const response = await deleteAsafoCompany(id)
-      if (response?.success === false) {
-        throw new Error(response?.message || 'Unable to delete asafo company.')
-      }
-      window.alert('Asafo company deleted successfully')
-      setSuccessMessage('Asafo company deleted.')
-      fetchCompanies()
-    } catch (error) {
-      if (error.status === 401) {
-        // Token is no longer valid; send the user back to login.
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
-
-      const message = error.message || 'Unable to delete asafo company.'
-      setError(message)
-      window.alert(message)
-    }
+  const updateField = async (id, patch) => {
+    const formData = new FormData()
+    Object.entries(patch).forEach(([k, v]) => formData.append(k, String(v)))
+    await updateAsafoCompany(id, formData)
+    load()
   }
 
-  const handleDeleteClick = (id) => {
-    setConfirmState({ open: true, id })
-  }
-
-  const handleConfirmDelete = async () => {
-    if (!confirmState.id) {
-      return
-    }
-
-    try {
-      await handleDelete(confirmState.id)
-    } finally {
-      setConfirmState({ open: false, id: null })
-    }
-  }
-
-  const totalPages =
-    total !== null ? Math.max(1, Math.ceil(total / limit)) : isLastPage ? page : page + 1
-
-  const handlePageChange = (nextPage) => {
-    if (nextPage < DEFAULT_PAGE || nextPage > totalPages) {
-      return
-    }
-    setPage(nextPage)
-  }
-
-  const actionLinkClassName =
-    'inline-flex h-8 items-center justify-center rounded-md border border-transparent px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+  const intro = items.find((item) => item.entry_type === 'introduction')
 
   return (
-    <section className="space-y-4 md:space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-xl font-semibold break-words md:text-2xl">Asafo Companies</h2>
-        {total !== null ? (
-          <p className="text-sm text-muted-foreground">Total: {total}</p>
-        ) : null}
+    <section className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-semibold">Asafo Entries</h2>
+        <div className="space-x-2">
+          {!intro ? <Link className="rounded border px-3 py-2" to="/admin/asafo-companies/create?type=introduction">Create Introduction</Link> : null}
+          <Link className="rounded bg-black px-3 py-2 text-white" to="/admin/asafo-companies/create">Create Company</Link>
+        </div>
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div />
-        <Button
-          type="button"
-          variant="primary"
-          onClick={() => navigate('/admin/asafo-companies/create')}
-        >
-          Create asafo company
-        </Button>
-      </div>
-      {error ? <ToastMessage type="error" message={errorMessage} /> : null}
-      {successMessage ? (
-        <ToastMessage type="success" message={successMessage} />
-      ) : null}
+      {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-      <StateGate
-        loading={isLoading}
-        error={error}
-        isEmpty={isEmpty}
-        skeleton={<TableSkeleton rows={6} columns={5} />}
-        errorFallback={
-          <ErrorState
-            message={errorMessage}
-            onRetry={fetchCompanies}
-            retryLabel="Reload companies"
-          />
-        }
-        empty={
-          <EmptyState
-            title="No companies found"
-            description="Create an asafo company to start building the list."
-            action={
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => navigate('/admin/asafo-companies/create')}
-              >
-                Create asafo company
-              </Button>
-            }
-          />
-        }
-      >
-        <Table>
-          <TableHead>
-            <tr>
-              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
-                Name
-              </th>
-              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
-                Slug
-              </th>
-              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
-                Status
-              </th>
-              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
-                Updated At
-              </th>
-              <th className="px-4 py-3 text-right font-medium whitespace-nowrap">
-                Actions
-              </th>
+      <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr className="border-b text-left">
+            <th className="py-2">Type</th>
+            <th>Title</th>
+            <th>Company Key</th>
+            <th>Published</th>
+            <th>Order</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.id} className="border-b">
+              <td className="py-2"><span className="rounded border px-2 py-1 text-xs">{item.entry_type}</span></td>
+              <td>{item.title || item.name}</td>
+              <td>{item.company_key || '-'}</td>
+              <td>
+                <input
+                  type="checkbox"
+                  checked={Boolean(item.published)}
+                  onChange={(e) => updateField(item.id, { published: e.target.checked })}
+                />
+              </td>
+              <td>
+                <input
+                  className="w-16 rounded border px-2 py-1"
+                  type="number"
+                  value={item.display_order ?? 0}
+                  onChange={(e) => updateField(item.id, { display_order: Number(e.target.value || 0) })}
+                />
+              </td>
+              <td className="space-x-2">
+                <Link to={`/admin/asafo-companies/edit/${item.id}`} className="underline">Edit</Link>
+                {item.entry_type !== 'introduction' ? (
+                  <button
+                    type="button"
+                    className="text-red-600"
+                    onClick={async () => {
+                      await deleteAsafoCompany(item.id)
+                      load()
+                    }}
+                  >
+                    Delete
+                  </button>
+                ) : null}
+              </td>
             </tr>
-          </TableHead>
-          <TableBody>
-            {items.map((item) => {
-              const id = item.id || item._id
-              const published =
-                typeof item.published === 'boolean'
-                  ? item.published
-                  : item.status === 'published'
-
-              return (
-                <TableRow key={id}>
-                  <TableCell className="max-w-xs break-words">
-                    {item.name || 'Untitled'}
-                  </TableCell>
-                  <TableCell className="max-w-xs break-words">
-                    {item.slug || '-'}
-                  </TableCell>
-                  <TableCell>
-                    <PublishStatus published={published} />
-                  </TableCell>
-                  <TableCell>
-                    {formatDate(item.updatedAt || item.updated_at)}
-                  </TableCell>
-                  <TableCell className="text-right whitespace-nowrap">
-                    <div className="flex flex-wrap items-center justify-end gap-2">
-                      <Link
-                        to={`/admin/asafo-companies/edit/${id}`}
-                        className={actionLinkClassName}
-                      >
-                        Edit
-                      </Link>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteClick(id)}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-      </StateGate>
-
-      <div className="flex justify-end">
-        <Pagination page={page} totalPages={totalPages} onChange={handlePageChange} />
-      </div>
-
-      <ConfirmDialog
-        open={confirmState.open}
-        title="Delete asafo company"
-        description="Delete this asafo company?"
-        confirmLabel="Delete"
-        variant="danger"
-        onConfirm={handleConfirmDelete}
-        onCancel={() => setConfirmState({ open: false, id: null })}
-      />
+          ))}
+        </tbody>
+      </table>
     </section>
   )
 }
-
-export default AdminAsafoCompaniesListPage
