@@ -6,11 +6,10 @@ const { success, error } = require('../../utils/response');
 const getAllPublishedLandmarks = async (req, res) => {
   try {
     const { limit, offset, page } = getPaginationParams(req);
-    const category = req.query?.category || null;
 
     const [items, total] = await Promise.all([
-      landmarkService.findAll({ limit, offset, category }),
-      landmarkService.countAll({ category }),
+      landmarkService.findAll({ limit, offset }),
+      landmarkService.countAll(),
     ]);
 
     return success(

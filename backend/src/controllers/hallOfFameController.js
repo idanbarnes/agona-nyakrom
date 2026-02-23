@@ -24,11 +24,11 @@ const getAllHeroes = async (req, res) => {
   }
 };
 
-// GET /api/hall-of-fame/:slug
+// GET /api/hall-of-fame/:slugOrId
 const getHeroBySlug = async (req, res) => {
   try {
-    const { slug } = req.params;
-    const hero = await hallOfFameService.findBySlug(slug);
+    const { slugOrId } = req.params;
+    const hero = await hallOfFameService.findBySlugOrId(slugOrId);
 
     if (!hero) {
       return error(res, 'Hero not found', 404);

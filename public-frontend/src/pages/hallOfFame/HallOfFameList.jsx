@@ -31,24 +31,6 @@ function extractItems(payload) {
   )
 }
 
-// Provide a brief summary across common field names.
-function getSummary(item) {
-  const summary =
-    item?.summary || item?.short_bio || item?.shortBio || item?.bio
-  if (summary) {
-    return summary
-  }
-
-  const description = item?.description || item?.achievements || ''
-  if (!description) {
-    return ''
-  }
-
-  return description.length > 180
-    ? `${description.slice(0, 180).trim()}...`
-    : description
-}
-
 function HallOfFameList() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -123,45 +105,51 @@ function HallOfFameList() {
         >
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => {
-              const thumbnail = item?.images?.thumbnail || item?.thumbnail
+              const thumbnail = item?.images?.thumbnail || item?.thumbnail || item?.imageUrl
               const slug = item?.slug
+              const routeKey = slug || item?.id
               const name = item?.full_name || item?.name || 'Unnamed'
-              const summary = getSummary(item)
               const role = item?.title || item?.role || item?.position
 
               return (
                 <Card
                   key={item?.id || slug || name}
-                  className="flex h-full flex-col overflow-hidden transition hover:shadow-sm"
+                  className="flex h-full flex-col rounded-2xl border border-border/70 bg-surface shadow-sm transition hover:shadow-md"
                 >
-                  <CmsCardImage
-                    src={thumbnail}
-                    alt={`${name} portrait`}
-                    ratio="4/5"
-                    className="rounded-none"
-                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                  />
-                  <CardContent className="space-y-3 pt-4">
-                    <div className="space-y-1">
-                      <h2 className="text-lg font-semibold text-foreground">
-                        {slug ? (
-                          <Link
-                            to={`/hall-of-fame/${slug}`}
-                            className="hover:underline"
-                          >
-                            {name}
-                          </Link>
-                        ) : (
-                          name
-                        )}
+                  <div className="p-4 pb-0">
+                    <CmsCardImage
+                      src={thumbnail}
+                      alt={`${name} portrait`}
+                      ratio="4/5"
+                      className="rounded-2xl bg-muted"
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    />
+                  </div>
+
+                  <CardContent className="flex h-full flex-col px-5 pb-5">
+                    <div className="pt-4">
+                      <h2 className="text-xl leading-tight font-semibold text-foreground">
+                        {name}
                       </h2>
                       {role ? (
-                        <p className="text-sm text-muted-foreground">{role}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{role}</p>
                       ) : null}
                     </div>
-                    {summary ? (
-                      <p className="text-sm text-muted-foreground">{summary}</p>
-                    ) : null}
+
+                    <div className="mt-4 flex justify-end">
+                      {routeKey ? (
+                        <Link
+                          to={`/hall-of-fame/${routeKey}`}
+                          className="mt-auto inline-flex items-center rounded-full border border-border bg-muted/40 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                        >
+                          Read more
+                        </Link>
+                      ) : (
+                        <span className="mt-auto inline-flex items-center rounded-full border border-border bg-muted/40 px-4 py-2 text-sm font-medium text-muted-foreground">
+                          Read more
+                        </span>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               )

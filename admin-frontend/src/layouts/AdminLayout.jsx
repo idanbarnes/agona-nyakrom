@@ -23,6 +23,7 @@ const aboutNyakromLinks = [
     label: 'Leadership & Governance',
     to: '/admin/about-nyakrom/leadership-governance',
   },
+  { label: 'Landmarks', to: '/admin/landmarks' },
 ]
 
 function AdminLayout() {
@@ -74,9 +75,6 @@ function AdminLayout() {
         </NavLink>
         <NavLink className={navLinkClass} to="/admin/homepage-sections" end>
           Homepage Settings
-        </NavLink>
-        <NavLink className={navLinkClass} to="/admin/landmarks" end>
-          Landmarks
         </NavLink>
         <NavLink className={navLinkClass} to="/admin/carousel" end>
           Carousel

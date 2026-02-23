@@ -236,6 +236,8 @@ function AdminHallOfFameListPage() {
               const published =
                 typeof item.published === 'boolean'
                   ? item.published
+                  : typeof item.isPublished === 'boolean'
+                  ? item.isPublished
                   : item.status === 'published'
 
               return (

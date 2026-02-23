@@ -17,8 +17,8 @@ import {
   FormField,
   InlineError,
   Input,
-  Textarea,
 } from '../../components/ui/index.jsx'
+import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
 
 // Draft leaders are created inline before persisting to the API.
 const createDraftLeader = (type) => ({
@@ -38,9 +38,8 @@ function AdminClansEditPage() {
   const [initialState, setInitialState] = useState(null)
   const [formState, setFormState] = useState({
     name: '',
-    intro: '',
-    history: '',
-    key_contributions: '',
+    caption: '',
+    body: '',
     published: false,
     image: null,
     existingImageUrl: '',
@@ -290,9 +289,8 @@ function AdminClansEditPage() {
 
         const nextState = {
           name: clan?.name || '',
-          intro: clan?.intro || '',
-          history: clan?.history || '',
-          key_contributions: clan?.key_contributions || '',
+          caption: clan?.caption || clan?.intro || '',
+          body: clan?.body || clan?.history || '',
           published: Boolean(clan?.published),
           image: null,
           existingImageUrl: clan?.image_url || clan?.imageUrl || clan?.image || '',
@@ -369,9 +367,8 @@ function AdminClansEditPage() {
     return (
       autoDrafted ||
       formState.name !== initialState.name ||
-      formState.intro !== initialState.intro ||
-      formState.history !== initialState.history ||
-      formState.key_contributions !== initialState.key_contributions ||
+      formState.caption !== initialState.caption ||
+      formState.body !== initialState.body ||
       formState.published !== initialState.published ||
       Boolean(formState.image)
     )
@@ -397,8 +394,8 @@ function AdminClansEditPage() {
       return
     }
 
-    if (!formState.name || !formState.intro || !formState.history) {
-      setErrorMessage('Name, intro, and history are required.')
+    if (!formState.name || !formState.body) {
+      setErrorMessage('Name and content are required.')
       return
     }
 
@@ -413,11 +410,8 @@ function AdminClansEditPage() {
 
     const formData = new FormData()
     formData.append('name', formState.name)
-    formData.append('intro', formState.intro)
-    formData.append('history', formState.history)
-    if (formState.key_contributions) {
-      formData.append('key_contributions', formState.key_contributions)
-    }
+    formData.append('intro', formState.caption)
+    formData.append('history', formState.body)
     // Force publish on successful save when leaving auto-draft mode.
     formData.append('published', 'true')
     if (formState.image) {
@@ -481,99 +475,82 @@ function AdminClansEditPage() {
           <CardContent className="space-y-5 md:space-y-6">
             <InlineError message={errorMessage} />
             <InlineError message={leaderMessage} />
-            <FormField label="Name" htmlFor="name" required>
-              <Input
-                id="name"
-                name="name"
-                type="text"
-                value={formState.name}
-                onChange={handleChange}
-                required
-              />
-            </FormField>
-
-            <FormField label="Intro" htmlFor="intro" required>
-              <Textarea
-                id="intro"
-                name="intro"
-                value={formState.intro}
-                onChange={handleChange}
-                required
-              />
-            </FormField>
-
-            <FormField label="History" htmlFor="history" required>
-              <Textarea
-                id="history"
-                name="history"
-                value={formState.history}
-                onChange={handleChange}
-                required
-              />
-            </FormField>
-
-            <FormField
-              label="Key contributions (optional)"
-              htmlFor="key_contributions"
-            >
-              <Textarea
-                id="key_contributions"
-                name="key_contributions"
-                value={formState.key_contributions}
-                onChange={handleChange}
-              />
-            </FormField>
-
-            <FormField label="Published" htmlFor="published">
-              <div className="flex items-center gap-2">
-                <input
-                  id="published"
-                  name="published"
-                  type="checkbox"
-                  checked={formState.published}
-                  onChange={handleChange}
-                  disabled={autoDrafted}
-                  className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-                <span className="text-sm text-muted-foreground">
-                  Publishing is enabled after saving changes.
-                </span>
-              </div>
-            </FormField>
-
-            <FormField
-              label="Replace image (optional)"
-              htmlFor="image"
-              helpText={
-                formState.existingImageUrl ? (
-                  <span>
-                    Current image:{' '}
-                    <a
-                      href={formState.existingImageUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary underline-offset-4 hover:underline"
-                    >
-                      View
-                    </a>
-                  </span>
-                ) : null
-              }
-            >
-              <div className="rounded-lg border border-border bg-background p-4">
+            <div className="space-y-5 rounded-lg border border-border bg-background p-4 md:space-y-6 md:p-5">
+              <FormField label="Name" htmlFor="name" required>
                 <Input
-                  id="image"
-                  name="image"
-                  type="file"
-                  onChange={handleFileChange}
+                  id="name"
+                  name="name"
+                  type="text"
+                  value={formState.name}
+                  onChange={handleChange}
+                  required
                 />
-              </div>
-            </FormField>
+              </FormField>
 
-            <div className="space-y-4">
+              <div className="grid gap-5 md:grid-cols-2">
+                <FormField label="Caption (optional)" htmlFor="caption">
+                  <Input
+                    id="caption"
+                    name="caption"
+                    type="text"
+                    value={formState.caption}
+                    onChange={handleChange}
+                  />
+                </FormField>
+
+                <FormField label="Content" htmlFor="clan-edit-rich-text" required>
+                  <SimpleRichTextEditor
+                    value={formState.body}
+                    onChange={(nextBody) =>
+                      setFormState((current) => ({ ...current, body: nextBody }))
+                    }
+                    textareaId="clan-edit-rich-text"
+                  />
+                </FormField>
+              </div>
+
+              <FormField
+                label="Replace image (optional)"
+                htmlFor="image"
+                helpText={
+                  formState.existingImageUrl ? (
+                    <span>
+                      Current image:{' '}
+                      <a
+                        href={formState.existingImageUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-primary underline-offset-4 hover:underline"
+                      >
+                        View
+                      </a>
+                    </span>
+                  ) : null
+                }
+              >
+                <div className="rounded-lg border border-border bg-background p-4">
+                  <Input
+                    id="image"
+                    name="image"
+                    type="file"
+                    onChange={handleFileChange}
+                  />
+                </div>
+              </FormField>
+            </div>
+
+            <div className="space-y-6 rounded-lg border border-border bg-background p-4 md:p-5">
+              <div>
+                <h2 className="text-base font-semibold">Leaders</h2>
+                <p className="text-sm text-muted-foreground">
+                  Manage and organize current and past clan leaders.
+                </p>
+              </div>
+
+              <div className="space-y-4 rounded-lg border border-border bg-background p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-base font-semibold">Current Leaders</h2>
+                  <h3 className="text-base font-semibold">Current Leaders</h3>
                   <p className="text-sm text-muted-foreground">
                     Manage the current leadership order.
                   </p>
@@ -804,10 +781,10 @@ function AdminClansEditPage() {
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 rounded-lg border border-border bg-background p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-base font-semibold">Past Leaders</h2>
+                  <h3 className="text-base font-semibold">Past Leaders</h3>
                   <p className="text-sm text-muted-foreground">
                     Track previous leadership positions and imagery.
                   </p>
@@ -1035,23 +1012,42 @@ function AdminClansEditPage() {
                 ))}
               </div>
             </div>
+            </div>
           </CardContent>
-          <CardFooter>
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={() => navigate('/admin/clans')}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              type="submit"
-              loading={isSubmitting}
-              disabled={!hasChanges}
-            >
-              {isSubmitting ? 'Saving...' : 'Save changes'}
-            </Button>
+          <CardFooter className="flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
+            <FormField label="Published" htmlFor="published">
+              <div className="flex items-center gap-2">
+                <input
+                  id="published"
+                  name="published"
+                  type="checkbox"
+                  checked={formState.published}
+                  onChange={handleChange}
+                  disabled={autoDrafted}
+                  className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <span className="text-sm text-muted-foreground">
+                  Publishing is enabled after saving changes.
+                </span>
+              </div>
+            </FormField>
+            <div className="flex items-center justify-end gap-3">
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={() => navigate('/admin/clans')}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                type="submit"
+                loading={isSubmitting}
+                disabled={!hasChanges}
+              >
+                {isSubmitting ? 'Saving...' : 'Save changes'}
+              </Button>
+            </div>
           </CardFooter>
         </Card>
       </form>

@@ -1,16 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getHallOfFameDetail } from '../../api/endpoints.js'
+import RichTextRenderer from '../../components/RichTextRenderer.jsx'
 import {
   Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   DetailSkeleton,
   EmptyState,
   ErrorState,
-  ImageWithFallback,
   StateGate,
 } from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
@@ -25,7 +21,7 @@ function HallOfFameDetail() {
     if (!slug) {
       setItem(null)
       setLoading(false)
-      setError(new Error('Missing hall of fame slug.'))
+      setError(new Error('Missing hall of fame identifier.'))
       return
     }
 
@@ -52,90 +48,91 @@ function HallOfFameDetail() {
     loadEntry()
   }, [loadEntry])
 
-  // Gather descriptive fields the backend might return.
-  const details = useMemo(() => {
-    if (!item) {
-      return []
-    }
+  const name = item?.name || item?.full_name || 'Hall of Fame'
+  const role = item?.title || item?.position || item?.role || ''
+  const body = item?.body || item?.bio || item?.description || item?.content || ''
 
-    return [
-      item?.bio,
-      item?.description,
-      item?.achievements,
-      item?.summary,
-    ].filter(Boolean)
-  }, [item])
-
-  // Prefer medium image, then fall back to any available image field.
   const imagePath =
-    item?.images?.medium || item?.images?.large || item?.image || item?.photo
-  const imageUrl = imagePath ? resolveAssetUrl(imagePath) : null
-  const role = item?.role || item?.title || item?.position
+    item?.imageUrl ||
+    item?.images?.large ||
+    item?.images?.medium ||
+    item?.images?.original ||
+    item?.image ||
+    item?.photo
+
+  const imageUrl = useMemo(() => (imagePath ? resolveAssetUrl(imagePath) : ''), [imagePath])
 
   return (
-    <section className="container py-6 md:py-10">
+    <section className="bg-background py-8 sm:py-10 md:py-12">
       <StateGate
         loading={loading}
         error={error}
         isEmpty={!loading && !error && !item}
         skeleton={<DetailSkeleton />}
         errorFallback={
-          <ErrorState
-            message={error?.message || 'Unable to load this entry.'}
-            onRetry={loadEntry}
-          />
+          <div className="container">
+            <ErrorState
+              message={error?.message || 'Unable to load this entry.'}
+              onRetry={loadEntry}
+            />
+          </div>
         }
         empty={
-          <EmptyState
-            title="Not found"
-            description="This item may have been removed."
-            action={
-              <Button as={Link} to="/hall-of-fame" variant="ghost">
-                Back to hall of fame
-              </Button>
-            }
-          />
+          <div className="container">
+            <EmptyState
+              title="Not found"
+              description="This Hall of Fame entry may have been removed."
+              action={
+                <Button as={Link} to="/hall-of-fame" variant="ghost">
+                  Back to hall of fame
+                </Button>
+              }
+            />
+          </div>
         }
       >
-        <div className="space-y-8">
-          <header className="space-y-4">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center">
-              <ImageWithFallback
-                src={imageUrl}
-                alt={item?.full_name || item?.name || 'Entry'}
-                className="h-28 w-28 rounded-xl border border-border object-cover"
-                fallbackText="No image"
-              />
-              <div>
-                <h1 className="text-2xl font-semibold leading-tight text-foreground break-words md:text-4xl">
-                  {item?.full_name || item?.name || 'Hall of Fame'}
-                </h1>
-                {role ? (
-                  <p className="mt-2 text-sm text-muted-foreground">{role}</p>
-                ) : null}
+        <article className="container mx-auto max-w-6xl">
+          <div className="rounded-2xl border border-border/70 bg-surface p-5 shadow-sm sm:p-7 lg:p-9">
+            <div className="grid gap-6 md:grid-cols-[minmax(220px,300px),1fr] md:items-start lg:gap-10">
+              <div className="w-full overflow-hidden rounded-2xl border border-border/70 bg-muted/40">
+                <div className="aspect-[4/5]">
+                  {imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt={`${name} portrait`}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm text-muted-foreground">
+                      Portrait image unavailable
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                <header className="space-y-2">
+                  <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-4xl">
+                    {name}
+                  </h1>
+                  {role ? (
+                    <p className="text-base text-muted-foreground md:text-lg">{role}</p>
+                  ) : null}
+                </header>
+
+                <div className="min-w-0">
+                  {body ? (
+                    <RichTextRenderer html={body} />
+                  ) : (
+                    <p className="text-muted-foreground">No biography available.</p>
+                  )}
+                </div>
               </div>
             </div>
-          </header>
-
-          <div className="max-w-3xl space-y-4 leading-7 text-foreground">
-            <Card className="border-border/70">
-              <CardHeader className="pb-2">
-                <CardTitle>Story</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm text-muted-foreground">
-                {details.length > 0 ? (
-                  details.map((detail, index) => (
-                    <p key={index} className="text-foreground">
-                      {detail}
-                    </p>
-                  ))
-                ) : (
-                  <p>No biography available.</p>
-                )}
-              </CardContent>
-            </Card>
           </div>
-        </div>
+        </article>
       </StateGate>
     </section>
   )

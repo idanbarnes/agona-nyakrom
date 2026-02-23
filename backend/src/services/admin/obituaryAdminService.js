@@ -1,4 +1,5 @@
 const { pool } = require('../../config/db');
+const { resolveAge } = require('../../utils/age');
 
 const baseSelect = `
   id,
@@ -9,6 +10,12 @@ const baseSelect = `
   death_date,
   funeral_start_at,
   funeral_end_at,
+  visitation_start_at,
+  visitation_location,
+  funeral_location,
+  burial_location,
+  deceased_photo_url,
+  poster_image_url,
   location,
   description,
   map_link,
@@ -34,6 +41,12 @@ const mapObituary = (row) => {
     death_date,
     funeral_start_at,
     funeral_end_at,
+    visitation_start_at,
+    visitation_location,
+    funeral_location,
+    burial_location,
+    deceased_photo_url,
+    poster_image_url,
     description,
     summary_field,
     original_image_path,
@@ -44,18 +57,25 @@ const mapObituary = (row) => {
     created_at,
     updated_at,
   } = row;
+  const normalizedAge = resolveAge(age, birth_date, death_date);
 
   return {
     id,
     full_name: name,
     slug,
-    age,
+    age: normalizedAge,
     summary: summary_field || description || null,
     biography: description || summary_field || null,
     date_of_birth: birth_date,
     date_of_death: death_date,
     burial_date: funeral_end_at,
     funeral_date: funeral_start_at,
+    visitation_date: visitation_start_at,
+    visitation_location: visitation_location || null,
+    funeral_location: funeral_location || null,
+    burial_location: burial_location || null,
+    deceased_photo_url: deceased_photo_url || null,
+    poster_image_url: poster_image_url || null,
     images: {
       original: original_image_path,
       large: large_image_path,
@@ -79,6 +99,12 @@ const create = async (data) => {
     date_of_death = null,
     burial_date = null,
     funeral_date = null,
+    visitation_date = null,
+    visitation_location = null,
+    funeral_location = null,
+    burial_location = null,
+    deceased_photo_url = null,
+    poster_image_url = null,
     images = {},
     published = false,
   } = data;
@@ -88,10 +114,11 @@ const create = async (data) => {
   const query = `
     INSERT INTO obituaries
       (name, slug, age, birth_date, death_date, funeral_start_at, funeral_end_at,
+       visitation_start_at, visitation_location, funeral_location, burial_location, deceased_photo_url, poster_image_url,
        description, original_image_path, large_image_path, medium_image_path, thumbnail_image_path,
        published, created_at, updated_at)
     VALUES
-      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, NOW(), NOW())
     RETURNING ${baseSelect}
   `;
 
@@ -103,6 +130,12 @@ const create = async (data) => {
     date_of_death,
     funeral_date,
     burial_date,
+    visitation_date,
+    visitation_location,
+    funeral_location,
+    burial_location,
+    deceased_photo_url,
+    poster_image_url,
     biography || summary,
     original || null,
     large || null,
@@ -136,6 +169,12 @@ const update = async (id, data) => {
   if (data.date_of_death !== undefined) setField('death_date', data.date_of_death);
   if (data.funeral_date !== undefined) setField('funeral_start_at', data.funeral_date);
   if (data.burial_date !== undefined) setField('funeral_end_at', data.burial_date);
+  if (data.visitation_date !== undefined) setField('visitation_start_at', data.visitation_date);
+  if (data.visitation_location !== undefined) setField('visitation_location', data.visitation_location);
+  if (data.funeral_location !== undefined) setField('funeral_location', data.funeral_location);
+  if (data.burial_location !== undefined) setField('burial_location', data.burial_location);
+  if (data.deceased_photo_url !== undefined) setField('deceased_photo_url', data.deceased_photo_url);
+  if (data.poster_image_url !== undefined) setField('poster_image_url', data.poster_image_url);
   if (data.published !== undefined) setField('published', data.published);
 
   if (data.images) {

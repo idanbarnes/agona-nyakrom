@@ -5,6 +5,7 @@ const baseSelect = `
   name,
   slug,
   title,
+  body,
   bio,
   achievements,
   is_featured,
@@ -26,6 +27,7 @@ const mapHallOfFame = (row) => {
     name,
     slug,
     title,
+    body,
     bio,
     achievements,
     is_featured,
@@ -39,13 +41,21 @@ const mapHallOfFame = (row) => {
     updated_at,
   } = row;
 
+  const normalizedBody = body || bio || achievements || '';
+  const imageUrl =
+    medium_image_path || large_image_path || original_image_path || thumbnail_image_path || '';
+
   return {
     id,
     name,
     slug,
     title,
-    bio,
+    position: title || null,
+    body: normalizedBody,
+    bio: bio || normalizedBody,
     achievements,
+    imageUrl,
+    isPublished: Boolean(published),
     is_featured,
     display_order,
     images: {
@@ -54,7 +64,9 @@ const mapHallOfFame = (row) => {
       medium: medium_image_path,
       thumbnail: thumbnail_image_path,
     },
-    published,
+    published: Boolean(published),
+    createdAt: created_at,
+    updatedAt: updated_at,
     created_at,
     updated_at,
   };
@@ -65,6 +77,7 @@ const create = async (data) => {
     name,
     slug,
     title = null,
+    body = null,
     bio = null,
     achievements = null,
     is_featured = false,
@@ -74,14 +87,15 @@ const create = async (data) => {
   } = data;
 
   const { original, large, medium, thumbnail } = images;
+  const resolvedBody = body || bio || achievements || null;
 
   const query = `
     INSERT INTO hall_of_fame
-      (name, slug, title, bio, achievements, is_featured, display_order,
+      (name, slug, title, body, bio, achievements, is_featured, display_order,
        original_image_path, large_image_path, medium_image_path, thumbnail_image_path,
        published, created_at, updated_at)
     VALUES
-      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
     RETURNING ${baseSelect}
   `;
 
@@ -89,7 +103,8 @@ const create = async (data) => {
     name,
     slug,
     title,
-    bio,
+    resolvedBody,
+    bio || resolvedBody,
     achievements,
     is_featured,
     display_order,
@@ -97,7 +112,7 @@ const create = async (data) => {
     large || null,
     medium || null,
     thumbnail || null,
-    published,
+    Boolean(published),
   ];
 
   const { rows } = await pool.query(query, values);
@@ -118,11 +133,19 @@ const update = async (id, data) => {
   if (data.name !== undefined) setField('name', data.name);
   if (data.slug !== undefined) setField('slug', data.slug);
   if (data.title !== undefined) setField('title', data.title);
+
+  if (data.body !== undefined) {
+    setField('body', data.body);
+    if (data.bio === undefined) {
+      setField('bio', data.body);
+    }
+  }
+
   if (data.bio !== undefined) setField('bio', data.bio);
   if (data.achievements !== undefined) setField('achievements', data.achievements);
   if (data.is_featured !== undefined) setField('is_featured', data.is_featured);
   if (data.display_order !== undefined) setField('display_order', data.display_order);
-  if (data.published !== undefined) setField('published', data.published);
+  if (data.published !== undefined) setField('published', Boolean(data.published));
 
   if (data.images) {
     const { original, large, medium, thumbnail } = data.images;
@@ -137,7 +160,6 @@ const update = async (id, data) => {
   }
 
   setField('updated_at', new Date());
-
   values.push(id);
 
   const query = `

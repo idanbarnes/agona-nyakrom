@@ -5,6 +5,7 @@ import {
   updateLandmark,
 } from '../../services/api/adminLandmarksApi.js'
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
 import {
   Button,
   Card,
@@ -13,7 +14,6 @@ import {
   FormField,
   InlineError,
   Input,
-  Textarea,
 } from '../../components/ui/index.jsx'
 
 function AdminLandmarksEditPage() {
@@ -22,11 +22,7 @@ function AdminLandmarksEditPage() {
   const [initialState, setInitialState] = useState(null)
   const [formState, setFormState] = useState({
     name: '',
-    title: '',
     description: '',
-    location: '',
-    google_map_link: '',
-    category: '',
     published: false,
     image: null,
     existingImageUrl: '',
@@ -53,15 +49,7 @@ function AdminLandmarksEditPage() {
 
         const nextState = {
           name: landmark?.name || '',
-          title: landmark?.title || '',
           description: landmark?.description || '',
-          location: landmark?.location || landmark?.address || '',
-          google_map_link:
-            landmark?.google_map_link ||
-            landmark?.googleMapLink ||
-            landmark?.video_url ||
-            '',
-          category: landmark?.category || '',
           published: Boolean(landmark?.published),
           image: null,
           existingImageUrl:
@@ -104,11 +92,7 @@ function AdminLandmarksEditPage() {
     return (
       autoDrafted ||
       formState.name !== initialState.name ||
-      formState.title !== initialState.title ||
       formState.description !== initialState.description ||
-      formState.location !== initialState.location ||
-      formState.google_map_link !== initialState.google_map_link ||
-      formState.category !== initialState.category ||
       formState.published !== initialState.published ||
       Boolean(formState.image)
     )
@@ -134,18 +118,14 @@ function AdminLandmarksEditPage() {
       return
     }
 
-    if (!formState.name.trim() && !formState.title.trim()) {
-      setErrorMessage('Name or title is required.')
+    if (!formState.name.trim()) {
+      setErrorMessage('Name is required.')
       return
     }
 
     const formData = new FormData()
     formData.append('name', formState.name.trim())
-    formData.append('title', formState.title.trim())
     formData.append('description', formState.description.trim())
-    formData.append('address', formState.location.trim())
-    formData.append('video_url', formState.google_map_link.trim())
-    formData.append('category', formState.category.trim())
     // Force publish on successful save when leaving auto-draft mode.
     formData.append('published', 'true')
     if (formState.image) {
@@ -197,7 +177,7 @@ function AdminLandmarksEditPage() {
       <header className="space-y-1">
         <h1 className="text-xl font-semibold break-words md:text-2xl">Edit Landmark</h1>
         <p className="text-sm text-muted-foreground">
-          Adjust the landmark details and media as needed.
+          Adjust the landmark description and media as needed.
         </p>
       </header>
       <form onSubmit={handleSubmit}>
@@ -214,52 +194,13 @@ function AdminLandmarksEditPage() {
               />
             </FormField>
 
-            <FormField label="Title" htmlFor="title">
-              <Input
-                id="title"
-                name="title"
-                type="text"
-                value={formState.title}
-                onChange={handleChange}
-              />
-            </FormField>
-
             <FormField label="Description" htmlFor="description">
-              <Textarea
-                id="description"
-                name="description"
+              <SimpleRichTextEditor
                 value={formState.description}
-                onChange={handleChange}
-              />
-            </FormField>
-
-            <FormField label="Location" htmlFor="location">
-              <Input
-                id="location"
-                name="location"
-                type="text"
-                value={formState.location}
-                onChange={handleChange}
-              />
-            </FormField>
-
-            <FormField label="Google map link" htmlFor="google_map_link">
-              <Input
-                id="google_map_link"
-                name="google_map_link"
-                type="url"
-                value={formState.google_map_link}
-                onChange={handleChange}
-              />
-            </FormField>
-
-            <FormField label="Category" htmlFor="category">
-              <Input
-                id="category"
-                name="category"
-                type="text"
-                value={formState.category}
-                onChange={handleChange}
+                onChange={(nextDescription) =>
+                  setFormState((current) => ({ ...current, description: nextDescription }))
+                }
+                textareaId={`landmark-description-edit-${id}`}
               />
             </FormField>
 
@@ -323,7 +264,7 @@ function AdminLandmarksEditPage() {
               loading={isSubmitting}
               disabled={!hasChanges}
             >
-              {isSubmitting ? 'Saving...' : 'Save changes'}
+              {isSubmitting ? 'Saving...' : 'Update Landmark'}
             </Button>
           </CardFooter>
         </Card>

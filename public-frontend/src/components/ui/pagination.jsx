@@ -46,7 +46,7 @@ export function Pagination({ page, totalPages, onChange, className }) {
         return (
           <React.Fragment key={pageNumber}>
             {showEllipsis ? (
-              <span className="px-2 text-sm text-muted-foreground">…</span>
+              <span className="px-2 text-sm text-muted-foreground">...</span>
             ) : null}
             <Button
               variant={pageNumber === page ? 'secondary' : 'ghost'}
@@ -71,3 +71,4 @@ export function Pagination({ page, totalPages, onChange, className }) {
     </nav>
   )
 }
+

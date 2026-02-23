@@ -11,8 +11,7 @@ import AdminClansListPage from './pages/clans/AdminClansListPage.jsx'
 import AdminClansCreatePage from './pages/clans/AdminClansCreatePage.jsx'
 import AdminClansEditPage from './pages/clans/AdminClansEditPage.jsx'
 import AdminAsafoCompaniesListPage from './pages/asafo/AdminAsafoCompaniesListPage.jsx'
-import AdminAsafoCompaniesCreatePage from './pages/asafo/AdminAsafoCompaniesCreatePage.jsx'
-import AdminAsafoCompaniesEditPage from './pages/asafo/AdminAsafoCompaniesEditPage.jsx'
+import AdminAsafoCompaniesSectionPage from './pages/asafo/AdminAsafoCompaniesSectionPage.jsx'
 import AdminHallOfFameListPage from './pages/hallOfFame/AdminHallOfFameListPage.jsx'
 import AdminHallOfFameCreatePage from './pages/hallOfFame/AdminHallOfFameCreatePage.jsx'
 import AdminHallOfFameEditPage from './pages/hallOfFame/AdminHallOfFameEditPage.jsx'
@@ -66,12 +65,8 @@ function App() {
               element={<AdminAsafoCompaniesListPage />}
             />
             <Route
-              path="/admin/asafo-companies/create"
-              element={<AdminAsafoCompaniesCreatePage />}
-            />
-            <Route
-              path="/admin/asafo-companies/edit/:id"
-              element={<AdminAsafoCompaniesEditPage />}
+              path="/admin/asafo-companies/section/:sectionId"
+              element={<AdminAsafoCompaniesSectionPage />}
             />
             <Route
               path="/admin/hall-of-fame"

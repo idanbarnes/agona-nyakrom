@@ -12,11 +12,11 @@ const getAllPublishedHallOfFame = async (req, res) => {
   }
 };
 
-// GET /api/public/hall-of-fame/:slug
+// GET /api/public/hall-of-fame/:slugOrId
 const getPublishedHallOfFameBySlug = async (req, res) => {
   try {
-    const { slug } = req.params;
-    const entry = await hallOfFameService.findBySlug(slug);
+    const { slugOrId } = req.params;
+    const entry = await hallOfFameService.findBySlugOrId(slugOrId);
     if (!entry) {
       return error(res, 'Hall of fame entry not found', 404);
     }

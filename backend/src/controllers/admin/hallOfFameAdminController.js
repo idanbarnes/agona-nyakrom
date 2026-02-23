@@ -1,15 +1,23 @@
 const hallOfFameAdminService = require('../../services/admin/hallOfFameAdminService');
 const mediaService = require('../../services/mediaService');
-const { requireFields, isValidSlugFormat } = require('../../utils/validators');
+const { isValidSlugFormat } = require('../../utils/validators');
 const { generateSlug } = require('../../utils/slugify');
 const { success, error } = require('../../utils/response');
+
+const parseBoolean = (value) => value === true || value === 'true';
+
+const normalizeText = (value) => {
+  if (value === undefined || value === null) return undefined;
+  const text = String(value).trim();
+  return text || null;
+};
 
 const processImageIfPresent = async (file, uniqueId) => {
   if (!file) return {};
   return mediaService.processImage(file, 'hall-of-fame', uniqueId);
 };
 
-// Support multer uploads and base64 data URIs
+// Support multer uploads and base64 data URIs.
 const extractImageFromRequest = (req) => {
   if (req.file) return req.file;
 
@@ -29,17 +37,49 @@ const extractImageFromRequest = (req) => {
   };
 };
 
-// POST /create
+const normalizePayload = (body = {}) => {
+  const normalizedBody = normalizeText(body.body ?? body.bio ?? body.description ?? body.content);
+  const normalizedTitle = normalizeText(body.title ?? body.position ?? body.role);
+  const normalizedName = normalizeText(body.name ?? body.full_name);
+  const displayOrderRaw = body.display_order;
+  const parsedDisplayOrder =
+    displayOrderRaw !== undefined && displayOrderRaw !== '' ? Number(displayOrderRaw) : undefined;
+
+  return {
+    name: normalizedName,
+    title: normalizedTitle,
+    body: normalizedBody,
+    bio: normalizedBody,
+    achievements: normalizeText(body.achievements),
+    is_featured:
+      body.is_featured !== undefined
+        ? parseBoolean(body.is_featured)
+        : body.isFeatured !== undefined
+        ? parseBoolean(body.isFeatured)
+        : undefined,
+    display_order:
+      Number.isFinite(parsedDisplayOrder) ? parsedDisplayOrder : undefined,
+    published:
+      body.published !== undefined
+        ? parseBoolean(body.published)
+        : body.isPublished !== undefined
+        ? parseBoolean(body.isPublished)
+        : undefined,
+  };
+};
+
 const createHallOfFame = async (req, res) => {
   try {
-    const { name, title, bio, achievements, is_featured, display_order, published } = req.body || {};
+    const payload = normalizePayload(req.body || {});
 
-    const { valid, missing } = requireFields(req.body || {}, ['name', 'bio']);
-    if (!valid) {
-      return error(res, `Missing fields: ${missing.join(', ')}`, 400);
+    if (!payload.name) {
+      return error(res, 'Name is required.', 400);
+    }
+    if (!payload.body) {
+      return error(res, 'Body is required.', 400);
     }
 
-    const slug = generateSlug(name);
+    const slug = generateSlug(payload.name);
     if (!isValidSlugFormat(slug)) {
       return error(res, 'Invalid slug format', 400);
     }
@@ -48,15 +88,11 @@ const createHallOfFame = async (req, res) => {
     const images = await processImageIfPresent(imageFile, slug);
 
     const created = await hallOfFameAdminService.create({
-      name,
+      ...payload,
       slug,
-      title,
-      bio,
-      achievements,
-      is_featured,
-      display_order,
       images,
-      published,
+      published: payload.published ?? false,
+      is_featured: payload.is_featured ?? false,
     });
 
     return success(res, created, 'Hall of fame entry created successfully', 201);
@@ -69,22 +105,12 @@ const createHallOfFame = async (req, res) => {
   }
 };
 
-// PUT /update/:id
 const updateHallOfFame = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, title, bio, achievements, is_featured, display_order, published } = req.body || {};
+    const payload = normalizePayload(req.body || {});
 
-    const updatableFields = [
-      'name',
-      'title',
-      'bio',
-      'achievements',
-      'is_featured',
-      'display_order',
-      'published',
-    ];
-    const hasFieldUpdate = updatableFields.some((field) => req.body && req.body[field] !== undefined);
+    const hasFieldUpdate = Object.values(payload).some((value) => value !== undefined);
     const hasImageUpdate = Boolean(req.file || typeof req.body?.image === 'string');
     if (!hasFieldUpdate && !hasImageUpdate) {
       return error(res, 'No fields provided to update', 400);
@@ -96,8 +122,8 @@ const updateHallOfFame = async (req, res) => {
     }
 
     let slug = existing.slug;
-    if (name) {
-      slug = generateSlug(name);
+    if (payload.name) {
+      slug = generateSlug(payload.name);
       if (!isValidSlugFormat(slug)) {
         return error(res, 'Invalid slug format', 400);
       }
@@ -107,15 +133,9 @@ const updateHallOfFame = async (req, res) => {
     const images = await processImageIfPresent(imageFile, slug || id);
 
     const updated = await hallOfFameAdminService.update(id, {
-      name,
+      ...payload,
       slug,
-      title,
-      bio,
-      achievements,
-      is_featured,
-      display_order,
-      images,
-      published,
+      images: Object.keys(images).length > 0 ? images : undefined,
     });
 
     return success(res, updated, 'Hall of fame entry updated successfully');
@@ -131,7 +151,6 @@ const updateHallOfFame = async (req, res) => {
   }
 };
 
-// DELETE /delete/:id
 const deleteHallOfFame = async (req, res) => {
   try {
     const { id } = req.params;
@@ -148,7 +167,6 @@ const deleteHallOfFame = async (req, res) => {
   }
 };
 
-// GET /all
 const getAllHallOfFame = async (req, res) => {
   try {
     const items = await hallOfFameAdminService.getAll();
@@ -159,7 +177,6 @@ const getAllHallOfFame = async (req, res) => {
   }
 };
 
-// GET /single/:id
 const getSingleHallOfFame = async (req, res) => {
   try {
     const { id } = req.params;
@@ -174,10 +191,22 @@ const getSingleHallOfFame = async (req, res) => {
   }
 };
 
+const uploadHallOfFameImage = async (req, res) => {
+  try {
+    if (!req.file) return error(res, 'Image is required', 400);
+    const images = await mediaService.processImage(req.file, 'hall-of-fame', `hof-${Date.now()}`);
+    return success(res, { image_url: images.large || images.original, images }, 'Image uploaded successfully');
+  } catch (err) {
+    console.error('Error uploading hall of fame image:', err.message);
+    return error(res, err.message || 'Failed to upload image', 500);
+  }
+};
+
 module.exports = {
   createHallOfFame,
   updateHallOfFame,
   deleteHallOfFame,
   getAllHallOfFame,
   getSingleHallOfFame,
+  uploadHallOfFameImage,
 };

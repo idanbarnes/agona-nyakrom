@@ -3,14 +3,8 @@ const { pool } = require('../../config/db');
 const baseSelect = `
   id,
   name,
-  title,
   slug,
-  category,
   description,
-  address,
-  latitude,
-  longitude,
-  video_url,
   original_image_path,
   large_image_path,
   medium_image_path,
@@ -26,14 +20,8 @@ const mapLandmark = (row) => {
   const {
     id,
     name,
-    title,
     slug,
-    category,
     description,
-    address,
-    latitude,
-    longitude,
-    video_url,
     original_image_path,
     large_image_path,
     medium_image_path,
@@ -46,16 +34,8 @@ const mapLandmark = (row) => {
   return {
     id,
     name,
-    title,
     slug,
-    category,
     description,
-    address,
-    latitude,
-    longitude,
-    video_url,
-    location: address,
-    google_map_link: video_url,
     images: {
       original: original_image_path,
       large: large_image_path,
@@ -72,13 +52,7 @@ const create = async (data) => {
   const {
     name,
     slug,
-    title = null,
-    category = null,
     description = null,
-    address = null,
-    latitude = null,
-    longitude = null,
-    video_url = null,
     images = {},
     published = false,
   } = data;
@@ -87,24 +61,18 @@ const create = async (data) => {
 
   const query = `
     INSERT INTO landmarks
-      (name, title, slug, category, description, address, latitude, longitude, video_url,
+      (name, slug, description,
        original_image_path, large_image_path, medium_image_path, thumbnail_image_path,
        published, created_at, updated_at)
     VALUES
-      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
+      ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
     RETURNING ${baseSelect}
   `;
 
   const values = [
     name,
-    title,
     slug,
-    category,
     description,
-    address,
-    latitude,
-    longitude,
-    video_url,
     original || null,
     large || null,
     medium || null,
@@ -128,14 +96,8 @@ const update = async (id, data) => {
   };
 
   if (data.name !== undefined) setField('name', data.name);
-  if (data.title !== undefined) setField('title', data.title);
   if (data.slug !== undefined) setField('slug', data.slug);
-  if (data.category !== undefined) setField('category', data.category);
   if (data.description !== undefined) setField('description', data.description);
-  if (data.address !== undefined) setField('address', data.address);
-  if (data.latitude !== undefined) setField('latitude', data.latitude);
-  if (data.longitude !== undefined) setField('longitude', data.longitude);
-  if (data.video_url !== undefined) setField('video_url', data.video_url);
   if (data.published !== undefined) setField('published', data.published);
 
   if (data.images) {

@@ -92,6 +92,15 @@
     text-decoration: underline;
   }
 
+  .asafo-card-link,
+  .asafo-card-link:visited,
+  .asafo-card-link:hover,
+  .asafo-card-link:focus,
+  .asafo-card-link:active {
+    color: inherit;
+    text-decoration: none;
+  }
+
   :focus-visible {
     outline: none;
     @apply ring-2 ring-ring ring-offset-2 ring-offset-background;

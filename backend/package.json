@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "node server.js",
+    "dev": "npm run migrate && node server.js",
+    "migrate": "knex --knexfile knexfile.js migrate:latest",
     "seed:admin": "node src/scripts/seedAdmin.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

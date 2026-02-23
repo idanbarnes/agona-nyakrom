@@ -45,5 +45,6 @@ const upload = multer({
 
 // Export a ready-to-use middleware for single image uploads
 module.exports = {
-  single: (fieldName = 'image') => upload.single(fieldName)
+  single: (fieldName = 'image') => upload.single(fieldName),
+  fields: (fieldDefinitions = []) => upload.fields(fieldDefinitions),
 };

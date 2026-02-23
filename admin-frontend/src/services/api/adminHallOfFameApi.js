@@ -30,7 +30,7 @@ async function parseJsonResponse(response) {
   let payload
   try {
     payload = await response.json()
-  } catch (error) {
+  } catch {
     throw new Error('Unexpected server response.')
   }
 
@@ -110,6 +110,22 @@ export async function deleteHallOfFame(id) {
       Accept: 'application/json',
       ...buildAuthHeaders(),
     },
+  })
+
+  return parseJsonResponse(response)
+}
+
+export async function uploadHallOfFameInlineImage(file) {
+  const formData = new FormData()
+  formData.append('image', file)
+
+  const response = await fetch(buildUrl('/api/admin/hall-of-fame/upload-image'), {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      ...buildAuthHeaders(),
+    },
+    body: formData,
   })
 
   return parseJsonResponse(response)

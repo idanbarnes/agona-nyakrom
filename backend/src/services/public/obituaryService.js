@@ -1,4 +1,5 @@
 const { pool } = require('../../config/db');
+const { resolveAge } = require('../../utils/age');
 
 const baseSelect = `
   id,
@@ -9,6 +10,12 @@ const baseSelect = `
   age,
   funeral_start_at,
   funeral_end_at,
+  visitation_start_at,
+  visitation_location,
+  funeral_location,
+  burial_location,
+  deceased_photo_url,
+  poster_image_url,
   location,
   description,
   map_link,
@@ -32,6 +39,12 @@ const mapObituary = (row) => {
     age,
     funeral_start_at,
     funeral_end_at,
+    visitation_start_at,
+    visitation_location,
+    funeral_location,
+    burial_location,
+    deceased_photo_url,
+    poster_image_url,
     location,
     description,
     map_link,
@@ -42,6 +55,7 @@ const mapObituary = (row) => {
     created_at,
     updated_at,
   } = row;
+  const normalizedAge = resolveAge(age, birth_date, death_date);
 
   return {
     id,
@@ -50,9 +64,15 @@ const mapObituary = (row) => {
     slug,
     date_of_birth: birth_date,
     date_of_death: death_date,
-    age,
+    age: normalizedAge,
     funeral_date: funeral_start_at,
     burial_date: funeral_end_at,
+    visitation_date: visitation_start_at,
+    visitation_location: visitation_location || null,
+    funeral_location: funeral_location || null,
+    burial_location: burial_location || null,
+    deceased_photo_url: deceased_photo_url || null,
+    poster_image_url: poster_image_url || null,
     location,
     summary: description || null,
     biography: description || null,

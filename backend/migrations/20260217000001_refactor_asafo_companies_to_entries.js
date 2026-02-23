@@ -3,9 +3,9 @@ exports.up = async function up(knex) {
   if (!hasEntryType) {
     await knex.schema.alterTable('asafo_companies', (table) => {
       table.string('entry_type').notNullable().defaultTo('company');
-      table.string('company_key');
-      table.string('title');
-      table.string('subtitle');
+      table.text('company_key');
+      table.text('title');
+      table.text('subtitle');
       table.text('body');
       table.integer('display_order').notNullable().defaultTo(0);
       table.string('seo_meta_title');

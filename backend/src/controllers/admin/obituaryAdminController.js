@@ -2,6 +2,7 @@ const obituaryAdminService = require('../../services/admin/obituaryAdminService'
 const mediaService = require('../../services/mediaService');
 const { requireFields, isValidSlugFormat } = require('../../utils/validators');
 const { generateSlug } = require('../../utils/slugify');
+const { computeAgeFromDates } = require('../../utils/age');
 const { success, error } = require('../../utils/response');
 
 const parseBooleanField = (value) => {
@@ -19,15 +20,26 @@ const parseBooleanField = (value) => {
   return Boolean(value);
 };
 
+const normalizeOptionalUrl = (value) => {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed || null;
+};
+
+// File picker metadata can leak as "photo.jpg" into URL fields; reject these.
+const isBareFilename = (value) =>
+  typeof value === 'string' && /^[^/\\]+\.[a-z0-9]{2,6}$/i.test(value.trim());
+
 const processImageIfPresent = async (file, uniqueId) => {
   if (!file) return {};
   return mediaService.processImage(file, 'obituaries', uniqueId);
 };
 
-const extractImageFromRequest = (req) => {
-  if (req.file) return req.file;
+const extractImageFromRequest = (req, fieldName = 'image') => {
+  if (req.file && fieldName === 'image') return req.file;
+  if (req.files?.[fieldName]?.[0]) return req.files[fieldName][0];
 
-  const rawImage = req.body?.image;
+  const rawImage = req.body?.[fieldName];
   if (typeof rawImage !== 'string') return null;
 
   const match = rawImage.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
@@ -50,11 +62,16 @@ const createObituary = async (req, res) => {
       full_name,
       summary,
       biography,
-      age,
       date_of_birth,
       date_of_death,
       burial_date,
       funeral_date,
+      visitation_date,
+      visitation_location,
+      funeral_location,
+      burial_location,
+      deceased_photo_url,
+      poster_image_url,
       published,
     } = req.body || {};
 
@@ -69,19 +86,44 @@ const createObituary = async (req, res) => {
       return error(res, 'Invalid slug format', 400);
     }
 
-    const imageFile = extractImageFromRequest(req);
+    const imageFile = extractImageFromRequest(req, 'image');
+    const deceasedImageFile = extractImageFromRequest(req, 'deceased_image');
     const images = await processImageIfPresent(imageFile, slug);
+    const deceasedImages = await processImageIfPresent(
+      deceasedImageFile,
+      `${slug}-deceased`
+    );
+
+    const normalizedDeceasedPhotoUrl = normalizeOptionalUrl(deceased_photo_url);
+    const normalizedPosterImageUrl = normalizeOptionalUrl(poster_image_url);
+    const resolvedDeceasedPhotoUrl = deceasedImageFile
+      ? deceasedImages?.medium || deceasedImages?.original || null
+      : isBareFilename(normalizedDeceasedPhotoUrl)
+        ? null
+        : normalizedDeceasedPhotoUrl || null;
+    const resolvedPosterImageUrl = imageFile
+      ? images?.medium || images?.original || null
+        : isBareFilename(normalizedPosterImageUrl)
+        ? null
+        : normalizedPosterImageUrl || null;
+    const computedAge = computeAgeFromDates(date_of_birth, date_of_death);
 
     const created = await obituaryAdminService.create({
       full_name,
       slug,
-      age,
+      age: computedAge,
       summary,
       biography,
       date_of_birth,
       date_of_death,
       burial_date,
       funeral_date,
+      visitation_date,
+      visitation_location,
+      funeral_location,
+      burial_location,
+      deceased_photo_url: resolvedDeceasedPhotoUrl,
+      poster_image_url: resolvedPosterImageUrl,
       published: publishedValue,
       images,
     });
@@ -104,11 +146,16 @@ const updateObituary = async (req, res) => {
       full_name,
       summary,
       biography,
-      age,
       date_of_birth,
       date_of_death,
       burial_date,
       funeral_date,
+      visitation_date,
+      visitation_location,
+      funeral_location,
+      burial_location,
+      deceased_photo_url,
+      poster_image_url,
       published,
     } = req.body || {};
 
@@ -117,15 +164,26 @@ const updateObituary = async (req, res) => {
       'full_name',
       'summary',
       'biography',
-      'age',
       'date_of_birth',
       'date_of_death',
       'burial_date',
       'funeral_date',
+      'visitation_date',
+      'visitation_location',
+      'funeral_location',
+      'burial_location',
+      'deceased_photo_url',
+      'poster_image_url',
       'published',
     ];
     const hasFieldUpdate = updatableFields.some((field) => req.body && req.body[field] !== undefined);
-    const hasImageUpdate = Boolean(req.file || typeof req.body?.image === 'string');
+    const hasImageUpdate = Boolean(
+      req.file ||
+      req.files?.image?.[0] ||
+      req.files?.deceased_image?.[0] ||
+      typeof req.body?.image === 'string' ||
+      typeof req.body?.deceased_image === 'string'
+    );
     if (!hasFieldUpdate && !hasImageUpdate) {
       return error(res, 'No fields provided to update', 400);
     }
@@ -143,19 +201,46 @@ const updateObituary = async (req, res) => {
       }
     }
 
-    const imageFile = extractImageFromRequest(req);
+    const imageFile = extractImageFromRequest(req, 'image');
+    const deceasedImageFile = extractImageFromRequest(req, 'deceased_image');
     const images = await processImageIfPresent(imageFile, slug || id);
+    const deceasedImages = await processImageIfPresent(
+      deceasedImageFile,
+      `${slug || id}-deceased`
+    );
+
+    const normalizedDeceasedPhotoUrl = normalizeOptionalUrl(deceased_photo_url);
+    const normalizedPosterImageUrl = normalizeOptionalUrl(poster_image_url);
+    const resolvedDeceasedPhotoUrl = deceasedImageFile
+      ? deceasedImages?.medium || deceasedImages?.original
+      : isBareFilename(normalizedDeceasedPhotoUrl)
+        ? undefined
+        : normalizedDeceasedPhotoUrl;
+    const resolvedPosterImageUrl = imageFile
+      ? images?.medium || images?.original
+      : isBareFilename(normalizedPosterImageUrl)
+        ? undefined
+        : normalizedPosterImageUrl;
+    const effectiveDateOfBirth = date_of_birth !== undefined ? date_of_birth : existing.date_of_birth;
+    const effectiveDateOfDeath = date_of_death !== undefined ? date_of_death : existing.date_of_death;
+    const computedAge = computeAgeFromDates(effectiveDateOfBirth, effectiveDateOfDeath);
 
     const updated = await obituaryAdminService.update(id, {
       full_name,
       slug,
-      age,
+      age: computedAge,
       summary,
       biography,
       date_of_birth,
       date_of_death,
       burial_date,
       funeral_date,
+      visitation_date,
+      visitation_location,
+      funeral_location,
+      burial_location,
+      deceased_photo_url: resolvedDeceasedPhotoUrl,
+      poster_image_url: resolvedPosterImageUrl,
       published: publishedValue,
       images,
     });

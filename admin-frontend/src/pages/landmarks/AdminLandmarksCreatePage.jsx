@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createLandmark } from '../../services/api/adminLandmarksApi.js'
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
 import {
   Button,
   Card,
@@ -10,18 +11,13 @@ import {
   FormField,
   InlineError,
   Input,
-  Textarea,
 } from '../../components/ui/index.jsx'
 
 function AdminLandmarksCreatePage() {
   const navigate = useNavigate()
   const [formState, setFormState] = useState({
     name: '',
-    title: '',
     description: '',
-    location: '',
-    google_map_link: '',
-    category: '',
     published: false,
     image: null,
   })
@@ -48,18 +44,14 @@ function AdminLandmarksCreatePage() {
       return
     }
 
-    if (!formState.name.trim() && !formState.title.trim()) {
-      setErrorMessage('Name or title is required.')
+    if (!formState.name.trim()) {
+      setErrorMessage('Name is required.')
       return
     }
 
     const formData = new FormData()
     formData.append('name', formState.name.trim())
-    formData.append('title', formState.title.trim())
     formData.append('description', formState.description.trim())
-    formData.append('address', formState.location.trim())
-    formData.append('video_url', formState.google_map_link.trim())
-    formData.append('category', formState.category.trim())
     formData.append('published', String(formState.published))
     if (formState.image) {
       formData.append('image', formState.image)
@@ -94,7 +86,7 @@ function AdminLandmarksCreatePage() {
       <header className="space-y-1">
         <h1 className="text-xl font-semibold break-words md:text-2xl">Create Landmark</h1>
         <p className="text-sm text-muted-foreground">
-          Provide location details, descriptions, and imagery for the landmark.
+          Add a landmark description and imagery.
         </p>
       </header>
       <form onSubmit={handleSubmit}>
@@ -111,52 +103,13 @@ function AdminLandmarksCreatePage() {
               />
             </FormField>
 
-            <FormField label="Title" htmlFor="title">
-              <Input
-                id="title"
-                name="title"
-                type="text"
-                value={formState.title}
-                onChange={handleChange}
-              />
-            </FormField>
-
             <FormField label="Description" htmlFor="description">
-              <Textarea
-                id="description"
-                name="description"
+              <SimpleRichTextEditor
                 value={formState.description}
-                onChange={handleChange}
-              />
-            </FormField>
-
-            <FormField label="Location" htmlFor="location">
-              <Input
-                id="location"
-                name="location"
-                type="text"
-                value={formState.location}
-                onChange={handleChange}
-              />
-            </FormField>
-
-            <FormField label="Google map link" htmlFor="google_map_link">
-              <Input
-                id="google_map_link"
-                name="google_map_link"
-                type="url"
-                value={formState.google_map_link}
-                onChange={handleChange}
-              />
-            </FormField>
-
-            <FormField label="Category" htmlFor="category">
-              <Input
-                id="category"
-                name="category"
-                type="text"
-                value={formState.category}
-                onChange={handleChange}
+                onChange={(nextDescription) =>
+                  setFormState((current) => ({ ...current, description: nextDescription }))
+                }
+                textareaId="landmark-description-create"
               />
             </FormField>
 
@@ -196,7 +149,7 @@ function AdminLandmarksCreatePage() {
               Cancel
             </Button>
             <Button variant="primary" type="submit" loading={isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create landmark'}
+              {isSubmitting ? 'Creating...' : 'Create Landmark'}
             </Button>
           </CardFooter>
         </Card>

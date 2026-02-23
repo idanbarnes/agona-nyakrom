@@ -24,12 +24,7 @@ const create = async (data) => {
   const {
     name,
     slug,
-    category = null,
     description = null,
-    address = null,
-    latitude = null,
-    longitude = null,
-    video_url = null,
     published = false,
     original_image_path = null,
     large_image_path = null,
@@ -39,18 +34,13 @@ const create = async (data) => {
 
   const { rows } = await pool.query(
     `INSERT INTO ${TABLE} 
-     (name, slug, category, description, address, latitude, longitude, video_url, published, original_image_path, large_image_path, medium_image_path, thumbnail_image_path)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+     (name, slug, description, published, original_image_path, large_image_path, medium_image_path, thumbnail_image_path)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING *`,
     [
       name,
       slug,
-      category,
       description,
-      address,
-      latitude,
-      longitude,
-      video_url,
       published,
       original_image_path,
       large_image_path,

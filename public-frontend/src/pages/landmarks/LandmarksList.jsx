@@ -4,7 +4,6 @@ import { getLandmarks } from '../../api/endpoints.js'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
 import {
   Card,
-  CardContent,
   CardSkeleton,
   EmptyState,
   ErrorState,
@@ -12,15 +11,6 @@ import {
   Pagination,
   StateGate,
 } from '../../components/ui/index.jsx'
-
-// Normalize the location field to a readable string.
-function formatLocation(value) {
-  if (!value) {
-    return ''
-  }
-
-  return typeof value === 'string' ? value : JSON.stringify(value)
-}
 
 // Extract list data across possible payload shapes.
 function extractItems(payload) {
@@ -39,23 +29,6 @@ function extractItems(payload) {
     payload.landmarks ||
     []
   )
-}
-
-// Provide a brief fallback summary when only a long description is available.
-function getShortDescription(item) {
-  if (item?.short_description) {
-    return item.short_description
-  }
-
-  if (item?.description) {
-    const trimmed =
-      item.description.length > 180
-        ? `${item.description.slice(0, 180).trim()}...`
-        : item.description
-    return trimmed
-  }
-
-  return ''
 }
 
 function LandmarksList() {
@@ -170,49 +143,35 @@ function LandmarksList() {
         >
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => {
-              const name = item?.name || item?.title || 'Untitled'
+              const name = item?.name || 'Untitled'
               const slug = item?.slug
-              const location = formatLocation(item?.location)
               const thumbnail = item?.images?.thumbnail || item?.thumbnail
-              const description = getShortDescription(item)
 
               return (
                 <Card
                   key={item?.id || slug || name}
-                  className="flex h-full flex-col overflow-hidden transition hover:shadow-sm"
+                  className="group relative overflow-hidden rounded-xl border-0 shadow-sm transition hover:shadow-md"
                 >
                   <ImageWithFallback
                     src={thumbnail ? resolveAssetUrl(thumbnail) : null}
-                    alt={name || 'Landmark thumbnail'}
-                    className="h-48 w-full object-cover"
+                    alt={name || 'Landmark portrait'}
+                    className="h-[22rem] w-full object-cover transition duration-300 group-hover:scale-[1.03]"
                     fallbackText="No image"
                   />
-                  <CardContent className="space-y-3 pt-4">
-                    <div className="space-y-1">
-                      <h2 className="text-lg font-semibold text-foreground">
-                        {slug ? (
-                          <Link
-                            to={`/landmarks/${slug}`}
-                            className="hover:underline"
-                          >
-                            {name}
-                          </Link>
-                        ) : (
-                          name
-                        )}
-                      </h2>
-                      {location ? (
-                        <p className="text-xs text-muted-foreground">
-                          {location}
-                        </p>
-                      ) : null}
-                    </div>
-                    {description ? (
-                      <p className="text-sm text-muted-foreground">
-                        {description}
-                      </p>
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 p-4">
+                    <h2 className="text-base font-semibold text-white md:text-lg">
+                      {name}
+                    </h2>
+                    {slug ? (
+                      <Link
+                        to={`/landmarks/${slug}`}
+                        className="rounded-full border border-white/70 bg-transparent px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition hover:bg-white/15"
+                      >
+                        Read details
+                      </Link>
                     ) : null}
-                  </CardContent>
+                  </div>
                 </Card>
               )
             })}

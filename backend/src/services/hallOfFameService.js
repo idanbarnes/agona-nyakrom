@@ -7,6 +7,7 @@ const mapHero = (row) => {
     name,
     slug,
     title,
+    body,
     bio,
     achievements,
     is_featured,
@@ -14,17 +15,27 @@ const mapHero = (row) => {
     large_image_path,
     medium_image_path,
     thumbnail_image_path,
+    published,
     created_at,
     updated_at,
   } = row;
+
+  const normalizedBody = body || bio || achievements || '';
+  const imageUrl =
+    medium_image_path || large_image_path || original_image_path || thumbnail_image_path || '';
 
   return {
     id,
     name,
     slug,
     title,
-    short_bio: bio,
+    position: title || null,
+    body: normalizedBody,
+    bio: bio || normalizedBody,
+    short_bio: bio || normalizedBody,
     achievements,
+    imageUrl,
+    isPublished: Boolean(published),
     is_featured,
     images: {
       original: original_image_path,
@@ -32,6 +43,8 @@ const mapHero = (row) => {
       medium: medium_image_path,
       thumbnail: thumbnail_image_path,
     },
+    createdAt: created_at,
+    updatedAt: updated_at,
     created_at,
     updated_at,
   };
@@ -39,20 +52,24 @@ const mapHero = (row) => {
 
 const findAll = async ({ limit, offset, featured }) => {
   const params = [];
-  let whereClause = 'WHERE 1=1';
+  let index = 1;
+  const where = ['published = true'];
 
   if (featured) {
-    whereClause += ' AND is_featured = true';
+    where.push('is_featured = true');
   }
 
-  params.push(limit, offset);
+  params.push(limit);
+  const limitIndex = index++;
+  params.push(offset);
+  const offsetIndex = index++;
 
   const { rows } = await pool.query(
     `SELECT *
      FROM hall_of_fame
-     ${whereClause}
-     ORDER BY created_at DESC, name ASC
-     LIMIT $1 OFFSET $2`,
+     WHERE ${where.join(' AND ')}
+     ORDER BY is_featured DESC, display_order ASC NULLS LAST, created_at DESC
+     LIMIT $${limitIndex} OFFSET $${offsetIndex}`,
     params
   );
 
@@ -60,22 +77,26 @@ const findAll = async ({ limit, offset, featured }) => {
 };
 
 const countAll = async ({ featured }) => {
-  let query = 'SELECT COUNT(*)::int AS count FROM hall_of_fame';
   const params = [];
+  const where = ['published = true'];
+
   if (featured) {
-    query += ' WHERE is_featured = true';
+    where.push('is_featured = true');
   }
+
+  const query = `SELECT COUNT(*)::int AS count FROM hall_of_fame WHERE ${where.join(' AND ')}`;
   const { rows } = await pool.query(query, params);
   return rows[0]?.count || 0;
 };
 
-const findBySlug = async (slug) => {
+const findBySlugOrId = async (slugOrId) => {
   const { rows } = await pool.query(
     `SELECT *
      FROM hall_of_fame
-     WHERE slug = $1
+     WHERE published = true
+       AND (slug = $1 OR id::text = $1)
      LIMIT 1`,
-    [slug]
+    [slugOrId]
   );
   return mapHero(rows[0]);
 };
@@ -83,5 +104,5 @@ const findBySlug = async (slug) => {
 module.exports = {
   findAll,
   countAll,
-  findBySlug,
+  findBySlugOrId,
 };

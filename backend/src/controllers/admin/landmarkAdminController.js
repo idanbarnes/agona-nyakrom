@@ -34,20 +34,9 @@ const createLandmark = async (req, res) => {
   try {
     const {
       name,
-      title,
-      category,
       description,
-      address: rawAddress,
-      location,
-      latitude,
-      longitude,
-      video_url: rawVideoUrl,
-      google_map_link,
       published,
     } = req.body || {};
-
-    const address = rawAddress ?? location ?? null;
-    const video_url = rawVideoUrl ?? google_map_link ?? null;
 
     const { valid, missing } = requireFields(req.body || {}, ['name']);
     if (!valid) {
@@ -65,13 +54,7 @@ const createLandmark = async (req, res) => {
     const created = await landmarkAdminService.create({
       name,
       slug,
-      title,
-      category,
       description,
-      address,
-      latitude,
-      longitude,
-      video_url,
       images,
       published,
     });
@@ -92,30 +75,13 @@ const updateLandmark = async (req, res) => {
     const { id } = req.params;
     const {
       name,
-      title,
-      category,
       description,
-      address: rawAddress,
-      location,
-      latitude,
-      longitude,
-      video_url: rawVideoUrl,
-      google_map_link,
       published,
     } = req.body || {};
 
-    const address = rawAddress ?? location ?? null;
-    const video_url = rawVideoUrl ?? google_map_link ?? null;
-
     const updatableFields = [
       'name',
-      'title',
-      'category',
       'description',
-      'address',
-      'latitude',
-      'longitude',
-      'video_url',
       'published',
     ];
     const hasFieldUpdate = updatableFields.some((field) => req.body && req.body[field] !== undefined);
@@ -143,13 +109,7 @@ const updateLandmark = async (req, res) => {
     const updated = await landmarkAdminService.update(id, {
       name,
       slug,
-      title,
-      category,
       description,
-      address,
-      latitude,
-      longitude,
-      video_url,
       images,
       published,
     });

@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getClans } from '../../api/endpoints.js'
-import CmsCardImage from '../../components/media/CmsCardImage.jsx'
 import {
   Card,
-  CardContent,
   CardSkeleton,
   EmptyState,
   ErrorState,
   StateGate,
 } from '../../components/ui/index.jsx'
+import { resolveAssetUrl } from '../../lib/apiBase.js'
 
 // Extract list data across possible payload shapes.
 function extractItems(payload) {
@@ -96,52 +95,57 @@ function ClanList() {
         >
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => {
-              const thumbnail = item?.images?.thumbnail || item?.thumbnail
+              const imagePath =
+                item?.images?.medium ||
+                item?.images?.large ||
+                item?.images?.thumbnail ||
+                item?.thumbnail ||
+                item?.image
               const slug = item?.slug
-              const leadersCount =
-                item?.leaders_count ||
-                item?.leadersCount ||
-                item?.leaders?.length
+              const caption = (item?.caption || item?.intro || '').trim()
+              const imageUrl = imagePath ? resolveAssetUrl(imagePath) : ''
 
               return (
                 <Card
                   key={item?.id || slug || item?.name}
-                  className="flex h-full flex-col overflow-hidden transition hover:shadow-sm"
+                  className="group flex h-full min-h-[24rem] flex-col overflow-hidden transition hover:shadow-sm"
                 >
-                  <CmsCardImage
-                    src={thumbnail}
-                    alt={item?.name || 'Clan thumbnail'}
-                    ratio="16/9"
-                    className="rounded-none"
-                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                  />
-                  <CardContent className="space-y-3 pt-4">
-                    <div className="space-y-1">
-                      <h2 className="text-lg font-semibold text-foreground">
-                        {slug ? (
-                          <Link
-                            to={`/clans/${slug}`}
-                            className="hover:underline"
-                          >
-                            {item?.name || 'Unnamed clan'}
-                          </Link>
-                        ) : (
-                          item?.name || 'Unnamed clan'
-                        )}
-                      </h2>
-                      {leadersCount ? (
-                        <p className="text-xs text-muted-foreground">
-                          {leadersCount} leader
-                          {leadersCount === 1 ? '' : 's'}
-                        </p>
-                      ) : null}
-                    </div>
-                    {item?.intro ? (
-                      <p className="text-sm text-muted-foreground">
-                        {item.intro}
+                  <div className="flex-[9] overflow-hidden border-b border-border/70 bg-muted/30">
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={item?.name || 'Clan emblem'}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center px-4 text-center text-xs text-muted-foreground">
+                        Clan emblem unavailable
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-[1] flex-col justify-between gap-2 px-4 py-3">
+                    <h2 className="text-base font-semibold leading-tight text-foreground">
+                      {item?.name || 'Unnamed clan'}
+                    </h2>
+                    {caption ? (
+                      <p className="line-clamp-1 text-xs text-muted-foreground">
+                        {caption}
                       </p>
                     ) : null}
-                  </CardContent>
+                    {slug ? (
+                      <div>
+                        <Link
+                          to={`/clans/${slug}`}
+                          className="text-xs font-semibold uppercase tracking-wide text-primary underline-offset-4 hover:underline"
+                        >
+                          Read details
+                        </Link>
+                      </div>
+                    ) : null}
+                  </div>
                 </Card>
               )
             })}

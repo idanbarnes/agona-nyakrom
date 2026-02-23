@@ -10,5 +10,13 @@ router.get('/all', requireAdminAuth, hallOfFameAdminController.getAllHallOfFame)
 router.get('/single/:id', requireAdminAuth, hallOfFameAdminController.getSingleHallOfFame);
 router.put('/update/:id', requireAdminAuth, uploadMiddleware.single('image'), hallOfFameAdminController.updateHallOfFame);
 router.delete('/delete/:id', requireAdminAuth, hallOfFameAdminController.deleteHallOfFame);
+router.post('/upload-image', requireAdminAuth, uploadMiddleware.single('image'), hallOfFameAdminController.uploadHallOfFameImage);
+
+// REST-style aliases
+router.get('/', requireAdminAuth, hallOfFameAdminController.getAllHallOfFame);
+router.post('/', requireAdminAuth, uploadMiddleware.single('image'), hallOfFameAdminController.createHallOfFame);
+router.get('/:id', requireAdminAuth, hallOfFameAdminController.getSingleHallOfFame);
+router.put('/:id', requireAdminAuth, uploadMiddleware.single('image'), hallOfFameAdminController.updateHallOfFame);
+router.delete('/:id', requireAdminAuth, hallOfFameAdminController.deleteHallOfFame);
 
 module.exports = router;

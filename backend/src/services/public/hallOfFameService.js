@@ -5,6 +5,7 @@ const baseSelect = `
   name,
   slug,
   title,
+  body,
   bio,
   achievements,
   is_featured,
@@ -26,6 +27,7 @@ const mapEntry = (row) => {
     name,
     slug,
     title,
+    body,
     bio,
     achievements,
     is_featured,
@@ -34,17 +36,26 @@ const mapEntry = (row) => {
     large_image_path,
     medium_image_path,
     thumbnail_image_path,
+    published,
     created_at,
     updated_at,
   } = row;
+
+  const normalizedBody = body || bio || achievements || '';
+  const imageUrl =
+    medium_image_path || large_image_path || original_image_path || thumbnail_image_path || '';
 
   return {
     id,
     name,
     slug,
     title,
-    bio,
+    position: title || null,
+    body: normalizedBody,
+    bio: bio || normalizedBody,
     achievements,
+    imageUrl,
+    isPublished: Boolean(published),
     is_featured,
     display_order,
     images: {
@@ -53,6 +64,8 @@ const mapEntry = (row) => {
       medium: medium_image_path,
       thumbnail: thumbnail_image_path,
     },
+    createdAt: created_at,
+    updatedAt: updated_at,
     created_at,
     updated_at,
   };
@@ -68,18 +81,19 @@ const findAllPublished = async () => {
   return rows.map(mapEntry);
 };
 
-const findBySlug = async (slug) => {
+const findBySlugOrId = async (slugOrId) => {
   const { rows } = await pool.query(
     `SELECT ${baseSelect}
      FROM hall_of_fame
-     WHERE slug = $1 AND published = true
+     WHERE published = true
+       AND (slug = $1 OR id::text = $1)
      LIMIT 1`,
-    [slug]
+    [slugOrId]
   );
   return mapEntry(rows[0]);
 };
 
 module.exports = {
   findAllPublished,
-  findBySlug,
+  findBySlugOrId,
 };

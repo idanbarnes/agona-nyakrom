@@ -1,16 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getLandmarkDetail } from '../../api/endpoints.js'
+import RichTextRenderer from '../../components/RichTextRenderer.jsx'
 import {
   Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   DetailSkeleton,
   EmptyState,
   ErrorState,
-  ImageWithFallback,
   StateGate,
 } from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
@@ -69,92 +65,79 @@ function LandmarksDetail() {
     loadLandmark()
   }, [loadLandmark])
 
-  const name = item?.name || item?.title || 'Landmark'
+  const name = item?.name || 'Landmark'
   const imagePath = selectImage(item?.images, item?.image)
-  const imageUrl = imagePath ? resolveAssetUrl(imagePath) : null
-
-  const metaItems = [item?.location, item?.region, item?.category].filter(Boolean)
+  const body = item?.description || ''
+  const imageUrl = useMemo(() => (imagePath ? resolveAssetUrl(imagePath) : ''), [imagePath])
 
   return (
-    <section className="container py-6 md:py-10">
+    <section className="bg-background py-8 sm:py-10 md:py-12">
       <StateGate
         loading={loading}
         error={error}
         isEmpty={!loading && !error && !item}
         skeleton={<DetailSkeleton />}
         errorFallback={
-          <ErrorState
-            message={error?.message || 'Unable to load this landmark.'}
-            onRetry={loadLandmark}
-          />
+          <div className="container">
+            <ErrorState
+              message={error?.message || 'Unable to load this landmark.'}
+              onRetry={loadLandmark}
+            />
+          </div>
         }
         empty={
-          <EmptyState
-            title="Not found"
-            description="This item may have been removed."
-            action={
-              <Button as={Link} to="/landmarks" variant="ghost">
-                Back to landmarks
-              </Button>
-            }
-          />
+          <div className="container">
+            <EmptyState
+              title="Not found"
+              description="This landmark may have been removed."
+              action={
+                <Button as={Link} to="/landmarks" variant="ghost">
+                  Back to landmarks
+                </Button>
+              }
+            />
+          </div>
         }
       >
-        <div className="space-y-6">
-          <header className="space-y-3">
-            <h1 className="text-2xl font-semibold leading-tight text-foreground break-words md:text-4xl">
-              {name}
-            </h1>
-            {metaItems.length > 0 ? (
-              <div className="mt-3 flex flex-wrap gap-3 text-sm text-muted-foreground">
-                {metaItems.map((meta) => (
-                  <span key={meta}>{meta}</span>
-                ))}
+        <article className="container mx-auto max-w-6xl">
+          <div className="rounded-2xl border border-border/70 bg-surface p-5 shadow-sm sm:p-7 lg:p-9">
+            <div className="grid gap-6 md:grid-cols-[minmax(220px,300px),1fr] md:items-start lg:gap-10">
+              <div className="w-full overflow-hidden rounded-2xl border border-border/70 bg-muted/40">
+                <div className="aspect-[4/5]">
+                  {imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt={`${name} portrait`}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm text-muted-foreground">
+                      Portrait image unavailable
+                    </div>
+                  )}
+                </div>
               </div>
-            ) : null}
-          </header>
 
-          {imageUrl ? (
-            <ImageWithFallback
-              src={imageUrl}
-              alt={name}
-              className="h-56 w-full rounded-xl border border-border object-cover md:h-80"
-            />
-          ) : null}
+              <div className="space-y-5">
+                <header className="space-y-2">
+                  <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-4xl">
+                    {name}
+                  </h1>
+                </header>
 
-          <div className="max-w-3xl space-y-4 leading-7 text-foreground">
-            <Card className="border-border/70">
-              <CardHeader className="pb-2">
-                <CardTitle>About this landmark</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm text-muted-foreground">
-                {item?.description ? (
-                  <p className="text-foreground">{item.description}</p>
-                ) : (
-                  <p>No description available.</p>
-                )}
-              </CardContent>
-            </Card>
-
-            {item?.google_map_link ? (
-              <Card className="border-border/70">
-                <CardHeader className="pb-2">
-                  <CardTitle>Location</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-muted-foreground">
-                  <a
-                    href={item.google_map_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline"
-                  >
-                    View on Google Maps
-                  </a>
-                </CardContent>
-              </Card>
-            ) : null}
+                <div className="min-w-0">
+                  {body ? (
+                    <RichTextRenderer html={body} />
+                  ) : (
+                    <p className="text-muted-foreground">No description available.</p>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        </article>
       </StateGate>
     </section>
   )

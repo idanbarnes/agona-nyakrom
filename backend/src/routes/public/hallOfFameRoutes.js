@@ -4,6 +4,6 @@ const hallOfFameController = require('../../controllers/public/hallOfFameControl
 
 // Public read-only routes for Hall of Fame
 router.get('/', hallOfFameController.getAllPublishedHallOfFame);
-router.get('/:slug', hallOfFameController.getPublishedHallOfFameBySlug);
+router.get('/:slugOrId', hallOfFameController.getPublishedHallOfFameBySlug);
 
 module.exports = router;

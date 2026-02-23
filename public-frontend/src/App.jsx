@@ -36,6 +36,7 @@ function App() {
           <Route path="updates" element={<NewsList />} />
           <Route path="news/:slug" element={<NewsDetail />} />
           <Route path="obituaries" element={<ObituaryList />} />
+          <Route path="obituary/:id" element={<ObituaryDetail />} />
           <Route path="obituaries/:slug" element={<ObituaryDetail />} />
           <Route path="clans" element={<ClanList />} />
           <Route path="clans/:slug" element={<ClanDetail />} />
