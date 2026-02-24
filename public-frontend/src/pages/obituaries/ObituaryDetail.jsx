@@ -106,6 +106,23 @@ function Share2Icon({ className = 'h-5 w-5' }) {
   )
 }
 
+function ArrowLeftIcon({ className = 'h-4 w-4' }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  )
+}
+
 function toDate(value) {
   if (!value) {
     return null
@@ -451,13 +468,13 @@ function ServiceSection({
 
   return (
     <div className="py-6 first:pt-2 last:pb-0">
-      <div className="flex items-center gap-2 text-[2rem] font-semibold text-neutral-900">
+      <div className="flex items-center gap-2 text-lg font-semibold text-neutral-900 md:text-xl">
         <span className="text-neutral-900">{icon}</span>
-        <h3 className="text-[2rem] leading-none">{title}</h3>
+        <h3 className="leading-none">{title}</h3>
       </div>
 
       {hasDetails ? (
-        <div className="mt-4 space-y-2 pl-8 text-[2rem] text-neutral-700">
+        <div className="mt-4 space-y-2 pl-6 text-sm text-neutral-700 md:text-base">
           {dateTimeLabel ? (
             <p className="flex items-start gap-2">
               <ClockIcon className="mt-0.5 h-4 w-4 text-neutral-500" />
@@ -485,7 +502,7 @@ function ServiceSection({
           ) : null}
         </div>
       ) : (
-        <p className="mt-4 pl-8 text-[2rem] text-neutral-500">
+        <p className="mt-4 pl-6 text-sm text-neutral-500 md:text-base">
           Details to be announced.
         </p>
       )}
@@ -588,17 +605,18 @@ function ObituaryDetail() {
   }, [normalizedItem?.fullName])
 
   return (
-    <div className="bg-neutral-100">
-      <section className="border-b border-neutral-300 bg-neutral-200/70">
-        <div className="mx-auto max-w-7xl px-8 py-8">
-          <h1 className="text-5xl font-medium text-neutral-700">Obituaries</h1>
-          <p className="mt-3 text-lg text-neutral-600">
+    <section className="bg-background py-8 sm:py-10 md:py-12">
+      <div className="container space-y-8">
+        <header className="space-y-2">
+          <h1 className="text-2xl font-semibold text-foreground break-words md:text-3xl">
+            Obituaries
+          </h1>
+          <p className="text-sm text-muted-foreground">
             Honoring the lives and memories of those who have passed
           </p>
-        </div>
-      </section>
+        </header>
 
-      <section className="mx-auto max-w-7xl px-8 py-8">
+        <div className="mx-auto max-w-7xl">
         {loading ? (
           <div className="rounded-lg border border-neutral-300 bg-white p-6 text-neutral-600">
             Loading...
@@ -642,163 +660,176 @@ function ObituaryDetail() {
         ) : null}
 
         {!loading && !error && normalizedItem ? (
-          <div className="flex flex-col gap-8 lg:flex-row">
-            <div className="mx-auto w-full max-w-sm lg:mx-0 lg:w-64 lg:flex-shrink-0">
-              <Card className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-md">
-                <CardContent className="p-0">
-                  <ImageWithFallback
-                    src={normalizedItem.portraitUrl || FALLBACK_IMAGE}
-                    fallbackSrc={FALLBACK_IMAGE}
-                    alt={normalizedItem.fullName}
-                    className="h-[420px] w-full object-cover"
-                  />
-                </CardContent>
-              </Card>
+          <article className="mx-auto max-w-6xl">
+            <div className="mb-4">
+              <Link
+                to="/obituaries"
+                className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+              >
+                <ArrowLeftIcon className="h-4 w-4" />
+                <span>Back to Obituaries</span>
+              </Link>
             </div>
-
-            <div className="flex-1">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-3xl font-medium text-amber-600">In Memory of</p>
-                  <h2 className="mt-2 break-words text-5xl font-medium uppercase tracking-wide text-neutral-700">
-                    {normalizedItem.fullName}
-                  </h2>
-                  {(metadataLine || normalizedItem.age !== null) && (
-                    <p className="mt-3 text-[1.75rem] text-neutral-700">
-                      {metadataLine}
-                      {metadataLine && normalizedItem.age !== null ? ' \u00B7 ' : ''}
-                      {normalizedItem.age !== null ? (
-                        <span className="italic">{`Age: ${normalizedItem.age} Years`}</span>
-                      ) : null}
-                    </p>
-                  )}
-                </div>
-
-                <div className="shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 rounded-md border-none bg-neutral-200 text-neutral-700 hover:bg-neutral-300"
-                    aria-label="Share obituary"
-                    onClick={handleShare}
-                  >
-                    <Share2Icon className="h-5 w-5" />
-                  </Button>
-                  <p className="mt-2 min-h-5 text-right text-xs text-neutral-600" aria-live="polite">
-                    {shareMessage}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-8 border-b border-neutral-300">
-                <div role="tablist" aria-label="Obituary content tabs" className="flex gap-8">
-                  <button
-                    type="button"
-                    role="tab"
-                    id="tab-obituary"
-                    aria-controls="panel-obituary"
-                    aria-selected={activeTab === 'obituary'}
-                    onClick={() => setActiveTab('obituary')}
-                    className={`border-b-2 pb-3 text-[2rem] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 focus-visible:ring-offset-2 ${
-                      activeTab === 'obituary'
-                        ? 'border-neutral-900 text-neutral-900'
-                        : 'border-transparent text-neutral-500 hover:text-neutral-700'
-                    }`}
-                  >
-                    Obituary
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    id="tab-biography"
-                    aria-controls="panel-biography"
-                    aria-selected={activeTab === 'biography'}
-                    onClick={() => setActiveTab('biography')}
-                    className={`border-b-2 pb-3 text-[2rem] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 focus-visible:ring-offset-2 ${
-                      activeTab === 'biography'
-                        ? 'border-neutral-900 text-neutral-900'
-                        : 'border-transparent text-neutral-500 hover:text-neutral-700'
-                    }`}
-                  >
-                    Biography
-                  </button>
-                </div>
-              </div>
-
-              {activeTab === 'obituary' ? (
-                <div id="panel-obituary" role="tabpanel" aria-labelledby="tab-obituary" className="mt-6 space-y-6">
-                  <div className="overflow-hidden rounded-lg bg-neutral-100 shadow-md">
+            <div className="rounded-2xl border border-border/70 bg-surface p-5 shadow-sm sm:p-7 lg:p-9">
+              <div className="grid gap-6 md:grid-cols-[minmax(220px,300px),1fr] md:items-start lg:gap-10">
+                <div className="w-full overflow-hidden rounded-2xl border border-border/70 bg-muted/40">
+                  <div className="aspect-[4/5]">
                     <ImageWithFallback
-                      src={normalizedItem.posterUrl || FALLBACK_IMAGE}
+                      src={normalizedItem.portraitUrl || FALLBACK_IMAGE}
                       fallbackSrc={FALLBACK_IMAGE}
-                      alt={`${normalizedItem.fullName} memorial poster`}
-                      className="h-[280px] w-full object-cover sm:h-[360px] lg:h-[430px]"
+                      alt={normalizedItem.fullName}
+                      className="h-full w-full object-cover"
+                      fallbackText={`${normalizedItem.fullName} portrait`}
                     />
                   </div>
+                </div>
 
-                  <Card className="rounded-2xl border border-neutral-300 bg-white">
-                    <CardContent className="p-8">
-                      <h3 className="text-[2rem] font-semibold text-neutral-900">
-                        Service Information
-                      </h3>
+                <div className="min-w-0">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-lg font-medium text-amber-600 md:text-xl">In Memory of</p>
+                      <h2 className="mt-2 break-words text-2xl font-semibold tracking-tight text-foreground md:text-4xl">
+                        {normalizedItem.fullName}
+                      </h2>
+                      {(metadataLine || normalizedItem.age !== null) && (
+                        <p className="mt-3 text-sm text-muted-foreground md:text-base">
+                          {metadataLine}
+                          {metadataLine && normalizedItem.age !== null ? ' \u00B7 ' : ''}
+                          {normalizedItem.age !== null ? (
+                            <span className="italic">{`Age: ${normalizedItem.age} Years`}</span>
+                          ) : null}
+                        </p>
+                      )}
+                    </div>
 
-                      <div className="mt-4 divide-y divide-neutral-200">
-                        <ServiceSection
-                          title="Visitation"
-                          icon={<CalendarIcon className="h-5 w-5" />}
-                          startAt={normalizedItem.services.visitation.startAt}
-                          endAt={normalizedItem.services.visitation.endAt}
-                          location={normalizedItem.services.visitation.location}
-                          address={normalizedItem.services.visitation.address}
-                          officiant={normalizedItem.services.visitation.officiant}
-                          note={normalizedItem.services.visitation.note}
-                        />
-                        <ServiceSection
-                          title="Funeral Service"
-                          icon={<CrossIcon className="h-5 w-5" />}
-                          startAt={normalizedItem.services.funeral.startAt}
-                          endAt={normalizedItem.services.funeral.endAt}
-                          location={normalizedItem.services.funeral.location}
-                          address={normalizedItem.services.funeral.address}
-                          officiant={normalizedItem.services.funeral.officiant}
-                          note={normalizedItem.services.funeral.note}
-                        />
-                        <ServiceSection
-                          title="Burial"
-                          icon={<MapPinIcon className="h-5 w-5" />}
-                          startAt={normalizedItem.services.burial.startAt}
-                          endAt={normalizedItem.services.burial.endAt}
-                          location={normalizedItem.services.burial.location}
-                          address={normalizedItem.services.burial.address}
-                          officiant={normalizedItem.services.burial.officiant}
-                          note={burialNote}
+                    <div className="shrink-0">
+                      <Button
+                        variant="ghost"
+                        className="h-9 rounded-md bg-neutral-200 px-3 text-sm font-medium text-neutral-700 hover:bg-neutral-300"
+                        aria-label="Share obituary"
+                        onClick={handleShare}
+                      >
+                        <Share2Icon className="h-5 w-5" />
+                        <span>Share</span>
+                      </Button>
+                      <p className="mt-2 min-h-5 text-right text-xs text-neutral-600" aria-live="polite">
+                        {shareMessage}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 border-b border-neutral-300">
+                    <div role="tablist" aria-label="Obituary content tabs" className="flex gap-5 sm:gap-8">
+                      <button
+                        type="button"
+                        role="tab"
+                        id="tab-obituary"
+                        aria-controls="panel-obituary"
+                        aria-selected={activeTab === 'obituary'}
+                        onClick={() => setActiveTab('obituary')}
+                        className={`border-b-2 pb-2 text-base font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 focus-visible:ring-offset-2 sm:pb-3 sm:text-lg ${
+                          activeTab === 'obituary'
+                            ? 'border-neutral-900 text-neutral-900'
+                            : 'border-transparent text-neutral-500 hover:text-neutral-700'
+                        }`}
+                      >
+                        Obituary
+                      </button>
+                      <button
+                        type="button"
+                        role="tab"
+                        id="tab-biography"
+                        aria-controls="panel-biography"
+                        aria-selected={activeTab === 'biography'}
+                        onClick={() => setActiveTab('biography')}
+                        className={`border-b-2 pb-2 text-base font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 focus-visible:ring-offset-2 sm:pb-3 sm:text-lg ${
+                          activeTab === 'biography'
+                            ? 'border-neutral-900 text-neutral-900'
+                            : 'border-transparent text-neutral-500 hover:text-neutral-700'
+                        }`}
+                      >
+                        Biography
+                      </button>
+                    </div>
+                  </div>
+
+                  {activeTab === 'obituary' ? (
+                    <div id="panel-obituary" role="tabpanel" aria-labelledby="tab-obituary" className="mt-6 space-y-6">
+                      <div className="rounded-lg bg-neutral-100 shadow-md">
+                        <ImageWithFallback
+                          src={normalizedItem.posterUrl || FALLBACK_IMAGE}
+                          fallbackSrc={FALLBACK_IMAGE}
+                          alt={`${normalizedItem.fullName} memorial poster`}
+                          className="h-auto w-full object-contain"
                         />
                       </div>
-                    </CardContent>
-                  </Card>
+
+                      <Card className="rounded-2xl border border-neutral-300 bg-white">
+                        <CardContent className="p-5 sm:p-7">
+                          <h3 className="text-xl font-semibold text-neutral-900 md:text-2xl">
+                            Service Information
+                          </h3>
+
+                          <div className="mt-4 divide-y divide-neutral-200">
+                            <ServiceSection
+                              title="Visitation"
+                              icon={<CalendarIcon className="h-5 w-5" />}
+                              startAt={normalizedItem.services.visitation.startAt}
+                              endAt={normalizedItem.services.visitation.endAt}
+                              location={normalizedItem.services.visitation.location}
+                              address={normalizedItem.services.visitation.address}
+                              officiant={normalizedItem.services.visitation.officiant}
+                              note={normalizedItem.services.visitation.note}
+                            />
+                            <ServiceSection
+                              title="Funeral Service"
+                              icon={<CrossIcon className="h-5 w-5" />}
+                              startAt={normalizedItem.services.funeral.startAt}
+                              endAt={normalizedItem.services.funeral.endAt}
+                              location={normalizedItem.services.funeral.location}
+                              address={normalizedItem.services.funeral.address}
+                              officiant={normalizedItem.services.funeral.officiant}
+                              note={normalizedItem.services.funeral.note}
+                            />
+                            <ServiceSection
+                              title="Burial"
+                              icon={<MapPinIcon className="h-5 w-5" />}
+                              startAt={normalizedItem.services.burial.startAt}
+                              endAt={normalizedItem.services.burial.endAt}
+                              location={normalizedItem.services.burial.location}
+                              address={normalizedItem.services.burial.address}
+                              officiant={normalizedItem.services.burial.officiant}
+                              note={burialNote}
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ) : (
+                    <div
+                      id="panel-biography"
+                      role="tabpanel"
+                      aria-labelledby="tab-biography"
+                      className="mt-6"
+                    >
+                      <Card className="rounded-2xl border border-neutral-300 bg-white">
+                        <CardContent className="space-y-4 p-5 sm:p-7">
+                          <h3 className="text-2xl font-semibold text-neutral-900 md:text-3xl">Biography</h3>
+                          <p className="whitespace-pre-line leading-relaxed text-neutral-700">
+                            {normalizedItem.biography || 'No biography provided.'}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div
-                  id="panel-biography"
-                  role="tabpanel"
-                  aria-labelledby="tab-biography"
-                  className="mt-6"
-                >
-                  <Card className="rounded-2xl border border-neutral-300 bg-white">
-                    <CardContent className="space-y-5 p-8">
-                      <h3 className="text-4xl font-semibold text-neutral-900">Biography</h3>
-                      <p className="whitespace-pre-line leading-relaxed text-neutral-700">
-                        {normalizedItem.biography || 'No biography provided.'}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
+              </div>
             </div>
-          </div>
+          </article>
         ) : null}
-      </section>
-    </div>
+        </div>
+      </div>
+    </section>
   )
 }
 

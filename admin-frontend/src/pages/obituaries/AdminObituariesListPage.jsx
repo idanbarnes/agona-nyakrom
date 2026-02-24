@@ -161,7 +161,22 @@ function getPublishedValue(item) {
 }
 
 function getPhotoPath(item) {
+  const deceasedCandidate =
+    item?.deceased_photo_url ||
+    item?.deceasedPhotoUrl ||
+    item?.photo_url ||
+    item?.photoUrl ||
+    null
+
+  if (
+    typeof deceasedCandidate === 'string' &&
+    /^[^/\\]+\.[a-z0-9]{2,6}$/i.test(deceasedCandidate.trim())
+  ) {
+    return ''
+  }
+
   return (
+    deceasedCandidate ||
     item?.images?.thumbnail ||
     item?.images?.medium ||
     item?.images?.large ||
@@ -404,19 +419,6 @@ function AdminObituariesListPage() {
       <Card>
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="flex h-12 flex-1 items-center rounded-xl border border-border bg-background">
-              <span className="pointer-events-none inline-flex h-full w-11 items-center justify-center text-muted-foreground">
-                <SearchIcon aria-hidden="true" className="h-4 w-4" />
-              </span>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={handleSearchChange}
-                placeholder="Search by name..."
-                className="h-full w-full appearance-none border-0 bg-transparent pr-3 text-base text-foreground shadow-none placeholder:text-muted-foreground outline-none ring-0 focus:border-0 focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-              />
-            </div>
-
             <div className="relative flex-1">
               <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted-foreground">
                 <SearchIcon className="h-4 w-4" />

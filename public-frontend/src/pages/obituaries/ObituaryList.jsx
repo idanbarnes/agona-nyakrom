@@ -365,7 +365,7 @@ function MetaDetail({ icon, label, value, toneClasses }) {
   }
 
   return (
-    <div className="flex min-w-[12rem] items-center">
+    <div className="flex min-w-0 w-full items-center">
       <span
         className={`mr-3 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${toneClasses}`}
         aria-hidden="true"
@@ -445,9 +445,9 @@ function ObituaryCard({ item }) {
 
   return (
     <li>
-      <article className="group rounded-2xl border border-gray-200 bg-white p-5 shadow-[0_2px_12px_rgba(15,23,42,0.05)] transition hover:shadow-[0_16px_28px_rgba(15,23,42,0.08)] sm:p-6 md:p-7">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-stretch">
-          <div className="relative h-56 w-full overflow-hidden rounded-2xl sm:h-auto sm:w-48 md:w-56">
+      <article className="group h-full overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.05)] transition hover:shadow-[0_16px_28px_rgba(15,23,42,0.08)] md:p-5">
+        <div className="flex min-w-0 flex-row items-stretch gap-4">
+          <div className="relative w-32 shrink-0 overflow-hidden rounded-2xl sm:w-36 md:w-48">
             <ImageWithFallback
               src={thumbnail ? resolveAssetUrl(thumbnail) : null}
               alt={itemName}
@@ -458,12 +458,12 @@ function ObituaryCard({ item }) {
           </div>
 
           <div className="flex min-w-0 flex-1 flex-col justify-between">
-            <div className="space-y-2.5">
-              <h2 className="text-xl font-semibold leading-tight text-gray-900 sm:text-2xl">
+            <div className="space-y-2">
+              <h2 className="break-words text-lg font-semibold leading-tight text-gray-900 md:text-xl">
                 {itemName}
               </h2>
               {lifespan ? (
-                <p className="text-base font-medium tracking-wide text-gray-600">
+                <p className="break-words text-sm font-medium tracking-wide text-gray-600 md:text-base">
                   {lifespan}
                 </p>
               ) : null}
@@ -497,15 +497,15 @@ function ObituaryCard({ item }) {
 
                 <div className="relative" ref={shareRef}>
                   <Button
-                    size="icon"
                     variant="ghost"
-                    className="h-10 w-10 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                    className="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                     onClick={handleShare}
                     aria-label={`Share obituary for ${itemName}`}
                     aria-expanded={shareOpen}
                     aria-haspopup="menu"
                   >
                     <ShareIcon className="h-[18px] w-[18px]" />
+                    <span>Share</span>
                   </Button>
 
                   {shareOpen ? (
@@ -648,33 +648,33 @@ function ObituaryList() {
   const noMatches = !loading && !error && allItems.length > 0 && filteredItems.length === 0
 
   return (
-    <section className="bg-gradient-to-b from-gray-50 via-gray-50 to-gray-100 py-8 md:py-10">
-      <div className="container">
-        <div className="mx-auto max-w-7xl space-y-6">
-          <header className="rounded-2xl border border-gray-200 bg-white px-6 py-10 shadow-sm md:px-8">
-            <h1 className="font-serif text-4xl font-semibold text-gray-900 sm:text-5xl">
-              Obituaries
-            </h1>
-            <p className="mt-3 text-base text-gray-600 sm:text-lg">
-              Honoring the lives and memories of those who have passed
-            </p>
-          </header>
+    <section className="container py-6 md:py-10">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold text-foreground break-words md:text-3xl">
+          Obituaries
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Honoring the lives and memories of those who have passed
+        </p>
+      </div>
+      <div className="mt-8">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
+          <div className="relative max-w-2xl">
+            <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400">
+              <SearchIcon className="h-5 w-5" />
+            </span>
+            <Input
+              id="obituaries-search"
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search by name..."
+              className="h-12 rounded-xl border-gray-200 bg-white pl-12 pr-4 text-base text-gray-900 placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-0"
+            />
+          </div>
+        </div>
 
-           
-            <div className="relative max-w-2xl">
-              <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400">
-                <SearchIcon className="h-5 w-5" />
-              </span>
-              <Input
-                id="obituaries-search"
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search by name..."
-                className="h-12 rounded-xl border-gray-200 bg-white pl-12 pr-4 text-base text-gray-900 placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-0"
-              />
-            </div>
-
+        <div className="mt-6">
           <StateGate
             loading={loading}
             error={error}
@@ -697,7 +697,7 @@ function ObituaryList() {
             }
           >
             <div className="space-y-6">
-              <ul className="space-y-6">
+              <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {visibleItems.map((item) => (
                   <ObituaryCard key={getItemKey(item)} item={item} />
                 ))}
