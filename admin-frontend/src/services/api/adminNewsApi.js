@@ -30,7 +30,7 @@ async function parseJsonResponse(response) {
   let payload
   try {
     payload = await response.json()
-  } catch (error) {
+  } catch {
     throw new Error('Unexpected server response.')
   }
 
@@ -50,6 +50,12 @@ export async function getAllNews(params = {}) {
   }
   if (params.limit !== undefined) {
     searchParams.set('limit', params.limit)
+  }
+  if (params.search !== undefined && String(params.search).trim() !== '') {
+    searchParams.set('search', String(params.search).trim())
+  }
+  if (params.status !== undefined && String(params.status).trim() !== '') {
+    searchParams.set('status', String(params.status).trim())
   }
 
   const query = searchParams.toString()

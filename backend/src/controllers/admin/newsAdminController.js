@@ -31,10 +31,23 @@ const extractImageFromRequest = (req) => {
   };
 };
 
+const normalizeText = (value) => (typeof value === 'string' ? value.trim() : '');
+
 // POST /create
 const createNews = async (req, res) => {
   try {
-    const { title, content, summary, reporter, published_at, status, tags, categories, published } =
+    const {
+      title,
+      slug: requestedSlug,
+      content,
+      summary,
+      reporter,
+      published_at,
+      status,
+      tags,
+      categories,
+      published,
+    } =
       req.body || {};
 
     const { valid, missing } = requireFields(req.body || {}, ['title', 'content', 'summary']);
@@ -42,7 +55,16 @@ const createNews = async (req, res) => {
       return error(res, `Missing fields: ${missing.join(', ')}`, 400);
     }
 
-    const slug = generateSlug(title);
+    const normalizedTitle = normalizeText(title);
+    const normalizedContent = normalizeText(content);
+    const normalizedSummary = normalizeText(summary);
+    if (!normalizedTitle || !normalizedContent || !normalizedSummary) {
+      return error(res, 'Title, content, and summary are required.', 400);
+    }
+
+    const slug = requestedSlug
+      ? String(requestedSlug).trim().toLowerCase()
+      : generateSlug(normalizedTitle);
     if (!isValidSlugFormat(slug)) {
       return error(res, 'Invalid slug format', 400);
     }
@@ -51,11 +73,11 @@ const createNews = async (req, res) => {
     const images = await processImageIfPresent(imageFile, slug);
 
     const created = await newsAdminService.create({
-      title,
+      title: normalizedTitle,
       slug,
-      summary,
-      content,
-      reporter,
+      summary: normalizedSummary,
+      content: normalizedContent,
+      reporter: normalizeText(reporter) || null,
       published_at,
       status,
       tags,
@@ -79,11 +101,23 @@ const createNews = async (req, res) => {
 const updateNews = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, content, summary, reporter, published_at, status, tags, categories, published } =
+    const {
+      title,
+      slug: requestedSlug,
+      content,
+      summary,
+      reporter,
+      published_at,
+      status,
+      tags,
+      categories,
+      published,
+    } =
       req.body || {};
 
     const updatableFields = [
       'title',
+      'slug',
       'content',
       'summary',
       'reporter',
@@ -99,28 +133,48 @@ const updateNews = async (req, res) => {
       return error(res, 'No fields provided to update', 400);
     }
 
+    if (title !== undefined && !normalizeText(title)) {
+      return error(res, 'Title cannot be empty.', 400);
+    }
+    if (content !== undefined && !normalizeText(content)) {
+      return error(res, 'Content cannot be empty.', 400);
+    }
+    if (summary !== undefined && !normalizeText(summary)) {
+      return error(res, 'Summary cannot be empty.', 400);
+    }
+    if (requestedSlug !== undefined && !normalizeText(requestedSlug)) {
+      return error(res, 'Slug cannot be empty.', 400);
+    }
+
     const existing = await newsAdminService.getById(id);
     if (!existing) {
       return error(res, 'News not found', 404);
     }
 
     let slug = existing.slug;
-    if (title) {
-      slug = generateSlug(title);
-      if (!isValidSlugFormat(slug)) {
-        return error(res, 'Invalid slug format', 400);
-      }
+    if (requestedSlug !== undefined) {
+      slug = String(requestedSlug).trim().toLowerCase();
+    } else if (title) {
+      slug = generateSlug(normalizeText(title));
+    }
+
+    if (requestedSlug !== undefined && !isValidSlugFormat(slug)) {
+      return error(res, 'Invalid slug format', 400);
+    }
+
+    if (requestedSlug === undefined && title && !isValidSlugFormat(slug)) {
+      return error(res, 'Invalid slug format', 400);
     }
 
     const imageFile = extractImageFromRequest(req);
     const images = await processImageIfPresent(imageFile, slug || id);
 
     const updated = await newsAdminService.update(id, {
-      title,
+      title: title !== undefined ? normalizeText(title) : undefined,
       slug,
-      summary,
-      content,
-      reporter,
+      summary: summary !== undefined ? normalizeText(summary) : undefined,
+      content: content !== undefined ? normalizeText(content) : undefined,
+      reporter: reporter !== undefined ? normalizeText(reporter) || null : undefined,
       published_at,
       status,
       tags,
@@ -162,8 +216,9 @@ const deleteNews = async (req, res) => {
 // GET /all
 const getAllNews = async (req, res) => {
   try {
-    const items = await newsAdminService.getAll();
-    return success(res, items, 'News fetched successfully');
+    const { page, limit, search, status } = req.query || {};
+    const result = await newsAdminService.getAll({ page, limit, search, status });
+    return success(res, result, 'News fetched successfully');
   } catch (err) {
     console.error('Error fetching news (admin):', err.message);
     return error(res, 'Failed to fetch news', 500);

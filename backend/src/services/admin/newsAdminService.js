@@ -154,13 +154,62 @@ const remove = async (id) => {
   return rowCount > 0;
 };
 
-const getAll = async () => {
-  const { rows } = await pool.query(
-    `SELECT ${baseSelect}
-     FROM news
-     ORDER BY created_at DESC`
-  );
-  return rows.map(mapNews);
+const getAll = async (options = {}) => {
+  const rawPage = Number(options.page);
+  const rawLimit = Number(options.limit);
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1;
+  const limit =
+    Number.isFinite(rawLimit) && rawLimit > 0
+      ? Math.min(100, Math.floor(rawLimit))
+      : 15;
+  const offset = (page - 1) * limit;
+
+  const filters = [];
+  const values = [];
+
+  const status = String(options.status || 'all').toLowerCase();
+  if (status === 'published') {
+    values.push(true);
+    filters.push(`published = $${values.length}`);
+  } else if (status === 'draft') {
+    values.push(false);
+    filters.push(`published = $${values.length}`);
+  }
+
+  const search = String(options.search || '').trim();
+  if (search) {
+    values.push(`%${search}%`);
+    filters.push(`(title ILIKE $${values.length} OR COALESCE(reporter, '') ILIKE $${values.length})`);
+  }
+
+  const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+
+  const countQuery = `
+    SELECT COUNT(*)::int AS total
+    FROM news
+    ${whereClause}
+  `;
+
+  const countResult = await pool.query(countQuery, values);
+  const total = countResult.rows[0]?.total || 0;
+
+  const listValues = [...values, limit, offset];
+  const listQuery = `
+    SELECT ${baseSelect}
+    FROM news
+    ${whereClause}
+    ORDER BY created_at DESC
+    LIMIT $${listValues.length - 1}
+    OFFSET $${listValues.length}
+  `;
+
+  const { rows } = await pool.query(listQuery, listValues);
+  return {
+    items: rows.map(mapNews),
+    total,
+    page,
+    limit,
+  };
 };
 
 const getById = async (id) => {
