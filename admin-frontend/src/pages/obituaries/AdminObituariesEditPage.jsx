@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   getSingleObituary,
   updateObituary,
 } from '../../services/api/adminObituariesApi.js'
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
+import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
 import {
   Button,
   Card,
@@ -140,6 +141,7 @@ function normalizeDateTimeInput(value) {
 
 function AdminObituariesEditPage() {
   const { id } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const deceasedPhotoInputRef = useRef(null)
   const posterPhotoInputRef = useRef(null)
@@ -451,7 +453,7 @@ function AdminObituariesEditPage() {
     )
   }
 
-  return (
+  const formContent = (
     <div className="mx-auto w-full max-w-4xl space-y-6 md:space-y-8">
       <header className="space-y-3">
         <Link
@@ -782,6 +784,21 @@ function AdminObituariesEditPage() {
         </div>
       </form>
     </div>
+  )
+
+  return (
+    <AdminInlinePreviewLayout
+      resource="obituaries"
+      itemId={id}
+      query={location.search}
+      storageKey="obituaries-preview-pane-width"
+      onAuthError={() => {
+        clearAuthToken()
+        navigate('/login', { replace: true })
+      }}
+    >
+      {formContent}
+    </AdminInlinePreviewLayout>
   )
 }
 

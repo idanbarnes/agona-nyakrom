@@ -1,5 +1,6 @@
 const asafoService = require('../../services/public/asafoService');
 const { success, error } = require('../../utils/response');
+const { resolvePreviewAccess } = require('../../utils/previewAccess');
 
 const getAllPublishedAsafo = async (req, res) => {
   try {
@@ -13,7 +14,15 @@ const getAllPublishedAsafo = async (req, res) => {
 
 const getPublishedAsafoBySlug = async (req, res) => {
   try {
-    const asafo = await asafoService.findBySlug(req.params.slug);
+    const preview = resolvePreviewAccess(req, 'asafo-companies');
+    if (preview.isPreviewRequest && !preview.isAuthorized) {
+      return error(res, preview.errorMessage, 401);
+    }
+
+    const asafo = preview.isAuthorized
+      ? await asafoService.findById(preview.previewId)
+      : await asafoService.findBySlug(req.params.slug);
+
     if (!asafo) {
       return error(res, 'Asafo entry not found', 404);
     }

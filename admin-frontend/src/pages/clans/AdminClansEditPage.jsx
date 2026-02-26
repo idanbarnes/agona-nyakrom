@@ -19,6 +19,7 @@ import {
   Input,
 } from '../../components/ui/index.jsx'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
+import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
 
 // Draft leaders are created inline before persisting to the API.
 const createDraftLeader = (type) => ({
@@ -462,7 +463,7 @@ function AdminClansEditPage() {
     )
   }
 
-  return (
+  const formContent = (
     <div className="space-y-6">
       <header className="space-y-1">
         <h1 className="text-xl font-semibold break-words md:text-2xl">Edit Family Clan</h1>
@@ -1052,6 +1053,21 @@ function AdminClansEditPage() {
         </Card>
       </form>
     </div>
+  )
+
+  return (
+    <AdminInlinePreviewLayout
+      resource="clans"
+      itemId={id}
+      query={location.search}
+      storageKey="clans-preview-pane-width"
+      onAuthError={() => {
+        clearAuthToken()
+        navigate('/login', { replace: true })
+      }}
+    >
+      {formContent}
+    </AdminInlinePreviewLayout>
   )
 }
 

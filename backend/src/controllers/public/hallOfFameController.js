@@ -1,5 +1,6 @@
 const hallOfFameService = require('../../services/public/hallOfFameService');
 const { success, error } = require('../../utils/response');
+const { resolvePreviewAccess } = require('../../utils/previewAccess');
 
 // GET /api/public/hall-of-fame
 const getAllPublishedHallOfFame = async (req, res) => {
@@ -16,7 +17,15 @@ const getAllPublishedHallOfFame = async (req, res) => {
 const getPublishedHallOfFameBySlug = async (req, res) => {
   try {
     const { slugOrId } = req.params;
-    const entry = await hallOfFameService.findBySlugOrId(slugOrId);
+    const preview = resolvePreviewAccess(req, 'hall-of-fame');
+    if (preview.isPreviewRequest && !preview.isAuthorized) {
+      return error(res, preview.errorMessage, 401);
+    }
+
+    const entry = preview.isAuthorized
+      ? await hallOfFameService.findById(preview.previewId)
+      : await hallOfFameService.findBySlugOrId(slugOrId);
+
     if (!entry) {
       return error(res, 'Hall of fame entry not found', 404);
     }

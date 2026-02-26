@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { getNewsDetail } from '../../api/endpoints.js'
+import { Link, useLocation, useParams } from 'react-router-dom'
+import { getNewsDetail, getNewsPreview } from '../../api/endpoints.js'
 import {
   Button,
   DetailSkeleton,
@@ -42,9 +42,26 @@ function selectImage(images = {}, fallback) {
 
 function NewsDetail() {
   const { slug } = useParams()
+  const location = useLocation()
   const [item, setItem] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const previewToken = useMemo(() => {
+    const token = new URLSearchParams(location.search).get('preview_token')
+    return String(token || '').trim()
+  }, [location.search])
+  const isPreviewMode = Boolean(previewToken)
+  const isEmbeddedPreview = useMemo(() => {
+    if (!isPreviewMode) {
+      return false
+    }
+
+    try {
+      return window.self !== window.top
+    } catch {
+      return true
+    }
+  }, [isPreviewMode])
 
   const loadNews = useCallback(async () => {
     if (!slug) {
@@ -58,11 +75,27 @@ function NewsDetail() {
     setError(null)
 
     try {
-      const response = await getNewsDetail(slug)
+      const response = isPreviewMode
+        ? await getNewsPreview(slug, previewToken)
+        : await getNewsDetail(slug)
       const payload = response?.data || response?.item || response
       setItem(payload || null)
     } catch (err) {
-      if (err?.status === 404) {
+      if (isPreviewMode && (err?.status === 401 || err?.status === 403)) {
+        setItem(null)
+        setError(
+          new Error(
+            'This preview link is invalid or has expired. Generate a new preview from the admin dashboard.',
+          ),
+        )
+      } else if (isPreviewMode && err?.status === 404) {
+        setItem(null)
+        setError(
+          new Error(
+            'This preview is unavailable. The draft may have been removed.',
+          ),
+        )
+      } else if (err?.status === 404) {
         setItem(null)
         setError(null)
       } else {
@@ -71,11 +104,30 @@ function NewsDetail() {
     } finally {
       setLoading(false)
     }
-  }, [slug])
+  }, [isPreviewMode, previewToken, slug])
 
   useEffect(() => {
     loadNews()
   }, [loadNews])
+
+  useEffect(() => {
+    if (!isPreviewMode) {
+      return undefined
+    }
+
+    const handlePreviewRefresh = (event) => {
+      if (typeof event?.preventDefault === 'function') {
+        event.preventDefault()
+      }
+
+      void loadNews()
+    }
+
+    window.addEventListener('cms-preview-refresh', handlePreviewRefresh)
+    return () => {
+      window.removeEventListener('cms-preview-refresh', handlePreviewRefresh)
+    }
+  }, [isPreviewMode, loadNews])
 
   const publishedAt = item?.published_at || item?.publishedAt
   const dateLabel = useMemo(() => formatDate(publishedAt), [publishedAt])
@@ -91,7 +143,13 @@ function NewsDetail() {
   ].filter(Boolean)
 
   return (
-    <section className="container py-6 md:py-10">
+    <section
+      className={
+        isEmbeddedPreview
+          ? 'mx-auto w-full max-w-5xl px-4 py-4 md:px-6 md:py-6'
+          : 'container py-6 md:py-10'
+      }
+    >
       <StateGate
         loading={loading}
         error={error}
@@ -105,8 +163,12 @@ function NewsDetail() {
         }
         empty={
           <EmptyState
-            title="Not found"
-            description="This item may have been removed."
+            title={isPreviewMode ? 'Preview unavailable' : 'Not found'}
+            description={
+              isPreviewMode
+                ? 'This preview link may be invalid, expired, or no longer available.'
+                : 'This item may have been removed.'
+            }
             action={
               <Button as={Link} to="/news" variant="ghost">
                 Back to news

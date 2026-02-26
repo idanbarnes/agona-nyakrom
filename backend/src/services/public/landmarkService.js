@@ -63,8 +63,20 @@ const findBySlug = async (slug) => {
   return mapLandmark(rows[0]);
 };
 
+const findById = async (id) => {
+  const { rows } = await pool.query(
+    `SELECT *
+     FROM landmarks
+     WHERE id = $1
+     LIMIT 1`,
+    [id]
+  );
+  return mapLandmark(rows[0]);
+};
+
 module.exports = {
   findAll,
   countAll,
   findBySlug,
+  findById,
 };

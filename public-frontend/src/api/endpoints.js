@@ -1,4 +1,5 @@
 import { request } from './http.js'
+import { appendPreviewToken } from '../lib/preview.js'
 
 // Build a query string for pagination when values are provided.
 function withPagination(path, { page, limit } = {}) {
@@ -27,49 +28,59 @@ export const getNews = (pagination) =>
   request(withPagination('/api/public/news', pagination))
 
 export const getNewsDetail = (slug) =>
-  request(`/api/public/news/${slug}`)
+  request(appendPreviewToken(`/api/public/news/${slug}`))
+
+export const getNewsPreview = (slug, token) => {
+  const query = new URLSearchParams()
+  query.set('slug', String(slug || '').trim())
+  query.set('token', String(token || '').trim())
+
+  return request(`/api/public/news/preview?${query.toString()}`)
+}
 
 // Obituaries endpoints.
 export const getObituaries = (pagination) =>
   request(withPagination('/api/public/obituaries', pagination))
 
 export const getObituaryDetail = (slug) =>
-  request(`/api/public/obituaries/${slug}`)
+  request(appendPreviewToken(`/api/public/obituaries/${slug}`))
 
 // Clans endpoints.
 export const getClans = () => request('/api/public/clans')
 
 export const getClanDetail = (slug) =>
-  request(`/api/public/clans/${slug}`)
+  request(appendPreviewToken(`/api/public/clans/${slug}`))
 
 // Asafo entries endpoints.
 export const getAsafoCompanies = () =>
   request('/api/public/asafo')
 
 export const getAsafoDetail = (slug) =>
-  request(`/api/public/asafo/${slug}`)
+  request(appendPreviewToken(`/api/public/asafo/${slug}`))
 
 // Hall of Fame endpoints.
 export const getHallOfFame = () => request('/api/public/hall-of-fame')
 
 export const getHallOfFameDetail = (slug) =>
-  request(`/api/public/hall-of-fame/${slug}`)
+  request(appendPreviewToken(`/api/public/hall-of-fame/${slug}`))
 
 // Landmarks endpoints.
 export const getLandmarks = (pagination) =>
   request(withPagination('/api/public/landmarks', pagination))
 
 export const getLandmarkDetail = (slug) =>
-  request(`/api/public/landmarks/${slug}`)
+  request(appendPreviewToken(`/api/public/landmarks/${slug}`))
 
 // Carousel endpoints.
 export const getCarousel = () => request('/api/public/carousel')
 
 // History endpoints.
 export const getHistory = () => request('/api/public/history')
-export const getAboutPageBySlug = (slug) => request(`/api/public/about/${slug}`)
+export const getAboutPageBySlug = (slug) =>
+  request(appendPreviewToken(`/api/public/about/${slug}`))
 export const getPublicLeaders = () => request('/api/public/leaders')
-export const getPublicLeaderBySlug = (slug) => request(`/api/public/leaders/${slug}`)
+export const getPublicLeaderBySlug = (slug) =>
+  request(appendPreviewToken(`/api/public/leaders/${slug}`))
 
 // Announcements & Events endpoints.
 export const getAnnouncementsEvents = (params = {}) => {
@@ -113,7 +124,7 @@ export const getPublicEvents = (params = {}) => {
 }
 
 export const getPublicEventDetail = (slug) =>
-  request(`/api/public/events/${slug}`)
+  request(appendPreviewToken(`/api/public/events/${slug}`))
 
 export const getPublicAnnouncements = (params = {}) => {
   const query = new URLSearchParams()
@@ -131,4 +142,4 @@ export const getPublicAnnouncements = (params = {}) => {
 }
 
 export const getPublicAnnouncementDetail = (slug) =>
-  request(`/api/public/announcements/${slug}`)
+  request(appendPreviewToken(`/api/public/announcements/${slug}`))

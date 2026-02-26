@@ -389,6 +389,14 @@ function AdminObituariesListPage() {
   const iconButtonClassName =
     'inline-flex h-8 w-8 items-center justify-center rounded-md border border-transparent text-slate-600 transition-colors hover:bg-accent hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
 
+  const handleOpenInlinePreview = (obituaryId) => {
+    if (!obituaryId) {
+      return
+    }
+
+    navigate(`/admin/obituaries/edit/${obituaryId}?preview=1`)
+  }
+
   return (
     <section className="space-y-6">
       <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -580,15 +588,16 @@ function AdminObituariesListPage() {
                 <TableCell>{formatDate(item.createdDate)}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
-                    {item.slug ? (
-                      <Link
-                        to={`/obituaries/${item.slug}`}
+                    {item.id ? (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenInlinePreview(item.id)}
                         className={iconButtonClassName}
                         aria-label={`View ${item.fullName}`}
-                        title="View"
+                        title="View in split preview"
                       >
                         <EyeIcon />
-                      </Link>
+                      </button>
                     ) : (
                       <span
                         className={`${iconButtonClassName} cursor-not-allowed opacity-40`}

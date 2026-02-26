@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   getSingleHallOfFame,
   updateHallOfFame,
@@ -7,9 +7,11 @@ import {
 } from '../../services/api/adminHallOfFameApi.js'
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
 import HallOfFameForm from './HallOfFameForm.jsx'
+import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
 
 function AdminHallOfFameEditPage() {
   const { id } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const [initialState, setInitialState] = useState(null)
   const [formState, setFormState] = useState({
@@ -156,7 +158,7 @@ function AdminHallOfFameEditPage() {
     )
   }
 
-  return (
+  const formContent = (
     <HallOfFameForm
       title="Edit Hall of Fame Entry"
       description="Refine this entry and publish when ready."
@@ -170,6 +172,21 @@ function AdminHallOfFameEditPage() {
       onSubmit={handleSubmit}
       onUploadImage={handleUploadBodyImage}
     />
+  )
+
+  return (
+    <AdminInlinePreviewLayout
+      resource="hall-of-fame"
+      itemId={id}
+      query={location.search}
+      storageKey="hall-of-fame-preview-pane-width"
+      onAuthError={() => {
+        clearAuthToken()
+        navigate('/login', { replace: true })
+      }}
+    >
+      {formContent}
+    </AdminInlinePreviewLayout>
   )
 }
 

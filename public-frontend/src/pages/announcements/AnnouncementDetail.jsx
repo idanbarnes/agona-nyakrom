@@ -5,6 +5,7 @@ import {
   getPublicAnnouncements,
 } from '../../api/endpoints.js'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import useCmsPreviewRefresh from '../../lib/useCmsPreviewRefresh.js'
 import {
   Badge,
   Button,
@@ -168,6 +169,8 @@ function AnnouncementDetail() {
   useEffect(() => {
     loadAnnouncement()
   }, [loadAnnouncement])
+
+  useCmsPreviewRefresh(loadAnnouncement)
 
   useEffect(() => {
     if (!item?.slug) return

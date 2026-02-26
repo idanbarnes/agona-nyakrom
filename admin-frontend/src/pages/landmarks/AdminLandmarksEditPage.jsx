@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   getSingleLandmark,
   updateLandmark,
 } from '../../services/api/adminLandmarksApi.js'
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
+import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
 import {
   Button,
   Card,
@@ -18,6 +19,7 @@ import {
 
 function AdminLandmarksEditPage() {
   const { id } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const [initialState, setInitialState] = useState(null)
   const [formState, setFormState] = useState({
@@ -172,7 +174,7 @@ function AdminLandmarksEditPage() {
     )
   }
 
-  return (
+  const formContent = (
     <div className="space-y-6">
       <header className="space-y-1">
         <h1 className="text-xl font-semibold break-words md:text-2xl">Edit Landmark</h1>
@@ -270,6 +272,21 @@ function AdminLandmarksEditPage() {
         </Card>
       </form>
     </div>
+  )
+
+  return (
+    <AdminInlinePreviewLayout
+      resource="landmarks"
+      itemId={id}
+      query={location.search}
+      storageKey="landmarks-preview-pane-width"
+      onAuthError={() => {
+        clearAuthToken()
+        navigate('/login', { replace: true })
+      }}
+    >
+      {formContent}
+    </AdminInlinePreviewLayout>
   )
 }
 

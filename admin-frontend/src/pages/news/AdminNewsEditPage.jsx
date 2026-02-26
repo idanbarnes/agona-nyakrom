@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { getSingleNews, updateNews } from '../../services/api/adminNewsApi.js'
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
 import {
   Button,
   Card,
+  CardContent,
   CardHeader,
   CardTitle,
-  CardContent,
   FormField,
   InlineError,
   Input,
@@ -150,6 +151,7 @@ function normalizeDateInput(value = '') {
 
 function AdminNewsEditPage() {
   const { id } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const imageInputRef = useRef(null)
   const [initialState, setInitialState] = useState(null)
@@ -167,6 +169,8 @@ function AdminNewsEditPage() {
   const [submitAction, setSubmitAction] = useState('draft')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+  const [previewReloadKey, setPreviewReloadKey] = useState(0)
 
   useEffect(() => {
     if (!getAuthToken()) {
@@ -177,6 +181,7 @@ function AdminNewsEditPage() {
     const fetchNews = async () => {
       setIsLoading(true)
       setErrorMessage('')
+      setSuccessMessage('')
 
       try {
         const payload = await getSingleNews(id)
@@ -198,7 +203,6 @@ function AdminNewsEditPage() {
         setHasManuallyEditedSlug(Boolean(newsItem?.slug))
       } catch (error) {
         if (error.status === 401) {
-          // Token expired; force re-authentication.
           clearAuthToken()
           navigate('/login', { replace: true })
           return
@@ -230,6 +234,7 @@ function AdminNewsEditPage() {
   }, [formState, initialState])
 
   const handleChange = (event) => {
+    setSuccessMessage('')
     const { name, value, type, checked } = event.target
     const nextValue = type === 'checkbox' ? checked : value
 
@@ -252,6 +257,7 @@ function AdminNewsEditPage() {
   }
 
   const handleFileChange = (event) => {
+    setSuccessMessage('')
     const file = event.target.files?.[0] || null
 
     if (!file) {
@@ -277,6 +283,7 @@ function AdminNewsEditPage() {
 
   const handleSubmit = async (action) => {
     setErrorMessage('')
+    setSuccessMessage('')
     setSubmitAction(action)
 
     if (!hasChanges) {
@@ -296,7 +303,9 @@ function AdminNewsEditPage() {
     }
 
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalizedSlug)) {
-      setErrorMessage('URL slug can only contain lowercase letters, numbers, and hyphens.')
+      setErrorMessage(
+        'URL slug can only contain lowercase letters, numbers, and hyphens.',
+      )
       return
     }
 
@@ -305,7 +314,10 @@ function AdminNewsEditPage() {
       return
     }
 
-    const fallbackSummary = getContentText(normalizedContent).slice(0, MAX_META_DESCRIPTION_LENGTH)
+    const fallbackSummary = getContentText(normalizedContent).slice(
+      0,
+      MAX_META_DESCRIPTION_LENGTH,
+    )
     const summaryToSave = normalizedMetaDescription || fallbackSummary
     if (!summaryToSave) {
       setErrorMessage('Content is too short to generate a meta description.')
@@ -336,11 +348,31 @@ function AdminNewsEditPage() {
       if (response?.success === false) {
         throw new Error(response?.message || 'Unable to update news.')
       }
-      window.alert(publishedValue ? 'Article updated and published successfully' : 'Draft updated successfully')
-      navigate('/admin/news', { replace: true })
+
+      const nextState = {
+        title: normalizedTitle,
+        slug: normalizedSlug,
+        published_at: formState.published_at,
+        content: normalizedContent,
+        reporter: normalizedReporter,
+        metaDescription: summaryToSave,
+        image: null,
+      }
+
+      setInitialState(nextState)
+      setFormState(nextState)
+      setSuccessMessage(
+        publishedValue
+          ? 'Article updated and published successfully.'
+          : 'Draft updated successfully.',
+      )
+      setPreviewReloadKey((current) => current + 1)
+
+      if (imageInputRef.current) {
+        imageInputRef.current.value = ''
+      }
     } catch (error) {
       if (error.status === 401) {
-        // Token expired; force re-authentication.
         clearAuthToken()
         navigate('/login', { replace: true })
         return
@@ -376,7 +408,9 @@ function AdminNewsEditPage() {
           </p>
         </header>
         <Card className="border-border/80 shadow-sm">
-          <CardContent className="py-8 text-sm text-muted-foreground">Loading article...</CardContent>
+          <CardContent className="py-8 text-sm text-muted-foreground">
+            Loading article...
+          </CardContent>
         </Card>
       </div>
     )
@@ -384,10 +418,12 @@ function AdminNewsEditPage() {
 
   const metaDescriptionCount = formState.metaDescription.length
   const imageFileName = formState.image?.name || ''
-  const seoUrlPreview = formState.slug ? `/news/${formState.slug}` : '/news/article-url-slug'
+  const seoUrlPreview = formState.slug
+    ? `/news/${formState.slug}`
+    : '/news/article-url-slug'
 
-  return (
-    <div className="mx-auto max-w-6xl space-y-6 pb-8 md:space-y-8">
+  const formContent = (
+    <div className="mx-auto w-full max-w-[1700px] space-y-6 pb-8 md:space-y-8">
       <header className="rounded-2xl border border-border/80 bg-gradient-to-r from-white via-slate-50 to-blue-50/40 p-5 shadow-sm transition-shadow duration-200 hover:shadow-md sm:p-7">
         <Button
           type="button"
@@ -424,6 +460,11 @@ function AdminNewsEditPage() {
             </CardHeader>
             <CardContent className="space-y-5 pt-6 md:space-y-6">
               <InlineError message={errorMessage} />
+              {successMessage ? (
+                <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                  {successMessage}
+                </p>
+              ) : null}
 
               <FormField label="Title" htmlFor="title" required>
                 <Input
@@ -457,7 +498,10 @@ function AdminNewsEditPage() {
                   />
                   <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/80 bg-slate-50/80 px-3 py-2">
                     <p className="text-xs text-muted-foreground">
-                      URL preview: <span className="font-mono text-foreground">{seoUrlPreview}</span>
+                      URL preview:{' '}
+                      <span className="font-mono text-foreground">
+                        {seoUrlPreview}
+                      </span>
                     </p>
                     {hasManuallyEditedSlug ? (
                       <Button
@@ -476,7 +520,9 @@ function AdminNewsEditPage() {
                         Reset from title
                       </Button>
                     ) : (
-                      <span className="text-xs text-muted-foreground">Auto-generated</span>
+                      <span className="text-xs text-muted-foreground">
+                        Auto-generated
+                      </span>
                     )}
                   </div>
                 </div>
@@ -528,7 +574,9 @@ function AdminNewsEditPage() {
                     <p className="text-sm font-medium text-foreground">
                       {imageFileName || 'Click to upload image'}
                     </p>
-                    <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 5MB</p>
+                    <p className="text-xs text-muted-foreground">
+                      PNG, JPG, GIF up to 5MB
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       Leave empty to keep current image.
                     </p>
@@ -606,7 +654,8 @@ function AdminNewsEditPage() {
               <div className="rounded-xl border border-border/80 bg-slate-50/80 p-4">
                 <p className="text-sm font-semibold text-slate-900">Article status</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Save as draft to keep updates private, or publish to make changes live.
+                  Save as draft to keep updates private, or publish to make
+                  changes live.
                 </p>
               </div>
 
@@ -649,6 +698,23 @@ function AdminNewsEditPage() {
       </form>
     </div>
   )
+
+  return (
+    <AdminInlinePreviewLayout
+      resource="news"
+      itemId={id}
+      query={location.search}
+      reloadKey={previewReloadKey}
+      storageKey="news-preview-pane-width"
+      onAuthError={() => {
+        clearAuthToken()
+        navigate('/login', { replace: true })
+      }}
+    >
+      {formContent}
+    </AdminInlinePreviewLayout>
+  )
 }
 
 export default AdminNewsEditPage
+

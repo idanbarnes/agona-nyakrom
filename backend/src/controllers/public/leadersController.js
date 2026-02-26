@@ -1,5 +1,6 @@
 const leaderService = require('../../services/leaderService');
 const { success, error } = require('../../utils/response');
+const { resolvePreviewAccess } = require('../../utils/previewAccess');
 
 const getPublishedLeaders = async (req, res) => {
   try {
@@ -19,9 +20,16 @@ const getPublishedLeaders = async (req, res) => {
 
 const getPublishedLeaderBySlug = async (req, res) => {
   try {
-    const leader =
-      (await leaderService.getPublishedBySlug(req.params.slug)) ||
-      (await leaderService.getPublishedById(req.params.slug));
+    const preview = resolvePreviewAccess(req, 'leaders');
+    if (preview.isPreviewRequest && !preview.isAuthorized) {
+      return error(res, preview.errorMessage, 401);
+    }
+
+    const leader = preview.isAuthorized
+      ? await leaderService.getById(preview.previewId)
+      : (await leaderService.getPublishedBySlug(req.params.slug)) ||
+        (await leaderService.getPublishedById(req.params.slug));
+
     if (!leader) {
       return error(res, 'Leader not found', 404);
     }

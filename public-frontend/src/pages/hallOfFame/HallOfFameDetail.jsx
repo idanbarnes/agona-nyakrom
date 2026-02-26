@@ -10,6 +10,7 @@ import {
   StateGate,
 } from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import useCmsPreviewRefresh from '../../lib/useCmsPreviewRefresh.js'
 
 function HallOfFameDetail() {
   const { slug } = useParams()
@@ -47,6 +48,8 @@ function HallOfFameDetail() {
   useEffect(() => {
     loadEntry()
   }, [loadEntry])
+
+  useCmsPreviewRefresh(loadEntry)
 
   const name = item?.name || item?.full_name || 'Hall of Fame'
   const role = item?.title || item?.position || item?.role || ''

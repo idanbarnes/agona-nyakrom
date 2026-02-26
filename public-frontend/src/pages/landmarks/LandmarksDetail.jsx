@@ -10,6 +10,7 @@ import {
   StateGate,
 } from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import useCmsPreviewRefresh from '../../lib/useCmsPreviewRefresh.js'
 
 // Prefer medium image, then fall back to any available image field.
 function selectImage(images = {}, fallback) {
@@ -64,6 +65,8 @@ function LandmarksDetail() {
   useEffect(() => {
     loadLandmark()
   }, [loadLandmark])
+
+  useCmsPreviewRefresh(loadLandmark)
 
   const name = item?.name || 'Landmark'
   const imagePath = selectImage(item?.images, item?.image)

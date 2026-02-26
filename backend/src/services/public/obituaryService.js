@@ -130,7 +130,19 @@ const findBySlug = async (slug) => {
   return mapObituary(rows[0]);
 };
 
+const findById = async (id) => {
+  const { rows } = await pool.query(
+    `SELECT ${baseSelect}
+     FROM obituaries
+     WHERE id = $1
+     LIMIT 1`,
+    [id]
+  );
+  return mapObituary(rows[0]);
+};
+
 module.exports = {
   findPublished,
   findBySlug,
+  findById,
 };

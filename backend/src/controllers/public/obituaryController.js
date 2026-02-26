@@ -1,5 +1,6 @@
 const obituaryService = require('../../services/public/obituaryService');
 const { success, error } = require('../../utils/response');
+const { resolvePreviewAccess } = require('../../utils/previewAccess');
 
 // GET /api/public/obituaries
 const getAllPublishedObituaries = async (req, res) => {
@@ -17,7 +18,15 @@ const getAllPublishedObituaries = async (req, res) => {
 const getPublishedObituaryBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
-    const obituary = await obituaryService.findBySlug(slug);
+    const preview = resolvePreviewAccess(req, 'obituaries');
+    if (preview.isPreviewRequest && !preview.isAuthorized) {
+      return error(res, preview.errorMessage, 401);
+    }
+
+    const obituary = preview.isAuthorized
+      ? await obituaryService.findById(preview.previewId)
+      : await obituaryService.findBySlug(slug);
+
     if (!obituary) {
       return error(res, 'Obituary not found', 404);
     }

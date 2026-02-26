@@ -203,20 +203,6 @@ function buildPageItems(currentPage, totalPages) {
   return items
 }
 
-function getPublicNewsUrl(slug) {
-  const normalizedSlug = String(slug || '').trim()
-  const publicBaseUrl = String(import.meta.env.VITE_PUBLIC_SITE_URL || '').trim()
-  const normalizedBaseUrl = publicBaseUrl.endsWith('/')
-    ? publicBaseUrl.slice(0, -1)
-    : publicBaseUrl
-
-  if (normalizedBaseUrl) {
-    return `${normalizedBaseUrl}/news/${normalizedSlug}`
-  }
-
-  return `/news/${normalizedSlug}`
-}
-
 function AdminNewsListPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -369,6 +355,14 @@ function AdminNewsListPage() {
 
   const handleNextPage = () => {
     setPage((current) => Math.min(totalPages, current + 1))
+  }
+
+  const handleViewInEditorPreview = (newsId) => {
+    if (!newsId) {
+      return
+    }
+
+    navigate(`/admin/news/edit/${newsId}?preview=1`)
   }
 
   const hasPreviousPage = page > DEFAULT_PAGE
@@ -533,17 +527,16 @@ function AdminNewsListPage() {
                   </div>
 
                   <div className="flex items-center justify-end gap-1">
-                    {item.slug ? (
-                      <a
-                        href={getPublicNewsUrl(item.slug)}
-                        target="_blank"
-                        rel="noreferrer"
+                    {item.id ? (
+                      <button
+                        type="button"
+                        onClick={() => handleViewInEditorPreview(item.id)}
                         className={iconButtonClassName}
                         aria-label={`View ${item.title}`}
-                        title="View"
+                        title="View in split preview"
                       >
                         <EyeIcon />
-                      </a>
+                      </button>
                     ) : (
                       <span
                         className={`${iconButtonClassName} cursor-not-allowed opacity-40`}
@@ -611,17 +604,16 @@ function AdminNewsListPage() {
                     <TableCell>{formatUpdatedAt(item.updatedAt)}</TableCell>
                     <TableCell className="text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1">
-                        {item.slug ? (
-                          <a
-                            href={getPublicNewsUrl(item.slug)}
-                            target="_blank"
-                            rel="noreferrer"
+                        {item.id ? (
+                          <button
+                            type="button"
+                            onClick={() => handleViewInEditorPreview(item.id)}
                             className={iconButtonClassName}
                             aria-label={`View ${item.title}`}
-                            title="View"
+                            title="View in split preview"
                           >
                             <EyeIcon />
-                          </a>
+                          </button>
                         ) : (
                           <span
                             className={`${iconButtonClassName} cursor-not-allowed opacity-40`}

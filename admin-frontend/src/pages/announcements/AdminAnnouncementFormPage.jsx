@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   createAnnouncement,
   getAnnouncement,
@@ -7,6 +7,7 @@ import {
 } from '../../services/api/adminAnnouncementsApi.js'
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
 import { buildApiUrl } from '../../lib/apiClient.js'
+import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
 import {
   Button,
   Card,
@@ -54,6 +55,7 @@ function AnnouncementPlaceholder() {
 
 function AdminAnnouncementFormPage({ mode = 'create' }) {
   const { id } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const [initialState, setInitialState] = useState(null)
   const [formState, setFormState] = useState({
@@ -270,7 +272,7 @@ function AdminAnnouncementFormPage({ mode = 'create' }) {
     )
   }
 
-  return (
+  const formContent = (
     <div className="space-y-6">
       <header className="space-y-1">
         <h1 className="text-xl font-semibold break-words md:text-2xl">
@@ -413,6 +415,25 @@ function AdminAnnouncementFormPage({ mode = 'create' }) {
       </form>
     </div>
   )
+
+  if (mode === 'edit') {
+    return (
+      <AdminInlinePreviewLayout
+        resource="announcements"
+        itemId={id}
+        query={location.search}
+        storageKey="announcements-preview-pane-width"
+        onAuthError={() => {
+          clearAuthToken()
+          navigate('/login', { replace: true })
+        }}
+      >
+        {formContent}
+      </AdminInlinePreviewLayout>
+    )
+  }
+
+  return formContent
 }
 
 export default AdminAnnouncementFormPage

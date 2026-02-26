@@ -8,6 +8,7 @@ import {
   ImageWithFallback,
 } from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import useCmsPreviewRefresh from '../../lib/useCmsPreviewRefresh.js'
 
 const FALLBACK_IMAGE = '/share-default.svg'
 
@@ -554,6 +555,8 @@ function ObituaryDetail() {
   useEffect(() => {
     loadObituary()
   }, [loadObituary])
+
+  useCmsPreviewRefresh(loadObituary)
 
   const normalizedItem = useMemo(() => normalizeObituary(item), [item])
 

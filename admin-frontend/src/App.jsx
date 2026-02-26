@@ -35,6 +35,7 @@ import AdminAnnouncementFormPage from './pages/announcements/AdminAnnouncementFo
 import DashboardPage from './pages/DashboardPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import NotFoundPage from './pages/NotFoundPage.jsx'
+import AdminPreviewRedirectPage from './pages/AdminPreviewRedirectPage.jsx'
 
 function App() {
   return (
@@ -137,6 +138,10 @@ function App() {
             <Route
               path="/admin/announcements/:id/edit"
               element={<AdminAnnouncementFormPage mode="edit" />}
+            />
+            <Route
+              path="/admin/:resource/:id/preview"
+              element={<AdminPreviewRedirectPage />}
             />
           </Route>
         </Route>

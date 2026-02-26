@@ -83,6 +83,18 @@ export async function getSingleNews(id) {
   return parseJsonResponse(response)
 }
 
+export async function getNewsPreviewUrl(id) {
+  const response = await fetch(buildUrl(`/api/admin/news/${id}/preview`), {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      ...buildAuthHeaders(),
+    },
+  })
+
+  return parseJsonResponse(response)
+}
+
 export async function createNews(formData) {
   const response = await fetch(buildUrl('/api/admin/news/create'), {
     method: 'POST',

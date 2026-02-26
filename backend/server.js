@@ -33,6 +33,7 @@ const aboutPageAdminRoutes = require('./src/routes/admin/aboutPageRoutes');
 const leadersAdminRoutes = require('./src/routes/admin/leadersAdminRoutes');
 const adminEventsRoutes = require('./src/routes/adminEventsRoutes');
 const adminAnnouncementsRoutes = require('./src/routes/adminAnnouncementsRoutes');
+const adminPreviewRoutes = require('./src/routes/admin/previewRoutes');
 
 // for handling public endpoints routing
 const publicNewsRoutes = require('./src/routes/public/newsRoutes');
@@ -171,6 +172,7 @@ app.use('/api', settingsRoutes);//this handles history, homepage-settings, globa
 app.use('/api/admin/auth', adminAuthRoutes);//ensure that protected routes receives authentication first.
 app.use('/api/admin/protected', adminTestRoutes);
 app.use('/api/admin', adminBaseRoutes);
+app.use('/api/admin', adminPreviewRoutes);
 app.use('/api/admin/news', newsAdminRoutes);
 app.use('/api/admin/obituaries', obituaryAdminRoutes);
 app.use('/api/admin/clans', clanAdminRoutes);

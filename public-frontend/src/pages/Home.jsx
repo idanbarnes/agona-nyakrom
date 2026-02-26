@@ -16,7 +16,7 @@ import {
 } from '../components/ui/index.jsx'
 import { resolveAssetUrl } from '../lib/apiBase.js'
 import { cn } from '../lib/cn.js'
-import { usePublicSettings } from '../layouts/Layout.jsx'
+import { usePublicSettings } from '../layouts/publicSettingsContext.js'
 
 function pickFirstString(...values) {
   return values.find((value) => typeof value === 'string' && value.trim())

@@ -153,6 +153,14 @@ function AdminHallOfFameListPage() {
   const actionLinkClassName =
     'inline-flex h-8 items-center justify-center rounded-md border border-transparent px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
 
+  const handleOpenInlinePreview = (entryId) => {
+    if (!entryId) {
+      return
+    }
+
+    navigate(`/admin/hall-of-fame/edit/${entryId}?preview=1`)
+  }
+
   return (
     <section className="space-y-4 md:space-y-6">
       <div className="space-y-1">
@@ -260,6 +268,13 @@ function AdminHallOfFameListPage() {
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap">
                     <div className="flex flex-wrap items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        className={actionLinkClassName}
+                        onClick={() => handleOpenInlinePreview(id)}
+                      >
+                        Preview
+                      </button>
                       <Link
                         to={`/admin/hall-of-fame/edit/${id}`}
                         className={actionLinkClassName}

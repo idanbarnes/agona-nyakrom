@@ -12,6 +12,7 @@ import {
   StateGate,
 } from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import useCmsPreviewRefresh from '../../lib/useCmsPreviewRefresh.js'
 
 const EMPTY_LEADERS = { current: [], past: [] }
 
@@ -52,6 +53,8 @@ function ClanDetail() {
   useEffect(() => {
     loadClan()
   }, [loadClan])
+
+  useCmsPreviewRefresh(loadClan)
 
   const currentLeaders = item?.leaders?.current || EMPTY_LEADERS.current
   const pastLeaders = item?.leaders?.past || EMPTY_LEADERS.past

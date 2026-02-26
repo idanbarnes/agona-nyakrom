@@ -102,7 +102,19 @@ const findBySlug = async (slug) => {
   return mapNews(rows[0]);
 };
 
+const findById = async (id) => {
+  const { rows } = await pool.query(
+    `SELECT ${baseSelect}
+     FROM news
+     WHERE id = $1
+     LIMIT 1`,
+    [id]
+  );
+  return mapNews(rows[0]);
+};
+
 module.exports = {
   findPublished,
   findBySlug,
+  findById,
 };

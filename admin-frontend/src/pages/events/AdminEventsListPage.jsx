@@ -218,6 +218,14 @@ function AdminEventsListPage() {
   const actionLinkClassName =
     'inline-flex h-8 items-center justify-center rounded-md border border-transparent px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
 
+  const handleOpenInlinePreview = (eventId) => {
+    if (!eventId) {
+      return
+    }
+
+    navigate(`/admin/events/${eventId}/edit?preview=1`)
+  }
+
   const handleFilterChange = (event) => {
     const { name, value } = event.target
     setFilters((current) => ({ ...current, [name]: value }))
@@ -415,6 +423,13 @@ function AdminEventsListPage() {
                   <TableCell>{item.updated_at || item.updatedAt || '-'}</TableCell>
                   <TableCell className="text-right whitespace-nowrap">
                     <div className="flex flex-wrap items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        className={actionLinkClassName}
+                        onClick={() => handleOpenInlinePreview(id)}
+                      >
+                        Preview
+                      </button>
                       <Link
                         to={`/admin/events/${id}/edit`}
                         className={actionLinkClassName}

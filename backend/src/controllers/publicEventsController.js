@@ -1,5 +1,6 @@
 const eventsService = require('../services/eventsService');
 const { success, error } = require('../utils/response');
+const { resolvePreviewAccess } = require('../utils/previewAccess');
 
 const getPublicEvents = async (req, res) => {
   try {
@@ -27,7 +28,15 @@ const getPublicEvents = async (req, res) => {
 const getPublicEventBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
-    const event = await eventsService.getPublishedEventBySlug(slug);
+    const preview = resolvePreviewAccess(req, 'events');
+    if (preview.isPreviewRequest && !preview.isAuthorized) {
+      return error(res, preview.errorMessage, 401);
+    }
+
+    const event = preview.isAuthorized
+      ? await eventsService.getEventById(preview.previewId)
+      : await eventsService.getPublishedEventBySlug(slug);
+
     if (!event) {
       return error(res, 'Event not found', 404);
     }

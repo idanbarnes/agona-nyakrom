@@ -1,6 +1,7 @@
 const landmarkService = require('../../services/public/landmarkService');
 const { getPaginationParams } = require('../../utils/pagination');
 const { success, error } = require('../../utils/response');
+const { resolvePreviewAccess } = require('../../utils/previewAccess');
 
 // GET /api/public/landmarks
 const getAllPublishedLandmarks = async (req, res) => {
@@ -27,7 +28,14 @@ const getAllPublishedLandmarks = async (req, res) => {
 const getPublishedLandmarkBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
-    const landmark = await landmarkService.findBySlug(slug);
+    const preview = resolvePreviewAccess(req, 'landmarks');
+    if (preview.isPreviewRequest && !preview.isAuthorized) {
+      return error(res, preview.errorMessage, 401);
+    }
+
+    const landmark = preview.isAuthorized
+      ? await landmarkService.findById(preview.previewId)
+      : await landmarkService.findBySlug(slug);
 
     if (!landmark) {
       return error(res, 'Landmark not found', 404);

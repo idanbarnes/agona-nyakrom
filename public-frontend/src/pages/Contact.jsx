@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { usePublicSettings } from '../layouts/Layout.jsx'
+import { usePublicSettings } from '../layouts/publicSettingsContext.js'
 
 // Normalize social links so the UI can render them consistently.
 function normalizeSocialLinks(input) {

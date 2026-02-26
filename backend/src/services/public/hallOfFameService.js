@@ -93,7 +93,19 @@ const findBySlugOrId = async (slugOrId) => {
   return mapEntry(rows[0]);
 };
 
+const findById = async (id) => {
+  const { rows } = await pool.query(
+    `SELECT ${baseSelect}
+     FROM hall_of_fame
+     WHERE id = $1
+     LIMIT 1`,
+    [id]
+  );
+  return mapEntry(rows[0]);
+};
+
 module.exports = {
   findAllPublished,
   findBySlugOrId,
+  findById,
 };

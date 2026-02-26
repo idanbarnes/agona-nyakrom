@@ -82,4 +82,15 @@ const findBySlug = async (slug) => {
   return rows[0] ? mapAsafo(rows[0]) : null;
 };
 
-module.exports = { findAllPublished, findBySlug };
+const findById = async (id) => {
+  const { rows } = await pool.query(
+    `SELECT ${baseSelect}
+     FROM asafo_companies
+     WHERE id = $1
+     LIMIT 1`,
+    [id]
+  );
+  return rows[0] ? mapAsafo(rows[0]) : null;
+};
+
+module.exports = { findAllPublished, findBySlug, findById };

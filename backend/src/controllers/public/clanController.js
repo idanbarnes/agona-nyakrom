@@ -1,5 +1,6 @@
 const clanService = require('../../services/public/clanService');
 const { success, error } = require('../../utils/response');
+const { resolvePreviewAccess } = require('../../utils/previewAccess');
 
 // GET /api/public/clans
 const getAllPublishedClans = async (req, res) => {
@@ -16,7 +17,15 @@ const getAllPublishedClans = async (req, res) => {
 const getPublishedClanBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
-    const clan = await clanService.findBySlug(slug);
+    const preview = resolvePreviewAccess(req, 'clans');
+    if (preview.isPreviewRequest && !preview.isAuthorized) {
+      return error(res, preview.errorMessage, 401);
+    }
+
+    const clan = preview.isAuthorized
+      ? await clanService.findById(preview.previewId)
+      : await clanService.findBySlug(slug);
+
     if (!clan) {
       return error(res, 'Clan not found', 404);
     }

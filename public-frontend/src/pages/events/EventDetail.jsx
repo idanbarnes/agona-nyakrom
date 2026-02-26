@@ -5,6 +5,7 @@ import {
   getPublicEvents,
 } from '../../api/endpoints.js'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import useCmsPreviewRefresh from '../../lib/useCmsPreviewRefresh.js'
 import {
   Badge,
   Button,
@@ -210,6 +211,8 @@ function EventDetail() {
   useEffect(() => {
     loadEvent()
   }, [loadEvent])
+
+  useCmsPreviewRefresh(loadEvent)
 
   useEffect(() => {
     if (!item?.slug && !item?.id) return

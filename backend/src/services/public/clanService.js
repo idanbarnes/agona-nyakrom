@@ -90,7 +90,35 @@ const findBySlug = async (slug) => {
   };
 };
 
+const findById = async (id) => {
+  const { rows } = await pool.query(
+    `SELECT ${baseSelect}
+     FROM family_clans
+     WHERE id = $1
+     LIMIT 1`,
+    [id]
+  );
+  const clan = mapClan(rows[0]);
+  if (!clan) return null;
+
+  const leaders = await clanLeaderService.getByClan(clan.id);
+  const grouped = { current: [], past: [] };
+  leaders.forEach((leader) => {
+    if (leader?.type === 'past') {
+      grouped.past.push(leader);
+    } else {
+      grouped.current.push(leader);
+    }
+  });
+
+  return {
+    ...clan,
+    leaders: grouped,
+  };
+};
+
 module.exports = {
   findAllPublished,
   findBySlug,
+  findById,
 };

@@ -1,5 +1,6 @@
 const announcementsService = require('../services/announcementsService');
 const { success, error } = require('../utils/response');
+const { resolvePreviewAccess } = require('../utils/previewAccess');
 
 const getPublicAnnouncements = async (req, res) => {
   try {
@@ -15,7 +16,15 @@ const getPublicAnnouncements = async (req, res) => {
 const getPublicAnnouncementBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
-    const announcement = await announcementsService.getPublishedAnnouncementBySlug(slug);
+    const preview = resolvePreviewAccess(req, 'announcements');
+    if (preview.isPreviewRequest && !preview.isAuthorized) {
+      return error(res, preview.errorMessage, 401);
+    }
+
+    const announcement = preview.isAuthorized
+      ? await announcementsService.getAnnouncementById(preview.previewId)
+      : await announcementsService.getPublishedAnnouncementBySlug(slug);
+
     if (!announcement) {
       return error(res, 'Announcement not found', 404);
     }

@@ -1,9 +1,18 @@
 const aboutPageService = require('../../services/aboutPageService');
 const { success, error } = require('../../utils/response');
+const { resolvePreviewAccess } = require('../../utils/previewAccess');
 
 const getPublicAboutPage = async (req, res) => {
   try {
-    const page = await aboutPageService.getPublishedBySlug(req.params.slug);
+    const preview = resolvePreviewAccess(req, 'about-pages');
+    if (preview.isPreviewRequest && !preview.isAuthorized) {
+      return error(res, preview.errorMessage, 401);
+    }
+
+    const page = preview.isAuthorized
+      ? await aboutPageService.getBySlug(preview.previewId)
+      : await aboutPageService.getPublishedBySlug(req.params.slug);
+
     if (!page) {
       return error(res, 'About page not found', 404);
     }

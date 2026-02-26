@@ -147,6 +147,14 @@ function AdminClansListPage() {
   const actionLinkClassName =
     'inline-flex h-8 items-center justify-center rounded-md border border-transparent px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
 
+  const handleOpenInlinePreview = (clanId) => {
+    if (!clanId) {
+      return
+    }
+
+    navigate(`/admin/clans/edit/${clanId}?preview=1`)
+  }
+
   return (
     <section className="space-y-4 md:space-y-6">
       <div className="space-y-1">
@@ -242,6 +250,13 @@ function AdminClansListPage() {
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap">
                     <div className="flex flex-wrap items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        className={actionLinkClassName}
+                        onClick={() => handleOpenInlinePreview(id)}
+                      >
+                        Preview
+                      </button>
                       <Link
                         to={`/admin/clans/edit/${id}`}
                         className={actionLinkClassName}
