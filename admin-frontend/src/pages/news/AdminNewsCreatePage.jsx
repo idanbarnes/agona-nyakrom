@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createNews } from '../../services/api/adminNewsApi.js'
 import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
 import {
   Button,
   Card,
@@ -393,14 +394,15 @@ function AdminNewsCreatePage() {
             </CardHeader>
             <CardContent className="space-y-5 pt-6 md:space-y-6">
               <FormField label="Content" htmlFor="content" required>
-                <Textarea
-                  id="content"
-                  name="content"
+                <SimpleRichTextEditor
                   value={formState.content}
-                  onChange={handleChange}
-                  placeholder="Write your article content here..."
-                  className="min-h-[220px] resize-y transition-colors duration-200"
-                  required
+                  onChange={(nextContent) =>
+                    setFormState((current) => ({
+                      ...current,
+                      content: nextContent,
+                    }))
+                  }
+                  textareaId="news-create-rich-text"
                 />
               </FormField>
 
