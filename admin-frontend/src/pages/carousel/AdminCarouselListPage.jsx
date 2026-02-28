@@ -5,7 +5,7 @@ import {
   getAllSlides,
   updateSlide,
 } from '../../services/api/adminCarouselApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import {
   Button,
   ConfirmDialog,
@@ -84,12 +84,6 @@ function AdminCarouselListPage() {
       setItems(list)
       setTotal(data?.total ?? payload?.total ?? null)
     } catch (error) {
-      if (error.status === 401) {
-        // Session expired or invalid; force re-authentication.
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       setError(error)
     } finally {
@@ -120,11 +114,6 @@ function AdminCarouselListPage() {
       setSuccessMessage('Slide deleted.')
       fetchSlides()
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to delete slide.'
       setError(message)
@@ -183,11 +172,6 @@ function AdminCarouselListPage() {
       setSuccessMessage('Slide order updated.')
       fetchSlides()
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to update slide order.'
       setError(message)

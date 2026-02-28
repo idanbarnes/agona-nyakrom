@@ -8,10 +8,24 @@ import {
   CardHeader,
   CardTitle,
 } from '../components/ui/index.jsx'
+import { cn } from '../lib/cn.js'
 import { getAllNews } from '../services/api/adminNewsApi.js'
 import { listAnnouncements } from '../services/api/adminAnnouncementsApi.js'
 import { listEvents } from '../services/api/adminEventsApi.js'
 import { getAllSections } from '../services/api/adminHomepageSectionsApi.js'
+import { getAllHallOfFame } from '../services/api/adminHallOfFameApi.js'
+import {
+  AwardIcon,
+  CalendarIcon,
+  EyeIcon,
+  HeartIcon,
+  MegaphoneIcon,
+  NewsIcon,
+  PhoneIcon,
+  SettingsIcon,
+  TrendingUpIcon,
+  UsersIcon,
+} from '../components/admin/icons.jsx'
 
 function getItemsAndTotal(payload, fallbackKeys = []) {
   const data = payload?.data ?? payload
@@ -54,14 +68,53 @@ function getUpcomingCount(events) {
   }).length
 }
 
+function getRatio(part, total) {
+  if (!total) return 0
+  return Math.max(0, Math.min(100, Math.round((part / total) * 100)))
+}
+
+const toneStyles = {
+  blue: {
+    iconBadge: 'bg-blue-100 text-blue-600',
+    trend: 'text-blue-600',
+    progress: 'bg-blue-600',
+    quickHover: 'hover:border-blue-300',
+  },
+  emerald: {
+    iconBadge: 'bg-emerald-100 text-emerald-600',
+    trend: 'text-emerald-600',
+    progress: 'bg-emerald-600',
+    quickHover: 'hover:border-emerald-300',
+  },
+  amber: {
+    iconBadge: 'bg-amber-100 text-amber-700',
+    trend: 'text-amber-700',
+    progress: 'bg-amber-500',
+    quickHover: 'hover:border-amber-300',
+  },
+  violet: {
+    iconBadge: 'bg-violet-100 text-violet-600',
+    trend: 'text-violet-600',
+    progress: 'bg-violet-600',
+    quickHover: 'hover:border-violet-300',
+  },
+}
+
 function DashboardPage() {
   const navigate = useNavigate()
   const [dashboardData, setDashboardData] = useState({
     news: [],
     announcements: [],
     events: [],
+    hallOfFame: [],
     homepageSections: [],
-    totals: { news: 0, announcements: 0, events: 0, homepageSections: 0 },
+    totals: {
+      news: 0,
+      announcements: 0,
+      events: 0,
+      hallOfFame: 0,
+      homepageSections: 0,
+    },
   })
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
@@ -77,12 +130,14 @@ function DashboardPage() {
         getAllNews({ page: 1, limit: 10 }),
         listAnnouncements({ page: 1, limit: 10 }),
         listEvents({ page: 1, limit: 10 }),
+        getAllHallOfFame({ page: 1, limit: 10 }),
         getAllSections({ page: 1, limit: 10 }),
       ])
 
       if (!isMounted) return
 
-      const [newsResult, announcementsResult, eventsResult, sectionsResult] = results
+      const [newsResult, announcementsResult, eventsResult, hallOfFameResult, sectionsResult] =
+        results
 
       const newsData =
         newsResult.status === 'fulfilled'
@@ -95,6 +150,14 @@ function DashboardPage() {
       const eventsData =
         eventsResult.status === 'fulfilled'
           ? getItemsAndTotal(eventsResult.value, ['events'])
+          : { items: [], total: 0 }
+      const hallOfFameData =
+        hallOfFameResult.status === 'fulfilled'
+          ? getItemsAndTotal(hallOfFameResult.value, [
+              'hall_of_fame',
+              'hallOfFame',
+              'entries',
+            ])
           : { items: [], total: 0 }
       const sectionsData =
         sectionsResult.status === 'fulfilled'
@@ -109,11 +172,13 @@ function DashboardPage() {
         news: newsData.items,
         announcements: announcementData.items,
         events: eventsData.items,
+        hallOfFame: hallOfFameData.items,
         homepageSections: sectionsData.items,
         totals: {
           news: newsData.total,
           announcements: announcementData.total,
           events: eventsData.total,
+          hallOfFame: hallOfFameData.total,
           homepageSections: sectionsData.total,
         },
       })
@@ -142,13 +207,53 @@ function DashboardPage() {
     () =>
       dashboardData.news.filter((item) => !isPublished(item)).length +
       dashboardData.announcements.filter((item) => !isPublished(item)).length +
-      dashboardData.events.filter((item) => !isPublished(item)).length,
-    [dashboardData.announcements, dashboardData.events, dashboardData.news],
+      dashboardData.events.filter((item) => !isPublished(item)).length +
+      dashboardData.hallOfFame.filter((item) => !isPublished(item)).length,
+    [
+      dashboardData.announcements,
+      dashboardData.events,
+      dashboardData.hallOfFame,
+      dashboardData.news,
+    ],
   )
 
   const upcomingEvents = useMemo(
     () => getUpcomingCount(dashboardData.events),
     [dashboardData.events],
+  )
+
+  const publishedNewsCount = useMemo(
+    () => dashboardData.news.filter((item) => isPublished(item)).length,
+    [dashboardData.news],
+  )
+
+  const activeAnnouncementsCount = useMemo(
+    () => dashboardData.announcements.filter((item) => isPublished(item)).length,
+    [dashboardData.announcements],
+  )
+
+  const publishedHallOfFameCount = useMemo(
+    () => dashboardData.hallOfFame.filter((item) => isPublished(item)).length,
+    [dashboardData.hallOfFame],
+  )
+
+  const totalContentCount = useMemo(
+    () =>
+      dashboardData.totals.news +
+      dashboardData.totals.announcements +
+      dashboardData.totals.events +
+      dashboardData.totals.hallOfFame,
+    [dashboardData.totals],
+  )
+
+  const publishedContentRatio = useMemo(
+    () => getRatio(Math.max(0, totalContentCount - draftCount), totalContentCount),
+    [draftCount, totalContentCount],
+  )
+
+  const eventReadinessRatio = useMemo(
+    () => getRatio(upcomingEvents, dashboardData.totals.events),
+    [dashboardData.totals.events, upcomingEvents],
   )
 
   const recentActivity = useMemo(() => {
@@ -174,44 +279,109 @@ function DashboardPage() {
         badge: isPublished(item) ? 'published' : 'warning',
         updatedAt: item.updated_at || item.updatedAt || item.created_at,
       })),
+      ...dashboardData.hallOfFame.map((item) => ({
+        id: `hall-of-fame-${item.id}`,
+        title: item.title || 'Untitled hall of fame entry',
+        type: 'Hall of Fame',
+        badge: isPublished(item) ? 'published' : 'draft',
+        updatedAt: item.updated_at || item.updatedAt || item.created_at,
+      })),
     ]
       .sort((a, b) => getTimestamp(b.updatedAt) - getTimestamp(a.updatedAt))
       .slice(0, 5)
-  }, [dashboardData.announcements, dashboardData.events, dashboardData.news])
-
-  const distribution = useMemo(() => {
-    const rows = [
-      { label: 'News', count: dashboardData.totals.news },
-      { label: 'Announcements', count: dashboardData.totals.announcements },
-      { label: 'Events', count: dashboardData.totals.events },
-      { label: 'Homepage Sections', count: dashboardData.totals.homepageSections },
-    ]
-    const maxCount = Math.max(1, ...rows.map((row) => row.count))
-    return rows.map((row) => ({
-      ...row,
-      width: `${Math.max(8, Math.round((row.count / maxCount) * 100))}%`,
-    }))
-  }, [dashboardData.totals])
+  }, [
+    dashboardData.announcements,
+    dashboardData.events,
+    dashboardData.hallOfFame,
+    dashboardData.news,
+  ])
 
   const showPriorityBanner = draftCount > 0 || upcomingEvents === 0
 
+  const stats = [
+    {
+      label: 'Total News Articles',
+      value: dashboardData.totals.news,
+      icon: NewsIcon,
+      trend: `${publishedNewsCount} published`,
+      tone: 'blue',
+    },
+    {
+      label: 'Upcoming Events',
+      value: upcomingEvents,
+      icon: CalendarIcon,
+      trend: `${dashboardData.totals.events} total events`,
+      tone: 'emerald',
+    },
+    {
+      label: 'Active Announcements',
+      value: activeAnnouncementsCount,
+      icon: MegaphoneIcon,
+      trend: `${dashboardData.totals.announcements} total announcements`,
+      tone: 'amber',
+    },
+    {
+      label: 'Hall of Fame Entries',
+      value: dashboardData.totals.hallOfFame,
+      icon: AwardIcon,
+      trend: `${publishedHallOfFameCount} published`,
+      tone: 'violet',
+    },
+  ]
+
+  const quickActions = [
+    { label: 'Add News Article', to: '/admin/news', icon: NewsIcon, tone: 'blue' },
+    { label: 'Create Event', to: '/admin/events/new', icon: CalendarIcon, tone: 'emerald' },
+    {
+      label: 'Post Announcement',
+      to: '/admin/announcements/new',
+      icon: MegaphoneIcon,
+      tone: 'amber',
+    },
+    { label: 'Manage Clans', to: '/admin/clans', icon: UsersIcon, tone: 'violet' },
+    { label: 'Manage Obituaries', to: '/admin/obituaries', icon: HeartIcon, tone: 'blue' },
+    {
+      label: 'Homepage Settings',
+      to: '/admin/homepage-sections',
+      icon: SettingsIcon,
+      tone: 'emerald',
+    },
+    {
+      label: 'Contact Information',
+      to: '/admin/contact',
+      icon: PhoneIcon,
+      tone: 'amber',
+    },
+  ]
+
   return (
-    <section className="space-y-6 md:space-y-8">
-      <header className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+    <section className="space-y-6">
+      <header className="flex flex-col gap-4 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+          <p className="text-xs font-medium uppercase tracking-wide text-blue-100">
             {currentDate}
           </p>
-          <h1 className="mt-1 text-2xl font-semibold text-slate-900 md:text-3xl">
-            Dashboard Overview
+          <h1 className="mt-1 text-2xl font-semibold md:text-3xl">
+            Welcome to Agona Nyakrom CMS
           </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            Manage content health, publication status, and quick actions from one place.
+          <p className="mt-2 text-sm text-blue-100">
+            Manage township content, publication health, and operational priorities in one
+            place.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={() => navigate('/admin/news/create')}>Create Content</Button>
-          <Button variant="secondary" onClick={() => navigate('/')}>
+          <Button
+            variant="secondary"
+            onClick={() => navigate('/admin/news/create')}
+            className="border-white/40 bg-white/10 text-white hover:bg-white/20"
+          >
+            Create Content
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => navigate('/')}
+            className="border-white/20 bg-white text-blue-700 hover:bg-blue-50"
+          >
             View site
           </Button>
         </div>
@@ -231,36 +401,30 @@ function DashboardPage() {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          label="Total Announcements"
-          value={dashboardData.totals.announcements}
-          hint="Published and draft"
-          isLoading={isLoading}
-        />
-        <MetricCard
-          label="Draft Content"
-          value={draftCount}
-          hint="Across news, events, and announcements"
-          isLoading={isLoading}
-        />
-        <MetricCard
-          label="Upcoming Events"
-          value={upcomingEvents}
-          hint="Future-dated entries"
-          isLoading={isLoading}
-        />
-        <MetricCard
-          label="Total News"
-          value={dashboardData.totals.news}
-          hint="All news records"
-          isLoading={isLoading}
-        />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {stats.map((item) => (
+          <StatCard key={item.label} {...item} isLoading={isLoading} />
+        ))}
+      </div>
+
+      <div>
+        <h2 className="mb-4 text-lg font-semibold text-slate-900">Quick Actions</h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {quickActions.map((action) => (
+            <QuickActionCard
+              key={action.label}
+              title={action.label}
+              icon={action.icon}
+              tone={action.tone}
+              onClick={() => navigate(action.to)}
+            />
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">
-          <CardHeader>
+          <CardHeader className="border-b border-slate-200">
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
@@ -279,11 +443,10 @@ function DashboardPage() {
                       <p className="text-sm font-medium text-slate-900">{entry.title}</p>
                       <p className="text-xs text-slate-500">{entry.type}</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="muted">{entry.type}</Badge>
                       <Badge variant={entry.badge}>{entry.badge}</Badge>
-                      <span className="text-xs text-slate-500">
-                        {formatDate(entry.updatedAt)}
-                      </span>
+                      <span className="text-xs text-slate-500">{formatDate(entry.updatedAt)}</span>
                     </div>
                   </li>
                 ))}
@@ -293,84 +456,107 @@ function DashboardPage() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Content Distribution</CardTitle>
+          <CardHeader className="border-b border-slate-200">
+            <CardTitle>Analytics Overview</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {distribution.map((item) => (
-              <div key={item.label} className="space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-700">{item.label}</span>
-                  <span className="font-medium text-slate-900">{item.count}</span>
-                </div>
-                <div className="h-2 rounded-full bg-slate-100">
-                  <div className="h-2 rounded-full bg-primary" style={{ width: item.width }} />
-                </div>
-              </div>
-            ))}
+            <AnalyticsRow
+              label="Published Content"
+              value={publishedContentRatio}
+              description={`${Math.max(0, totalContentCount - draftCount)} of ${totalContentCount} items live`}
+              icon={EyeIcon}
+              tone="blue"
+            />
+            <AnalyticsRow
+              label="Event Readiness"
+              value={eventReadinessRatio}
+              description={`${upcomingEvents} upcoming of ${dashboardData.totals.events} events`}
+              icon={CalendarIcon}
+              tone="emerald"
+            />
+            <AnalyticsRow
+              label="Homepage Sections"
+              value={getRatio(dashboardData.totals.homepageSections, 12)}
+              description={`${dashboardData.totals.homepageSections} sections configured`}
+              icon={SettingsIcon}
+              tone="amber"
+            />
           </CardContent>
         </Card>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <QuickCard
-          title="News"
-          description="Publish stories and updates for residents."
-          onManage={() => navigate('/admin/news')}
-        />
-        <QuickCard
-          title="Events"
-          description="Create and organize upcoming community events."
-          onManage={() => navigate('/admin/events')}
-        />
-        <QuickCard
-          title="Announcements"
-          description="Share official notices and urgent communications."
-          onManage={() => navigate('/admin/announcements')}
-        />
-        <QuickCard
-          title="Obituaries"
-          description="Manage memorial listings and tribute details."
-          onManage={() => navigate('/admin/obituaries')}
-        />
-        <QuickCard
-          title="About Nyakrom"
-          description="Update history, governance, and town information."
-          onManage={() => navigate('/admin/about-nyakrom/history')}
-        />
-        <QuickCard
-          title="Homepage Settings"
-          description="Curate homepage sections and featured content."
-          onManage={() => navigate('/admin/homepage-sections')}
-        />
       </div>
     </section>
   )
 }
 
-function MetricCard({ label, value, hint, isLoading }) {
+function StatCard({ label, value, icon: Icon, trend, tone, isLoading }) {
+  const styles = toneStyles[tone] || toneStyles.blue
+
   return (
     <Card>
-      <CardContent className="space-y-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-        <p className="text-3xl font-semibold text-slate-900">{isLoading ? '...' : value}</p>
-        <p className="text-xs text-slate-500">{hint}</p>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className={cn('flex h-12 w-12 items-center justify-center rounded-lg', styles.iconBadge)}>
+            <Icon className="h-5 w-5" />
+          </div>
+          <div className={cn('flex items-center gap-1 text-xs font-medium', styles.trend)}>
+            <TrendingUpIcon className="h-4 w-4" />
+            <span>{trend}</span>
+          </div>
+        </div>
+        <div>
+          <p className="text-2xl font-semibold text-slate-900">{isLoading ? '...' : value}</p>
+          <p className="mt-1 text-sm text-slate-500">{label}</p>
+        </div>
       </CardContent>
     </Card>
   )
 }
 
-function QuickCard({ title, description, onManage }) {
+function AnalyticsRow({ label, value, description, icon: Icon, tone }) {
+  const styles = toneStyles[tone] || toneStyles.blue
+
   return (
-    <Card className="transition hover:-translate-y-0.5 hover:shadow-md">
-      <CardContent className="space-y-3">
-        <h3 className="text-base font-semibold text-slate-900">{title}</h3>
-        <p className="text-sm text-slate-500">{description}</p>
-        <Button variant="secondary" size="sm" onClick={onManage}>
-          Manage
-        </Button>
-      </CardContent>
-    </Card>
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Icon className="h-4 w-4 text-slate-400" />
+          <span className="text-sm text-slate-700">{label}</span>
+        </div>
+        <span className="text-sm font-semibold text-slate-900">{value}%</span>
+      </div>
+      <div className="h-2 rounded-full bg-slate-100">
+        <div
+          className={cn('h-2 rounded-full transition-all', styles.progress)}
+          style={{ width: `${value}%` }}
+        />
+      </div>
+      <p className="text-xs text-slate-500">{description}</p>
+    </div>
+  )
+}
+
+function QuickActionCard({ title, icon: Icon, tone, onClick }) {
+  const styles = toneStyles[tone] || toneStyles.blue
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'group rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md',
+        styles.quickHover,
+      )}
+    >
+      <div
+        className={cn(
+          'mb-4 flex h-12 w-12 items-center justify-center rounded-lg transition-transform group-hover:scale-105',
+          styles.iconBadge,
+        )}
+      >
+        <Icon className="h-5 w-5" />
+      </div>
+      <p className="text-sm font-semibold text-slate-900">{title}</p>
+    </button>
   )
 }
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { deleteClan, getAllClans } from '../../services/api/adminClansApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import {
   Button,
   ConfirmDialog,
@@ -70,12 +70,6 @@ function AdminClansListPage() {
       setItems(list)
       setTotal(data?.total ?? payload?.total ?? null)
     } catch (error) {
-      if (error.status === 401) {
-        // Session expired or invalid; force re-authentication.
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       setError(error)
     } finally {
@@ -104,12 +98,6 @@ function AdminClansListPage() {
       setSuccessMessage('Clan deleted.')
       fetchClans()
     } catch (error) {
-      if (error.status === 401) {
-        // Token is no longer valid; send the user back to login.
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to delete clan.'
       setError(message)

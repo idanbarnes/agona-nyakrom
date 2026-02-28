@@ -11,6 +11,7 @@ const RESOURCE_ALIASES = {
   leader: 'leaders',
   page: 'about-pages',
   pages: 'about-pages',
+  faq: 'faqs',
 }
 
 const SUPPORTED_RESOURCES = new Set([
@@ -24,6 +25,7 @@ const SUPPORTED_RESOURCES = new Set([
   'announcements',
   'leaders',
   'about-pages',
+  'faqs',
 ])
 
 export function normalizePreviewResource(resource) {

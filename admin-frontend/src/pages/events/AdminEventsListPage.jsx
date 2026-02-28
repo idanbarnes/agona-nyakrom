@@ -4,7 +4,7 @@ import {
   deleteEvent,
   listEvents,
 } from '../../services/api/adminEventsApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import { Badge } from '../../components/ui/badge.jsx'
 import { eventTags } from '../../constants/eventTags.js'
 import {
@@ -146,11 +146,6 @@ function AdminEventsListPage() {
       setItems(list)
       setTotal(data?.total ?? null)
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       setErrorMessage(error.message || 'Unable to load events.')
     } finally {
@@ -177,11 +172,6 @@ function AdminEventsListPage() {
       setSuccessMessage('Event deleted.')
       fetchEvents()
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to delete event.'
       setErrorMessage(message)

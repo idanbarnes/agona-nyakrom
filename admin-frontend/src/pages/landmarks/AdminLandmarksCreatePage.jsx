@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createLandmark } from '../../services/api/adminLandmarksApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
 import {
   Button,
@@ -66,12 +66,6 @@ function AdminLandmarksCreatePage() {
       window.alert('Landmark created successfully')
       navigate('/admin/landmarks', { replace: true })
     } catch (error) {
-      if (error.status === 401) {
-        // Token expired; force re-authentication.
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to create landmark.'
       setErrorMessage(message)

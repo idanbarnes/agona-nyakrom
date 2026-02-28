@@ -4,7 +4,7 @@ import {
   deleteObituary,
   getAllObituaries,
 } from '../../services/api/adminObituariesApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import { buildApiUrl } from '../../lib/apiClient.js'
 import {
   Button,
@@ -243,11 +243,6 @@ function AdminObituariesListPage() {
 
       setItems(list)
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       setErrorMessage(error.message || 'Unable to load obituaries.')
     } finally {
@@ -346,11 +341,6 @@ function AdminObituariesListPage() {
       setSuccessMessage('Obituary deleted.')
       fetchObituaries()
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to delete obituary.'
       setErrorMessage(message)

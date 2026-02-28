@@ -1,4 +1,5 @@
 const authService = require('../services/authService');
+const { clearLoginRateLimit } = require('../middleware/adminLoginRateLimit');
 const { success, error } = require('../utils/response');
 
 // POST /login
@@ -11,6 +12,7 @@ const login = async (req, res) => {
     }
 
     const result = await authService.loginAdmin(email, password);
+    clearLoginRateLimit(req);
     return success(res, result, 'Login successful');
   } catch (err) {
     if (err && err.status) {
@@ -18,6 +20,16 @@ const login = async (req, res) => {
     }
     console.error('Error logging in admin:', err.message);
     return error(res, 'Failed to login', 500);
+  }
+};
+
+// POST /logout
+const logout = async (req, res) => {
+  try {
+    return success(res, null, 'Logout successful');
+  } catch (err) {
+    console.error('Error logging out admin:', err.message);
+    return error(res, 'Failed to logout', 500);
   }
 };
 
@@ -36,5 +48,6 @@ const me = async (req, res) => {
 
 module.exports = {
   login,
+  logout,
   me,
 };

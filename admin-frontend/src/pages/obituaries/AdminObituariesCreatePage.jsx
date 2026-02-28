@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { createObituary } from '../../services/api/adminObituariesApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
+import { useDraftAutosave } from '../../hooks/useDraftAutosave.js'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
 import {
   Button,
@@ -15,6 +16,19 @@ import {
 } from '../../components/ui/index.jsx'
 
 const dateOnlyFields = new Set(['date_of_birth', 'date_of_death'])
+
+function formatDraftTime(timestamp) {
+  if (!timestamp) {
+    return 'local storage'
+  }
+
+  const parsed = new Date(timestamp)
+  if (Number.isNaN(parsed.getTime())) {
+    return 'local storage'
+  }
+
+  return parsed.toLocaleString()
+}
 
 function ArrowLeftIcon({ className = 'h-4 w-4' }) {
   return (
@@ -95,6 +109,7 @@ function AdminObituariesCreatePage() {
   const deceasedPhotoInputRef = useRef(null)
   const posterPhotoInputRef = useRef(null)
   const previewUrlRef = useRef({ deceased: null, poster: null })
+  const draftAppliedRef = useRef(false)
   const [formState, setFormState] = useState({
     full_name: '',
     biography: '',
@@ -114,11 +129,37 @@ function AdminObituariesCreatePage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitAction, setSubmitAction] = useState('publish')
   const [errorMessage, setErrorMessage] = useState('')
+  const [draftMessage, setDraftMessage] = useState('')
   const biographyText = (formState.biography || '')
     .replace(/<[^>]*>/g, ' ')
     .replace(/&nbsp;/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+  const draftPayload = {
+    ...formState,
+    image: null,
+    deceased_image: null,
+  }
+  const { restoredDraft, restoredAt, clearDraft } = useDraftAutosave({
+    key: 'admin:draft:obituaries:create',
+    data: draftPayload,
+    enabled: !isSubmitting,
+  })
+
+  useEffect(() => {
+    if (!restoredDraft || draftAppliedRef.current) {
+      return
+    }
+
+    draftAppliedRef.current = true
+    setFormState((current) => ({
+      ...current,
+      ...restoredDraft,
+      image: null,
+      deceased_image: null,
+    }))
+    setDraftMessage(`Restored unsaved draft from ${formatDraftTime(restoredAt)}.`)
+  }, [restoredAt, restoredDraft])
 
   const normalizeDateInput = (value) => {
     if (typeof value !== 'string') {
@@ -263,6 +304,7 @@ function AdminObituariesCreatePage() {
       if (response?.success === false) {
         throw new Error(response?.message || 'Unable to create obituary.')
       }
+      clearDraft()
       window.alert(
         action === 'draft'
           ? 'Obituary draft saved successfully'
@@ -270,13 +312,6 @@ function AdminObituariesCreatePage() {
       )
       navigate('/admin/obituaries', { replace: true })
     } catch (error) {
-      if (error.status === 401) {
-        // Token expired; force re-authentication.
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
-
       const message = error.message || 'Unable to create obituary.'
       setErrorMessage(message)
       window.alert(message)
@@ -313,6 +348,11 @@ function AdminObituariesCreatePage() {
         className="space-y-6"
       >
         <InlineError message={errorMessage} />
+        {draftMessage ? (
+          <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+            {draftMessage}
+          </p>
+        ) : null}
 
         <Card>
           <CardHeader className="space-y-1.5">

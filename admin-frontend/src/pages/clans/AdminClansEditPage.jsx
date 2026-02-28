@@ -8,7 +8,7 @@ import {
   updateClan,
   updateClanLeader,
 } from '../../services/api/adminClansApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import {
   Button,
   Card,
@@ -64,15 +64,6 @@ function AdminClansEditPage() {
     ]
     return allLeaders.some((leader) => leader.error)
   }, [leaders, draftLeaders])
-
-  const handleAuthError = (error) => {
-    if (error?.status === 401) {
-      clearAuthToken()
-      navigate('/login', { replace: true })
-      return true
-    }
-    return false
-  }
 
   const updateLeaderState = (type, leaderId, updates, isDraft = false) => {
     const setter = isDraft ? setDraftLeaders : setLeaders
@@ -158,9 +149,6 @@ function AdminClansEditPage() {
         [type]: nextList.map((leader) => leader.id),
       })
     } catch (reorderError) {
-      if (handleAuthError(reorderError)) {
-        return
-      }
       setLeaders(previousState)
       setLeaderMessage(
         reorderError.message || 'Unable to reorder clan leaders.'
@@ -204,9 +192,6 @@ function AdminClansEditPage() {
         isSaving: false,
       })
     } catch (leaderError) {
-      if (handleAuthError(leaderError)) {
-        return
-      }
       updateLeaderState(type, leader.id, {
         error: leaderError.message || 'Unable to save leader.',
         isSaving: false,
@@ -225,9 +210,6 @@ function AdminClansEditPage() {
         [type]: current[type].filter((leader) => leader.id !== leaderId),
       }))
     } catch (leaderError) {
-      if (handleAuthError(leaderError)) {
-        return
-      }
       setLeaderMessage(leaderError.message || 'Unable to delete leader.')
     }
   }
@@ -255,9 +237,6 @@ function AdminClansEditPage() {
         [type]: current[type].filter((entry) => entry.id !== leader.id),
       }))
     } catch (leaderError) {
-      if (handleAuthError(leaderError)) {
-        return
-      }
       updateLeaderState(
         type,
         leader.id,
@@ -328,12 +307,6 @@ function AdminClansEditPage() {
           })),
         })
       } catch (error) {
-        if (error.status === 401) {
-          // Token expired; force re-authentication.
-          clearAuthToken()
-          navigate('/login', { replace: true })
-          return
-        }
 
         setErrorMessage(error.message || 'Unable to load clan.')
       } finally {
@@ -431,12 +404,6 @@ function AdminClansEditPage() {
       window.alert('Clan edited successfully')
       navigate('/admin/clans', { replace: true })
     } catch (error) {
-      if (error.status === 401) {
-        // Token expired; force re-authentication.
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to update clan.'
       setErrorMessage(message)
@@ -1060,12 +1027,7 @@ function AdminClansEditPage() {
       resource="clans"
       itemId={id}
       query={location.search}
-      storageKey="clans-preview-pane-width"
-      onAuthError={() => {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-      }}
-    >
+      storageKey="clans-preview-pane-width">
       {formContent}
     </AdminInlinePreviewLayout>
   )

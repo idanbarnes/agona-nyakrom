@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { getSingleNews, updateNews } from '../../services/api/adminNewsApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
+import { useDraftAutosave } from '../../hooks/useDraftAutosave.js'
 import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
 import {
   Button,
@@ -149,11 +150,25 @@ function normalizeDateInput(value = '') {
   return stringValue.slice(0, 10)
 }
 
+function formatDraftTime(timestamp) {
+  if (!timestamp) {
+    return 'local storage'
+  }
+
+  const parsed = new Date(timestamp)
+  if (Number.isNaN(parsed.getTime())) {
+    return 'local storage'
+  }
+
+  return parsed.toLocaleString()
+}
+
 function AdminNewsEditPage() {
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
   const imageInputRef = useRef(null)
+  const draftAppliedRef = useRef(false)
   const [initialState, setInitialState] = useState(null)
   const [formState, setFormState] = useState({
     title: '',
@@ -170,6 +185,7 @@ function AdminNewsEditPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const [draftMessage, setDraftMessage] = useState('')
   const [previewReloadKey, setPreviewReloadKey] = useState(0)
 
   useEffect(() => {
@@ -202,12 +218,6 @@ function AdminNewsEditPage() {
         setFormState(nextState)
         setHasManuallyEditedSlug(Boolean(newsItem?.slug))
       } catch (error) {
-        if (error.status === 401) {
-          clearAuthToken()
-          navigate('/login', { replace: true })
-          return
-        }
-
         setErrorMessage(error.message || 'Unable to load news item.')
       } finally {
         setIsLoading(false)
@@ -232,6 +242,35 @@ function AdminNewsEditPage() {
       Boolean(formState.image)
     )
   }, [formState, initialState])
+
+  const draftPayload = useMemo(
+    () => ({
+      ...formState,
+      image: null,
+    }),
+    [formState],
+  )
+
+  const { restoredDraft, restoredAt, clearDraft } = useDraftAutosave({
+    key: id ? `admin:draft:news:edit:${id}` : '',
+    data: draftPayload,
+    enabled: Boolean(id) && !isLoading,
+  })
+
+  useEffect(() => {
+    if (isLoading || !restoredDraft || draftAppliedRef.current) {
+      return
+    }
+
+    draftAppliedRef.current = true
+    setFormState((current) => ({
+      ...current,
+      ...restoredDraft,
+      image: null,
+    }))
+    setHasManuallyEditedSlug(Boolean(restoredDraft.slug))
+    setDraftMessage(`Restored unsaved draft from ${formatDraftTime(restoredAt)}.`)
+  }, [isLoading, restoredAt, restoredDraft])
 
   const handleChange = (event) => {
     setSuccessMessage('')
@@ -348,6 +387,7 @@ function AdminNewsEditPage() {
       if (response?.success === false) {
         throw new Error(response?.message || 'Unable to update news.')
       }
+      clearDraft()
 
       const nextState = {
         title: normalizedTitle,
@@ -372,12 +412,6 @@ function AdminNewsEditPage() {
         imageInputRef.current.value = ''
       }
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
-
       const message = error.message || 'Unable to update news.'
       setErrorMessage(message)
       window.alert(message)
@@ -463,6 +497,11 @@ function AdminNewsEditPage() {
               {successMessage ? (
                 <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
                   {successMessage}
+                </p>
+              ) : null}
+              {draftMessage ? (
+                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                  {draftMessage}
                 </p>
               ) : null}
 
@@ -706,10 +745,6 @@ function AdminNewsEditPage() {
       query={location.search}
       reloadKey={previewReloadKey}
       storageKey="news-preview-pane-width"
-      onAuthError={() => {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-      }}
     >
       {formContent}
     </AdminInlinePreviewLayout>
@@ -717,4 +752,3 @@ function AdminNewsEditPage() {
 }
 
 export default AdminNewsEditPage
-

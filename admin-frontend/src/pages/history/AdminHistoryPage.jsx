@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getHistory, saveHistory } from '../../services/api/adminHistoryApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 
 function AdminHistoryPage() {
   const navigate = useNavigate()
@@ -50,12 +50,6 @@ function AdminHistoryPage() {
             data?.image_url || data?.imageUrl || data?.image || '',
         })
       } catch (error) {
-        if (error.status === 401) {
-          // Token expired; force re-authentication.
-          clearAuthToken()
-          navigate('/login', { replace: true })
-          return
-        }
 
         if (error.status !== 404) {
           setErrorMessage(error.message || 'Unable to load history.')
@@ -120,12 +114,6 @@ function AdminHistoryPage() {
       await saveHistory(formData)
       setSuccessMessage('History saved.')
     } catch (error) {
-      if (error.status === 401) {
-        // Token expired; force re-authentication.
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       setErrorMessage(error.message || 'Unable to save history.')
     } finally {

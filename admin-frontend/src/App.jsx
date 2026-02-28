@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import AdminLayout from './layouts/AdminLayout.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import AdminNewsCreatePage from './pages/news/AdminNewsCreatePage.jsx'
@@ -32,14 +32,17 @@ import AdminEventsListPage from './pages/events/AdminEventsListPage.jsx'
 import AdminEventFormPage from './pages/events/AdminEventFormPage.jsx'
 import AdminAnnouncementsListPage from './pages/announcements/AdminAnnouncementsListPage.jsx'
 import AdminAnnouncementFormPage from './pages/announcements/AdminAnnouncementFormPage.jsx'
+import AdminContactInfoPage from './pages/contact/AdminContactInfoPage.jsx'
+import AdminFaqManagerPage from './pages/contact/AdminFaqManagerPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import NotFoundPage from './pages/NotFoundPage.jsx'
 import AdminPreviewRedirectPage from './pages/AdminPreviewRedirectPage.jsx'
+import { AdminSessionProvider } from './context/AdminSessionContext.jsx'
 
 function App() {
   return (
-    <>
+    <AdminSessionProvider>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 
@@ -139,6 +142,8 @@ function App() {
               path="/admin/announcements/:id/edit"
               element={<AdminAnnouncementFormPage mode="edit" />}
             />
+            <Route path="/admin/contact" element={<AdminContactInfoPage />} />
+            <Route path="/admin/faqs" element={<AdminFaqManagerPage />} />
             <Route
               path="/admin/:resource/:id/preview"
               element={<AdminPreviewRedirectPage />}
@@ -149,7 +154,7 @@ function App() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-    </>
+    </AdminSessionProvider>
   )
 }
 

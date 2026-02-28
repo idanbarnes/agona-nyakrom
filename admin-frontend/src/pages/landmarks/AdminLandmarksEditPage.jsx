@@ -4,7 +4,7 @@ import {
   getSingleLandmark,
   updateLandmark,
 } from '../../services/api/adminLandmarksApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
 import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
 import {
@@ -70,12 +70,6 @@ function AdminLandmarksEditPage() {
         setFormState({ ...nextState, published: false })
         setAutoDrafted(true)
       } catch (error) {
-        if (error.status === 401) {
-          // Token expired; force re-authentication.
-          clearAuthToken()
-          navigate('/login', { replace: true })
-          return
-        }
 
         setErrorMessage(error.message || 'Unable to load landmark.')
       } finally {
@@ -145,12 +139,6 @@ function AdminLandmarksEditPage() {
       window.alert('Landmark edited successfully')
       navigate('/admin/landmarks', { replace: true })
     } catch (error) {
-      if (error.status === 401) {
-        // Token expired; force re-authentication.
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to update landmark.'
       setErrorMessage(message)
@@ -279,12 +267,7 @@ function AdminLandmarksEditPage() {
       resource="landmarks"
       itemId={id}
       query={location.search}
-      storageKey="landmarks-preview-pane-width"
-      onAuthError={() => {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-      }}
-    >
+      storageKey="landmarks-preview-pane-width">
       {formContent}
     </AdminInlinePreviewLayout>
   )

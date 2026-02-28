@@ -4,7 +4,7 @@ import {
   deleteAnnouncement,
   listAnnouncements,
 } from '../../services/api/adminAnnouncementsApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import { buildApiUrl } from '../../lib/apiClient.js'
 import {
   Button,
@@ -105,11 +105,6 @@ function AdminAnnouncementsListPage() {
       setItems(list)
       setTotal(data?.total ?? null)
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       setErrorMessage(error.message || 'Unable to load announcements.')
     } finally {
@@ -136,11 +131,6 @@ function AdminAnnouncementsListPage() {
       setSuccessMessage('Announcement deleted.')
       fetchAnnouncements()
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to delete announcement.'
       setErrorMessage(message)

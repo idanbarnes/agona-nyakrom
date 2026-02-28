@@ -5,7 +5,7 @@ import {
   getAnnouncement,
   updateAnnouncement,
 } from '../../services/api/adminAnnouncementsApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import { buildApiUrl } from '../../lib/apiClient.js'
 import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
 import {
@@ -112,11 +112,6 @@ function AdminAnnouncementFormPage({ mode = 'create' }) {
         setFormState({ ...nextState, is_published: false })
         setAutoDrafted(true)
       } catch (error) {
-        if (error.status === 401) {
-          clearAuthToken()
-          navigate('/login', { replace: true })
-          return
-        }
 
         setErrorMessage(error.message || 'Unable to load announcement.')
       } finally {
@@ -242,11 +237,6 @@ function AdminAnnouncementFormPage({ mode = 'create' }) {
         },
       })
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to save announcement.'
       setErrorMessage(message)
@@ -422,12 +412,7 @@ function AdminAnnouncementFormPage({ mode = 'create' }) {
         resource="announcements"
         itemId={id}
         query={location.search}
-        storageKey="announcements-preview-pane-width"
-        onAuthError={() => {
-          clearAuthToken()
-          navigate('/login', { replace: true })
-        }}
-      >
+        storageKey="announcements-preview-pane-width">
         {formContent}
       </AdminInlinePreviewLayout>
     )

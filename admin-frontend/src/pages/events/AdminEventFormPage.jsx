@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { getEvent, createEvent, updateEvent } from '../../services/api/adminEventsApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import { buildApiUrl } from '../../lib/apiClient.js'
 import SearchableSelect from '../../components/SearchableSelect.jsx'
 import { eventTags } from '../../constants/eventTags.js'
@@ -127,11 +127,6 @@ function AdminEventFormPage({ mode = 'create' }) {
         setFormState({ ...nextState, is_published: false })
         setAutoDrafted(true)
       } catch (error) {
-        if (error.status === 401) {
-          clearAuthToken()
-          navigate('/login', { replace: true })
-          return
-        }
 
         setErrorMessage(error.message || 'Unable to load event.')
       } finally {
@@ -260,11 +255,6 @@ function AdminEventFormPage({ mode = 'create' }) {
         state: { successMessage: `Event ${mode === 'edit' ? 'updated' : 'created'}.` },
       })
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to save event.'
       setErrorMessage(message)
@@ -512,12 +502,7 @@ function AdminEventFormPage({ mode = 'create' }) {
         resource="events"
         itemId={id}
         query={location.search}
-        storageKey="events-preview-pane-width"
-        onAuthError={() => {
-          clearAuthToken()
-          navigate('/login', { replace: true })
-        }}
-      >
+        storageKey="events-preview-pane-width">
         {formContent}
       </AdminInlinePreviewLayout>
     )

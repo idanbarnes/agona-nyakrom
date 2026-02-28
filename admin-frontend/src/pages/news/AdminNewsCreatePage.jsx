@@ -1,7 +1,8 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createNews } from '../../services/api/adminNewsApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
+import { useDraftAutosave } from '../../hooks/useDraftAutosave.js'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
 import {
   Button,
@@ -132,9 +133,23 @@ function getContentText(content = '') {
     .trim()
 }
 
+function formatDraftTime(timestamp) {
+  if (!timestamp) {
+    return 'local storage'
+  }
+
+  const parsed = new Date(timestamp)
+  if (Number.isNaN(parsed.getTime())) {
+    return 'local storage'
+  }
+
+  return parsed.toLocaleString()
+}
+
 function AdminNewsCreatePage() {
   const navigate = useNavigate()
   const imageInputRef = useRef(null)
+  const draftAppliedRef = useRef(false)
   const [formState, setFormState] = useState({
     title: '',
     slug: '',
@@ -148,6 +163,7 @@ function AdminNewsCreatePage() {
   const [submitAction, setSubmitAction] = useState('draft')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [draftMessage, setDraftMessage] = useState('')
 
   const imageFileName = formState.image?.name || ''
   const metaDescriptionCount = formState.metaDescription.length
@@ -158,6 +174,34 @@ function AdminNewsCreatePage() {
 
     return `/news/${formState.slug}`
   }, [formState.slug])
+
+  const draftPayload = useMemo(
+    () => ({
+      ...formState,
+      image: null,
+    }),
+    [formState],
+  )
+  const { restoredDraft, restoredAt, clearDraft } = useDraftAutosave({
+    key: 'admin:draft:news:create',
+    data: draftPayload,
+    enabled: !isSubmitting,
+  })
+
+  useEffect(() => {
+    if (!restoredDraft || draftAppliedRef.current) {
+      return
+    }
+
+    draftAppliedRef.current = true
+    setFormState((current) => ({
+      ...current,
+      ...restoredDraft,
+      image: null,
+    }))
+    setHasManuallyEditedSlug(Boolean(restoredDraft.slug))
+    setDraftMessage(`Restored unsaved draft from ${formatDraftTime(restoredAt)}.`)
+  }, [restoredAt, restoredDraft])
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target
@@ -269,16 +313,10 @@ function AdminNewsCreatePage() {
       if (response?.success === false) {
         throw new Error(response?.message || 'Unable to create news.')
       }
+      clearDraft()
       window.alert(publishedValue ? 'Article published successfully' : 'Draft saved successfully')
       navigate('/admin/news', { replace: true })
     } catch (error) {
-      if (error.status === 401) {
-        // Token expired; force re-authentication.
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
-
       const message = error.message || 'Unable to create news.'
       setErrorMessage(message)
       window.alert(message)
@@ -325,6 +363,11 @@ function AdminNewsCreatePage() {
             </CardHeader>
             <CardContent className="space-y-5 pt-6 md:space-y-6">
               <InlineError message={errorMessage} />
+              {draftMessage ? (
+                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                  {draftMessage}
+                </p>
+              ) : null}
 
               <FormField label="Title" htmlFor="title" required>
                 <Input

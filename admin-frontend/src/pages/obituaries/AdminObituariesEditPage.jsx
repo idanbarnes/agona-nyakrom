@@ -4,7 +4,8 @@ import {
   getSingleObituary,
   updateObituary,
 } from '../../services/api/adminObituariesApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
+import { useDraftAutosave } from '../../hooks/useDraftAutosave.js'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
 import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
 import {
@@ -19,6 +20,19 @@ import {
 } from '../../components/ui/index.jsx'
 
 const dateOnlyFields = new Set(['date_of_birth', 'date_of_death'])
+
+function formatDraftTime(timestamp) {
+  if (!timestamp) {
+    return 'local storage'
+  }
+
+  const parsed = new Date(timestamp)
+  if (Number.isNaN(parsed.getTime())) {
+    return 'local storage'
+  }
+
+  return parsed.toLocaleString()
+}
 
 function ArrowLeftIcon({ className = 'h-4 w-4' }) {
   return (
@@ -146,6 +160,7 @@ function AdminObituariesEditPage() {
   const deceasedPhotoInputRef = useRef(null)
   const posterPhotoInputRef = useRef(null)
   const previewUrlRef = useRef({ deceased: null, poster: null })
+  const draftAppliedRef = useRef(false)
   const [initialState, setInitialState] = useState(null)
   const [formState, setFormState] = useState({
     full_name: '',
@@ -170,6 +185,7 @@ function AdminObituariesEditPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitAction, setSubmitAction] = useState('publish')
   const [errorMessage, setErrorMessage] = useState('')
+  const [draftMessage, setDraftMessage] = useState('')
 
   const biographyText = (formState.biography || '')
     .replace(/<[^>]*>/g, ' ')
@@ -239,12 +255,6 @@ function AdminObituariesEditPage() {
         setInitialState(nextState)
         setFormState(nextState)
       } catch (error) {
-        if (error.status === 401) {
-          clearAuthToken()
-          navigate('/login', { replace: true })
-          return
-        }
-
         setErrorMessage(error.message || 'Unable to load obituary.')
       } finally {
         setIsLoading(false)
@@ -291,6 +301,32 @@ function AdminObituariesEditPage() {
   }, [formState, initialState])
 
   const canPublishDraft = Boolean(initialState) && !formState.published
+
+  const draftPayload = {
+    ...formState,
+    image: null,
+    deceased_image: null,
+  }
+  const { restoredDraft, restoredAt, clearDraft } = useDraftAutosave({
+    key: id ? `admin:draft:obituaries:edit:${id}` : '',
+    data: draftPayload,
+    enabled: Boolean(id) && !isLoading,
+  })
+
+  useEffect(() => {
+    if (isLoading || !restoredDraft || draftAppliedRef.current) {
+      return
+    }
+
+    draftAppliedRef.current = true
+    setFormState((current) => ({
+      ...current,
+      ...restoredDraft,
+      image: null,
+      deceased_image: null,
+    }))
+    setDraftMessage(`Restored unsaved draft from ${formatDraftTime(restoredAt)}.`)
+  }, [isLoading, restoredAt, restoredDraft])
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -409,6 +445,7 @@ function AdminObituariesEditPage() {
       if (response?.success === false) {
         throw new Error(response?.message || 'Unable to update obituary.')
       }
+      clearDraft()
 
       window.alert(
         action === 'draft'
@@ -417,12 +454,6 @@ function AdminObituariesEditPage() {
       )
       navigate('/admin/obituaries', { replace: true })
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
-
       const message = error.message || 'Unable to update obituary.'
       setErrorMessage(message)
       window.alert(message)
@@ -481,6 +512,11 @@ function AdminObituariesEditPage() {
         className="space-y-6"
       >
         <InlineError message={errorMessage} />
+        {draftMessage ? (
+          <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+            {draftMessage}
+          </p>
+        ) : null}
 
         <Card>
           <CardHeader className="space-y-1.5">
@@ -792,10 +828,6 @@ function AdminObituariesEditPage() {
       itemId={id}
       query={location.search}
       storageKey="obituaries-preview-pane-width"
-      onAuthError={() => {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-      }}
     >
       {formContent}
     </AdminInlinePreviewLayout>

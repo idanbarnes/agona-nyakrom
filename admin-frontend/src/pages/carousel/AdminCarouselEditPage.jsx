@@ -5,7 +5,7 @@ import {
   getSingleSlide,
   updateSlide,
 } from '../../services/api/adminCarouselApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import { getCroppedImageDataUrl } from '../../lib/cropImage.js'
 import {
   Button,
@@ -89,12 +89,6 @@ function AdminCarouselEditPage() {
         setFormState({ ...nextState, published: false })
         setAutoDrafted(true)
       } catch (error) {
-        if (error.status === 401) {
-          // Token expired; force re-authentication.
-          clearAuthToken()
-          navigate('/login', { replace: true })
-          return
-        }
 
         setErrorMessage(error.message || 'Unable to load slide.')
       } finally {
@@ -263,12 +257,6 @@ function AdminCarouselEditPage() {
       window.alert('Carousel slide edited successfully')
       navigate('/admin/carousel', { replace: true })
     } catch (error) {
-      if (error.status === 401) {
-        // Token expired; force re-authentication.
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to update slide.'
       setErrorMessage(message)

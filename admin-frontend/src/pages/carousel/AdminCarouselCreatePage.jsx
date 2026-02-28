@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Cropper from 'react-easy-crop'
 import { createSlide } from '../../services/api/adminCarouselApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import { getCroppedImageDataUrl } from '../../lib/cropImage.js'
 import {
   Button,
@@ -168,12 +168,6 @@ function AdminCarouselCreatePage() {
       window.alert('Carousel slide created successfully')
       navigate('/admin/carousel', { replace: true })
     } catch (error) {
-      if (error.status === 401) {
-        // Token expired; force re-authentication.
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to create slide.'
       setErrorMessage(message)

@@ -8,6 +8,7 @@ const eventsService = require('../eventsService');
 const announcementsService = require('../announcementsService');
 const leaderService = require('../leaderService');
 const aboutPageService = require('../aboutPageService');
+const contactCmsService = require('../contactCmsService');
 
 const normalizeResource = (resource) => String(resource || '').trim().toLowerCase();
 
@@ -108,6 +109,12 @@ const RESOURCES = [
     getPreviewId: (record, requestedId) => String(record?.slug || requestedId || '').trim(),
     toPublicPath: (record, requestedId) =>
       `/about/${slugOrFallback(record?.slug, requestedId)}`,
+  }),
+  createResource({
+    key: 'faqs',
+    aliases: ['faq'],
+    loadById: (id) => contactCmsService.getFaqById(id),
+    toPublicPath: () => '/contact',
   }),
 ];
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import {
   createAsafoCompany,
   getAllAsafoCompanies,
@@ -111,11 +111,6 @@ export default function AdminAsafoCompaniesSectionPage() {
       })
       .catch((err) => {
         if (cancelled) return
-        if (err.status === 401) {
-          clearAuthToken()
-          navigate('/login', { replace: true })
-          return
-        }
         setError(err.message || 'Failed to load section')
       })
       .finally(() => {

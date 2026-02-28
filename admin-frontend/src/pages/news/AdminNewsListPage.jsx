@@ -4,7 +4,7 @@ import {
   deleteNews,
   getAllNews,
 } from '../../services/api/adminNewsApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import {
   Button,
   Card,
@@ -240,12 +240,6 @@ function AdminNewsListPage() {
       setItems(list)
       setTotal(Array.isArray(data) ? list.length : Number(data?.total ?? payload?.total ?? list.length))
     } catch (error) {
-      if (error.status === 401) {
-        // Session expired or invalid; force re-authentication.
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       setErrorMessage(error.message || 'Unable to load news.')
       setTotal(0)
@@ -277,12 +271,6 @@ function AdminNewsListPage() {
       setSuccessMessage('News item deleted.')
       fetchNews()
     } catch (error) {
-      if (error.status === 401) {
-        // Token is no longer valid; send the user back to login.
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to delete news.'
       setErrorMessage(message)

@@ -1,5 +1,6 @@
 export { Button } from './button.jsx'
 export { Input } from './input.jsx'
+export { Checkbox } from './checkbox.jsx'
 export { Textarea } from './textarea.jsx'
 export { Select } from './select.jsx'
 export { Label } from './label.jsx'

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createBlock } from '../../services/api/adminHomepageBlocksApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import {
   Button,
   Card,
@@ -182,11 +182,6 @@ function AdminHomepageSectionsCreatePage() {
       window.alert('Homepage block created successfully')
       navigate('/admin/homepage-sections', { replace: true })
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to create block.'
       setErrorMessage(message)

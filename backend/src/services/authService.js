@@ -11,17 +11,20 @@ if (!JWT_SECRET) {
 
 /**
  * Authenticate an admin and return a signed JWT plus public admin info.
- * @param {string} email
+ * @param {string} emailOrUsername
  * @param {string} password
  * @returns {Promise<{ token: string, admin: { id: string, email: string, name: string } }>}
  */
-const loginAdmin = async (email, password) => {
+const loginAdmin = async (emailOrUsername, password) => {
   const invalidCredsError = { status: 401, message: 'Invalid email or password' };
 
-  // Look up admin by email
+  // Look up admin by email or display name to match current login UI copy.
   const { rows } = await pool.query(
-    'SELECT id, email, password_hash, role, name FROM admins WHERE email = $1 AND active = true LIMIT 1',
-    [email]
+    `SELECT id, email, password_hash, role, name
+     FROM admins
+     WHERE (email = $1 OR name = $1) AND active = true
+     LIMIT 1`,
+    [emailOrUsername]
   );
 
   const admin = rows[0];

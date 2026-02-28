@@ -6,7 +6,7 @@ import {
   getAllBlocks,
   updateBlock,
 } from '../../services/api/adminHomepageBlocksApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import {
   Button,
   ConfirmDialog,
@@ -79,11 +79,6 @@ function AdminHomepageSectionsListPage() {
       const list = Array.isArray(data) ? data : data?.items || data?.blocks || []
       setItems(list)
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       setError(error)
     } finally {
@@ -113,11 +108,6 @@ function AdminHomepageSectionsListPage() {
       setSuccessMessage('Block deleted.')
       fetchBlocks()
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to delete block.'
       setError(message)
@@ -168,11 +158,6 @@ function AdminHomepageSectionsListPage() {
       setSuccessMessage('Block order updated.')
       fetchBlocks()
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to update block order.'
       setError(message)
@@ -199,11 +184,6 @@ function AdminHomepageSectionsListPage() {
       )
       fetchBlocks()
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to update publish status.'
       setError(message)

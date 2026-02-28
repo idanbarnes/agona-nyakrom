@@ -4,7 +4,7 @@ import {
   createHallOfFame,
   uploadHallOfFameInlineImage,
 } from '../../services/api/adminHallOfFameApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import HallOfFameForm from './HallOfFameForm.jsx'
 
 function AdminHallOfFameCreatePage() {
@@ -57,11 +57,6 @@ function AdminHallOfFameCreatePage() {
         state: { successMessage: 'Hall of Fame entry created successfully.' },
       })
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       setErrorMessage(error.message || 'Unable to create entry.')
     } finally {

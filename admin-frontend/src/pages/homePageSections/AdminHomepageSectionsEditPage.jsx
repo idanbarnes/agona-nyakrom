@@ -4,7 +4,7 @@ import {
   getSingleBlock,
   updateBlock,
 } from '../../services/api/adminHomepageBlocksApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import {
   Button,
   Card,
@@ -153,11 +153,6 @@ function AdminHomepageSectionsEditPage() {
         setFormState({ ...nextState, is_published: false })
         setAutoDrafted(true)
       } catch (error) {
-        if (error.status === 401) {
-          clearAuthToken()
-          navigate('/login', { replace: true })
-          return
-        }
 
         setErrorMessage(error.message || 'Unable to load block.')
       } finally {
@@ -281,11 +276,6 @@ function AdminHomepageSectionsEditPage() {
       window.alert('Homepage block edited successfully')
       navigate('/admin/homepage-sections', { replace: true })
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to update block.'
       setErrorMessage(message)

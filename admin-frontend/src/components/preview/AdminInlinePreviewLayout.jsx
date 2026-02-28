@@ -96,7 +96,6 @@ function AdminInlinePreviewLayout({
   reloadKey = 0,
   enabled = true,
   storageKey = 'admin-inline-preview-width',
-  onAuthError,
   children,
 }) {
   const canPreview = Boolean(enabled && resource && itemId)
@@ -177,8 +176,7 @@ function AdminInlinePreviewLayout({
         }),
       )
     } catch (error) {
-      if (error.status === 401 && typeof onAuthError === 'function') {
-        onAuthError(error)
+      if (error.status === 401) {
         return
       }
 
@@ -188,7 +186,7 @@ function AdminInlinePreviewLayout({
     } finally {
       setPreviewLoading(false)
     }
-  }, [canPreview, cmsOrigin, itemId, onAuthError, previewChannel, resource])
+  }, [canPreview, cmsOrigin, itemId, previewChannel, resource])
 
   useEffect(() => {
     if (!canPreview) {

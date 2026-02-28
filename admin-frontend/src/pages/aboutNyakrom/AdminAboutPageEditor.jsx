@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import {
   getAboutPage,
   saveAboutPage,
@@ -36,10 +36,7 @@ export default function AdminAboutPageEditor() {
     getAboutPage(slug)
       .then((res) => setState({ ...initialState, ...(res.data || res) }))
       .catch((err) => {
-        if (err.status === 401) {
-          clearAuthToken()
-          navigate('/login', { replace: true })
-        }
+        setMessage(err?.message || 'Unable to load page details.')
       })
   }, [slug, navigate])
 

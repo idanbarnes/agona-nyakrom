@@ -20,6 +20,9 @@ function withPagination(path, { page, limit } = {}) {
 // Public content endpoints.
 export const getGlobalSettings = () =>
   request('/api/public/global-settings')
+export const getContactInfo = () => request('/api/public/contact')
+export const getContactFaqs = () => request('/api/public/faqs')
+export const getContactSections = () => request('/api/public/contact/sections')
 
 export const getHomepage = () => request('/api/public/homepage')
 

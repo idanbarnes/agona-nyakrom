@@ -4,7 +4,7 @@ import {
   deleteLandmark,
   getAllLandmarks,
 } from '../../services/api/adminLandmarksApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import {
   Button,
   ConfirmDialog,
@@ -75,12 +75,6 @@ function AdminLandmarksListPage() {
       setItems(list)
       setTotal(data?.total ?? payload?.total ?? null)
     } catch (error) {
-      if (error.status === 401) {
-        // Session expired or invalid; force re-authentication.
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       setError(error)
     } finally {
@@ -111,12 +105,6 @@ function AdminLandmarksListPage() {
       setSuccessMessage('Landmark deleted.')
       fetchLandmarks()
     } catch (error) {
-      if (error.status === 401) {
-        // Token is no longer valid; send the user back to login.
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to delete landmark.'
       setError(message)

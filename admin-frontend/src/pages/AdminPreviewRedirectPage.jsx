@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { clearAuthToken } from '../lib/auth.js'
+import { Link, useParams } from 'react-router-dom'
 import { apiRequest } from '../lib/apiClient.js'
 import { normalizePreviewResource } from '../lib/adminPreview.js'
 import { resolvePreviewTargetUrl } from '../lib/previewTargetUrl.js'
 import { Button } from '../components/ui/button.jsx'
 
 function AdminPreviewRedirectPage() {
-  const navigate = useNavigate()
   const { resource, id } = useParams()
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -41,12 +39,6 @@ function AdminPreviewRedirectPage() {
           return
         }
 
-        if (error.status === 401) {
-          clearAuthToken()
-          navigate('/login', { replace: true })
-          return
-        }
-
         setErrorMessage(error.message || 'Unable to open preview.')
       }
     }
@@ -56,7 +48,7 @@ function AdminPreviewRedirectPage() {
     return () => {
       isMounted = false
     }
-  }, [id, navigate, normalizedResource])
+  }, [id, normalizedResource])
 
   if (errorMessage) {
     return (

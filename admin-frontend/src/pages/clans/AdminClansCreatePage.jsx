@@ -5,7 +5,7 @@ import {
   createClanLeader,
   updateClan,
 } from '../../services/api/adminClansApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import {
   Button,
   Card,
@@ -216,12 +216,6 @@ function AdminClansCreatePage() {
       window.alert('Family clan created successfully')
       navigate('/admin/clans', { replace: true })
     } catch (error) {
-      if (error.status === 401) {
-        // Token expired; force re-authentication.
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       const message = error.message || 'Unable to create clan.'
       setErrorMessage(message)

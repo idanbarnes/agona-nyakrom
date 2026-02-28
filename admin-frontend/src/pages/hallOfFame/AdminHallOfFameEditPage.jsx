@@ -5,7 +5,7 @@ import {
   updateHallOfFame,
   uploadHallOfFameInlineImage,
 } from '../../services/api/adminHallOfFameApi.js'
-import { clearAuthToken, getAuthToken } from '../../lib/auth.js'
+import { getAuthToken } from '../../lib/auth.js'
 import HallOfFameForm from './HallOfFameForm.jsx'
 import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
 
@@ -67,11 +67,6 @@ function AdminHallOfFameEditPage() {
         setInitialState(nextState)
         setFormState(nextState)
       } catch (error) {
-        if (error.status === 401) {
-          clearAuthToken()
-          navigate('/login', { replace: true })
-          return
-        }
 
         setErrorMessage(error.message || 'Unable to load entry.')
       } finally {
@@ -130,11 +125,6 @@ function AdminHallOfFameEditPage() {
         state: { successMessage: 'Hall of Fame entry updated successfully.' },
       })
     } catch (error) {
-      if (error.status === 401) {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-        return
-      }
 
       setErrorMessage(error.message || 'Unable to update entry.')
     } finally {
@@ -179,12 +169,7 @@ function AdminHallOfFameEditPage() {
       resource="hall-of-fame"
       itemId={id}
       query={location.search}
-      storageKey="hall-of-fame-preview-pane-width"
-      onAuthError={() => {
-        clearAuthToken()
-        navigate('/login', { replace: true })
-      }}
-    >
+      storageKey="hall-of-fame-preview-pane-width">
       {formContent}
     </AdminInlinePreviewLayout>
   )

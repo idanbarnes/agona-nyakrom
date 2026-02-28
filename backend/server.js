@@ -34,6 +34,9 @@ const leadersAdminRoutes = require('./src/routes/admin/leadersAdminRoutes');
 const adminEventsRoutes = require('./src/routes/adminEventsRoutes');
 const adminAnnouncementsRoutes = require('./src/routes/adminAnnouncementsRoutes');
 const adminPreviewRoutes = require('./src/routes/admin/previewRoutes');
+const contactAdminRoutes = require('./src/routes/admin/contactAdminRoutes');
+const faqAdminRoutes = require('./src/routes/admin/faqAdminRoutes');
+const faqsAdminCompatRoutes = require('./src/routes/faqsAdminCompatRoutes');
 
 // for handling public endpoints routing
 const publicNewsRoutes = require('./src/routes/public/newsRoutes');
@@ -51,6 +54,8 @@ const publicLeadersRoutes = require('./src/routes/public/leadersRoutes');
 const publicEventsRoutes = require('./src/routes/publicEventsRoutes');
 const publicAnnouncementsRoutes = require('./src/routes/publicAnnouncementsRoutes');
 const publicAnnouncementsEventsRoutes = require('./src/routes/publicAnnouncementsEventsRoutes');
+const publicContactRoutes = require('./src/routes/public/contactRoutes');
+const publicFaqRoutes = require('./src/routes/public/faqRoutes');
 
 // Public site meta configuration for social sharing.
 const PUBLIC_SITE_URL = process.env.PUBLIC_SITE_URL || 'http://localhost:5173';
@@ -189,6 +194,9 @@ app.use('/api/admin/about-pages', aboutPageAdminRoutes);
 app.use('/api/admin/leaders', leadersAdminRoutes);
 app.use('/api/admin/events', adminEventsRoutes);
 app.use('/api/admin/announcements', adminAnnouncementsRoutes);
+app.use('/api/admin/contact', contactAdminRoutes);
+app.use('/api/admin/faqs', faqAdminRoutes);
+app.use('/api/faqs', faqsAdminCompatRoutes);
 
 //for handling public endpoints (registerd)
 app.use('/api/public/news', publicNewsRoutes);
@@ -207,6 +215,15 @@ app.use('/api/public/leaders', publicLeadersRoutes);
 app.use('/api/public/events', publicEventsRoutes);
 app.use('/api/public/announcements', publicAnnouncementsRoutes);
 app.use('/api/public/announcements-events', publicAnnouncementsEventsRoutes);
+app.use('/api/public/contact', publicContactRoutes);
+app.use('/api/public/faqs', publicFaqRoutes);
+
+// Versioned aliases for new contact CMS endpoints.
+app.use('/api/v1/contact', publicContactRoutes);
+app.use('/api/v1/faqs', publicFaqRoutes);
+app.use('/api/v1/admin', adminAuthRoutes);
+app.use('/api/v1/admin/contact', contactAdminRoutes);
+app.use('/api/v1/admin/faqs', faqAdminRoutes);
 
 // Server-rendered meta tags for event and announcement detail pages.
 app.get('/events/:slug', async (req, res) => {
