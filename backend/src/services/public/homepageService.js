@@ -45,11 +45,15 @@ const mapSection = (row) => {
 
 const mapHallOfFameItem = (row) => {
   if (!row) return null;
+  const normalizedBody = row.body || row.bio || row.achievements || null;
   return {
     id: row.id,
     name: row.name,
     title: row.title,
     label: row.title || row.name,
+    body: normalizedBody,
+    bio: row.bio || normalizedBody,
+    achievements: row.achievements || null,
     href: row.slug ? `/hall-of-fame/${row.slug}` : '/hall-of-fame',
     images: mapImages(row),
   };
@@ -103,11 +107,17 @@ const getPublishedBlocks = async () => {
       body,
       cta_label,
       cta_href,
+      secondary_cta_label,
+      secondary_cta_href,
       theme_variant,
       container_width,
       media_image_id,
       media_alt_text,
       layout_variant,
+      who_we_are_paragraph_one,
+      who_we_are_paragraph_two,
+      who_we_are_stats,
+      who_we_are_gallery,
       hof_selection_mode,
       hof_items_count,
       hof_manual_item_ids,
@@ -140,6 +150,8 @@ const getPublishedBlocks = async () => {
 
   return rows.map((row) => ({
     ...row,
+    who_we_are_stats: row.who_we_are_stats || [],
+    who_we_are_gallery: row.who_we_are_gallery || [],
     hof_manual_item_ids: row.hof_manual_item_ids || [],
     gateway_items: row.gateway_items || [],
   }));
@@ -181,6 +193,9 @@ const getHallOfFameItems = async (block, cache) => {
         name,
         slug,
         title,
+        body,
+        bio,
+        achievements,
         original_image_path,
         large_image_path,
         medium_image_path,

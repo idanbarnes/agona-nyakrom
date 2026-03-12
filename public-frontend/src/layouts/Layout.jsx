@@ -248,11 +248,7 @@ function Layout() {
           <main className="flex-1">
             <Outlet />
           </main>
-          <div className="mt-auto border-t border-border bg-surface">
-            <div className="container py-10">
-              <Footer settings={settings} loading={loading} error={error} />
-            </div>
-          </div>
+          <Footer settings={settings} loading={loading} error={error} />
         </div>
       )}
     </PublicSettingsContext.Provider>

@@ -88,10 +88,6 @@
     text-decoration: none;
   }
 
-  a:hover {
-    text-decoration: underline;
-  }
-
   .asafo-card-link,
   .asafo-card-link:visited,
   .asafo-card-link:hover,

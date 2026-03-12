@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { createLandmark } from '../../services/api/adminLandmarksApi.js'
 import { getAuthToken } from '../../lib/auth.js'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
+import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
+import FormActions from '../../components/ui/form-actions.jsx'
 import {
-  Button,
   Card,
   CardContent,
   CardFooter,
@@ -18,10 +19,10 @@ function AdminLandmarksCreatePage() {
   const [formState, setFormState] = useState({
     name: '',
     description: '',
-    published: false,
     image: null,
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitAction, setSubmitAction] = useState('publish')
   const [errorMessage, setErrorMessage] = useState('')
 
   const handleChange = (event) => {
@@ -35,9 +36,9 @@ function AdminLandmarksCreatePage() {
     setFormState((current) => ({ ...current, image: file }))
   }
 
-  const handleSubmit = async (event) => {
-    event.preventDefault()
+  const handleSubmit = async (action) => {
     setErrorMessage('')
+    setSubmitAction(action)
 
     if (!getAuthToken()) {
       navigate('/login', { replace: true })
@@ -52,7 +53,7 @@ function AdminLandmarksCreatePage() {
     const formData = new FormData()
     formData.append('name', formState.name.trim())
     formData.append('description', formState.description.trim())
-    formData.append('published', String(formState.published))
+    formData.append('published', String(action === 'publish'))
     if (formState.image) {
       formData.append('image', formState.image)
     }
@@ -63,7 +64,11 @@ function AdminLandmarksCreatePage() {
       if (response?.success === false) {
         throw new Error(response?.message || 'Unable to create landmark.')
       }
-      window.alert('Landmark created successfully')
+      window.alert(
+        action === 'draft'
+          ? 'Landmark draft saved successfully'
+          : 'Landmark published successfully',
+      )
       navigate('/admin/landmarks', { replace: true })
     } catch (error) {
 
@@ -83,7 +88,7 @@ function AdminLandmarksCreatePage() {
           Add a landmark description and imagery.
         </p>
       </header>
-      <form onSubmit={handleSubmit}>
+      <form>
         <Card>
           <CardContent className="space-y-5 md:space-y-6">
             <InlineError message={errorMessage} />
@@ -107,44 +112,31 @@ function AdminLandmarksCreatePage() {
               />
             </FormField>
 
-            <FormField label="Published" htmlFor="published">
-              <div className="flex items-center gap-2">
-                <input
-                  id="published"
-                  name="published"
-                  type="checkbox"
-                  checked={formState.published}
-                  onChange={handleChange}
-                  className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-                <span className="text-sm text-muted-foreground">
-                  Publish this landmark immediately.
-                </span>
-              </div>
-            </FormField>
-
-            <FormField label="Image (optional)" htmlFor="image">
-              <div className="rounded-lg border border-border bg-background p-4">
-                <Input
-                  id="image"
-                  name="image"
-                  type="file"
-                  onChange={handleFileChange}
-                />
-              </div>
-            </FormField>
+            <div className="rounded-xl border border-border bg-background/60">
+              <PhotoUploadField
+                label="Image (optional)"
+                value={formState.image?.name || ''}
+                valueType="text"
+                valueId="image"
+                valuePlaceholder="Select image"
+                fileId="image-file"
+                fileName="image"
+                acceptedFileTypes="image/*"
+                onChange={handleFileChange}
+              />
+            </div>
           </CardContent>
           <CardFooter>
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={() => navigate('/admin/landmarks')}
-            >
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit" loading={isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create Landmark'}
-            </Button>
+            <FormActions
+              mode="publish"
+              onCancel={() => navigate('/admin/landmarks')}
+              onAction={(action) => {
+                void handleSubmit(action)
+              }}
+              isSubmitting={isSubmitting}
+              submitAction={submitAction}
+              disableCancel={isSubmitting}
+            />
           </CardFooter>
         </Card>
       </form>

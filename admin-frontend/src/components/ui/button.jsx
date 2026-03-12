@@ -22,6 +22,7 @@ const sizeStyles = {
 }
 
 export function Button({
+  as: Comp = 'button',
   variant = 'primary',
   size = 'md',
   loading = false,
@@ -33,18 +34,21 @@ export function Button({
   ...props
 }) {
   const isDisabled = disabled || loading
+  const isButton = Comp === 'button'
 
   return (
-    <button
-      type={type}
+    <Comp
+      type={isButton ? type : undefined}
       onClick={onClick}
-      disabled={isDisabled}
+      disabled={isButton ? isDisabled : undefined}
+      aria-disabled={!isButton && isDisabled ? true : undefined}
       aria-busy={loading || undefined}
       className={cn(
         baseStyles,
         variantStyles[variant],
         sizeStyles[size],
         loading ? 'cursor-wait' : '',
+        !isButton && isDisabled ? 'pointer-events-none' : '',
         className,
       )}
       {...props}
@@ -60,6 +64,6 @@ export function Button({
       ) : (
         children
       )}
-    </button>
+    </Comp>
   )
 }

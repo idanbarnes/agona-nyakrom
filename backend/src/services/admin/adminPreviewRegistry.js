@@ -4,6 +4,7 @@ const clanAdminService = require('./clanAdminService');
 const asafoAdminService = require('./asafoAdminService');
 const hallOfFameAdminService = require('./hallOfFameAdminService');
 const landmarkAdminService = require('./landmarkAdminService');
+const carouselAdminService = require('./carouselAdminService');
 const eventsService = require('../eventsService');
 const announcementsService = require('../announcementsService');
 const leaderService = require('../leaderService');
@@ -81,6 +82,12 @@ const RESOURCES = [
     loadById: (id) => landmarkAdminService.getById(id),
     toPublicPath: (record, requestedId) =>
       `/landmarks/${slugOrFallback(record?.slug, requestedId)}`,
+  }),
+  createResource({
+    key: 'carousel',
+    aliases: ['carousels', 'carousel-slide', 'carousel-slides', 'slide', 'slides'],
+    loadById: (id) => carouselAdminService.getById(id),
+    toPublicPath: () => '/',
   }),
   createResource({
     key: 'events',

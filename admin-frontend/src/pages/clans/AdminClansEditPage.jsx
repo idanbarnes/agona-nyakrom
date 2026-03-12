@@ -10,7 +10,6 @@ import {
 } from '../../services/api/adminClansApi.js'
 import { getAuthToken } from '../../lib/auth.js'
 import {
-  Button,
   Card,
   CardContent,
   CardFooter,
@@ -19,18 +18,30 @@ import {
   Input,
 } from '../../components/ui/index.jsx'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
+import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
+import FormActions from '../../components/ui/form-actions.jsx'
+import ClanLeadersManager from './components/ClanLeadersManager.jsx'
+import {
+  buildClanLeaderReorderPayload,
+  getNextLeaderDisplayOrder,
+  moveClanLeader,
+  normalizeClanLeader,
+  reindexClanLeaders,
+} from './clanLeaderUtils.js'
 
-// Draft leaders are created inline before persisting to the API.
-const createDraftLeader = (type) => ({
-  id: `${type}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-  type,
-  name: '',
-  title: '',
-  position: '',
-  image: null,
-  error: '',
-})
+function buildLeaderFormData(leader, displayOrder) {
+  const formData = new FormData()
+  formData.append('type', leader.type)
+  formData.append('name', leader.name || '')
+  formData.append('title', leader.title || '')
+  formData.append('position', leader.position)
+  formData.append('display_order', String(displayOrder))
+  if (leader.image) {
+    formData.append('image', leader.image)
+  }
+  return formData
+}
 
 function AdminClansEditPage() {
   const { id } = useParams()
@@ -41,213 +52,14 @@ function AdminClansEditPage() {
     name: '',
     caption: '',
     body: '',
-    published: false,
     image: null,
     existingImageUrl: '',
   })
-  const [leaders, setLeaders] = useState({ current: [], past: [] })
-  const [draftLeaders, setDraftLeaders] = useState({ current: [], past: [] })
-  const [leaderMessage, setLeaderMessage] = useState(
-    location.state?.leaderSaveError || ''
-  )
-  const [autoDrafted, setAutoDrafted] = useState(false)
+  const [leaders, setLeaders] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitAction, setSubmitAction] = useState('publish')
   const [errorMessage, setErrorMessage] = useState('')
-
-  const hasLeaderErrors = useMemo(() => {
-    const allLeaders = [
-      ...leaders.current,
-      ...leaders.past,
-      ...draftLeaders.current,
-      ...draftLeaders.past,
-    ]
-    return allLeaders.some((leader) => leader.error)
-  }, [leaders, draftLeaders])
-
-  const updateLeaderState = (type, leaderId, updates, isDraft = false) => {
-    const setter = isDraft ? setDraftLeaders : setLeaders
-    setter((current) => ({
-      ...current,
-      [type]: current[type].map((leader) =>
-        leader.id === leaderId ? { ...leader, ...updates } : leader
-      ),
-    }))
-  }
-
-  const addDraftLeader = (type) => {
-    setDraftLeaders((current) => ({
-      ...current,
-      [type]: [...current[type], createDraftLeader(type)],
-    }))
-  }
-
-  const removeDraftLeader = (type, leaderId) => {
-    setDraftLeaders((current) => ({
-      ...current,
-      [type]: current[type].filter((leader) => leader.id !== leaderId),
-    }))
-  }
-
-  // Use FormData when an image is present; otherwise JSON is fine.
-  const buildLeaderFormData = (leader, displayOrder) => {
-    const formData = new FormData()
-    if (leader.type) {
-      formData.append('type', leader.type)
-    }
-    if (leader.name) {
-      formData.append('name', leader.name)
-    }
-    if (leader.title) {
-      formData.append('title', leader.title)
-    }
-    if (leader.position !== undefined) {
-      formData.append('position', leader.position)
-    }
-    if (displayOrder !== undefined) {
-      formData.append('display_order', String(displayOrder))
-    }
-    if (leader.image) {
-      formData.append('image', leader.image)
-    }
-    return formData
-  }
-
-  // Reorder leaders within a section and persist display_order server-side.
-  const handleReorder = async (type, direction, leaderId) => {
-    setLeaderMessage('')
-    setErrorMessage('')
-
-    const list = leaders[type]
-    const index = list.findIndex((leader) => leader.id === leaderId)
-    if (index === -1) {
-      return
-    }
-
-    const targetIndex = direction === 'up' ? index - 1 : index + 1
-    if (targetIndex < 0 || targetIndex >= list.length) {
-      return
-    }
-
-    const nextList = [...list]
-    const [moved] = nextList.splice(index, 1)
-    nextList.splice(targetIndex, 0, moved)
-
-    const previousState = leaders
-    setLeaders((current) => ({
-      ...current,
-      [type]: nextList.map((leader, orderIndex) => ({
-        ...leader,
-        display_order: orderIndex + 1,
-      })),
-    }))
-
-    try {
-      await reorderClanLeaders(id, {
-        current: leaders.current.map((leader) => leader.id),
-        past: leaders.past.map((leader) => leader.id),
-        [type]: nextList.map((leader) => leader.id),
-      })
-    } catch (reorderError) {
-      setLeaders(previousState)
-      setLeaderMessage(
-        reorderError.message || 'Unable to reorder clan leaders.'
-      )
-    }
-  }
-
-  const handleSaveLeader = async (type, leader) => {
-    setLeaderMessage('')
-
-    if (!leader.position) {
-      updateLeaderState(type, leader.id, { error: 'Position is required.' })
-      return
-    }
-
-    updateLeaderState(type, leader.id, { error: '', isSaving: true })
-
-    try {
-      const payload = leader.image
-        ? buildLeaderFormData(leader, leader.display_order)
-        : {
-            type: leader.type,
-            name: leader.name || '',
-            title: leader.title || '',
-            position: leader.position,
-            display_order: leader.display_order,
-          }
-      const response = await updateClanLeader(id, leader.id, payload)
-      const updated = response?.data ?? response
-      updateLeaderState(type, leader.id, {
-        ...updated,
-        image: null,
-        existingImageUrl:
-          updated?.image_url ||
-          updated?.imageUrl ||
-          updated?.image ||
-          updated?.images?.medium ||
-          updated?.images?.large ||
-          updated?.images?.original ||
-          '',
-        isSaving: false,
-      })
-    } catch (leaderError) {
-      updateLeaderState(type, leader.id, {
-        error: leaderError.message || 'Unable to save leader.',
-        isSaving: false,
-      })
-    }
-  }
-
-  const handleDeleteLeader = async (type, leaderId) => {
-    setLeaderMessage('')
-    setErrorMessage('')
-
-    try {
-      await deleteClanLeader(id, leaderId)
-      setLeaders((current) => ({
-        ...current,
-        [type]: current[type].filter((leader) => leader.id !== leaderId),
-      }))
-    } catch (leaderError) {
-      setLeaderMessage(leaderError.message || 'Unable to delete leader.')
-    }
-  }
-
-  const handleCreateLeader = async (type, leader) => {
-    if (!leader.position) {
-      updateLeaderState(type, leader.id, { error: 'Position is required.' }, true)
-      return
-    }
-
-    updateLeaderState(type, leader.id, { error: '', isSaving: true }, true)
-
-    try {
-      const response = await createClanLeader(
-        id,
-        buildLeaderFormData(leader, leaders[type].length + 1)
-      )
-      const created = response?.data ?? response
-      setLeaders((current) => ({
-        ...current,
-        [type]: [...current[type], created],
-      }))
-      setDraftLeaders((current) => ({
-        ...current,
-        [type]: current[type].filter((entry) => entry.id !== leader.id),
-      }))
-    } catch (leaderError) {
-      updateLeaderState(
-        type,
-        leader.id,
-        {
-          error: leaderError.message || 'Unable to save leader.',
-          isSaving: false,
-        },
-        true
-      )
-    }
-  }
 
   useEffect(() => {
     if (!getAuthToken()) {
@@ -263,7 +75,6 @@ function AdminClansEditPage() {
         const payload = await getSingleClan(id)
         const data = payload?.data ?? payload
         const clan = data?.clan || data
-
         const currentLeaders = data?.leaders?.current || []
         const pastLeaders = data?.leaders?.past || []
 
@@ -271,43 +82,20 @@ function AdminClansEditPage() {
           name: clan?.name || '',
           caption: clan?.caption || clan?.intro || '',
           body: clan?.body || clan?.history || '',
-          published: Boolean(clan?.published),
           image: null,
           existingImageUrl: clan?.image_url || clan?.imageUrl || clan?.image || '',
         }
 
         setInitialState(nextState)
-        // Auto-draft the UI when entering edit mode.
-        setFormState({ ...nextState, published: false })
-        setAutoDrafted(true)
-        setLeaders({
-          current: currentLeaders.map((leader) => ({
-            ...leader,
-            image: null,
-            existingImageUrl:
-              leader?.image_url ||
-              leader?.imageUrl ||
-              leader?.image ||
-              leader?.images?.medium ||
-              leader?.images?.large ||
-              leader?.images?.original ||
-              '',
-          })),
-          past: pastLeaders.map((leader) => ({
-            ...leader,
-            image: null,
-            existingImageUrl:
-              leader?.image_url ||
-              leader?.imageUrl ||
-              leader?.image ||
-              leader?.images?.medium ||
-              leader?.images?.large ||
-              leader?.images?.original ||
-              '',
-          })),
-        })
+        setFormState(nextState)
+        setLeaders(
+          reindexClanLeaders(
+            [...currentLeaders, ...pastLeaders].map((leader) =>
+              normalizeClanLeader(leader),
+            ),
+          ),
+        )
       } catch (error) {
-
         setErrorMessage(error.message || 'Unable to load clan.')
       } finally {
         setIsLoading(false)
@@ -317,41 +105,22 @@ function AdminClansEditPage() {
     fetchClan()
   }, [id, navigate])
 
-  useEffect(() => {
-    if (location.state?.failedLeaders?.length) {
-      const failed = location.state.failedLeaders
-      setDraftLeaders((current) => ({
-        current: [
-          ...current.current,
-          ...failed.filter((leader) => leader.type === 'current'),
-        ],
-        past: [
-          ...current.past,
-          ...failed.filter((leader) => leader.type === 'past'),
-        ],
-      }))
-    }
-  }, [location.state])
-
   const hasChanges = useMemo(() => {
     if (!initialState) {
       return false
     }
 
     return (
-      autoDrafted ||
       formState.name !== initialState.name ||
       formState.caption !== initialState.caption ||
       formState.body !== initialState.body ||
-      formState.published !== initialState.published ||
       Boolean(formState.image)
     )
-  }, [autoDrafted, formState, initialState])
+  }, [formState, initialState])
 
   const handleChange = (event) => {
-    const { name, value, type, checked } = event.target
-    const nextValue = type === 'checkbox' ? checked : value
-    setFormState((current) => ({ ...current, [name]: nextValue }))
+    const { name, value } = event.target
+    setFormState((current) => ({ ...current, [name]: value }))
   }
 
   const handleFileChange = (event) => {
@@ -359,11 +128,85 @@ function AdminClansEditPage() {
     setFormState((current) => ({ ...current, image: file }))
   }
 
-  const handleSubmit = async (event) => {
-    event.preventDefault()
-    setErrorMessage('')
+  const handleLeaderSubmit = async (leaderForm, editingLeader) => {
+    if (editingLeader) {
+      const nextDisplayOrder =
+        editingLeader.type === leaderForm.type
+          ? Number(editingLeader.display_order || 0) ||
+            getNextLeaderDisplayOrder(leaders, leaderForm.type, editingLeader.id)
+          : getNextLeaderDisplayOrder(leaders, leaderForm.type, editingLeader.id)
 
-    if (!hasChanges) {
+      const response = await updateClanLeader(
+        id,
+        editingLeader.id,
+        buildLeaderFormData(leaderForm, nextDisplayOrder),
+      )
+      const updated = normalizeClanLeader(response?.data ?? response)
+
+      setLeaders((current) =>
+        reindexClanLeaders(
+          current.map((leader) =>
+            leader.id === editingLeader.id
+              ? {
+                  ...leader,
+                  ...updated,
+                  type: leaderForm.type,
+                  display_order: nextDisplayOrder,
+                  error: '',
+                }
+              : leader,
+          ),
+        ),
+      )
+      return
+    }
+
+    const nextDisplayOrder = getNextLeaderDisplayOrder(leaders, leaderForm.type)
+    const response = await createClanLeader(
+      id,
+      buildLeaderFormData(leaderForm, nextDisplayOrder),
+    )
+    const created = normalizeClanLeader(response?.data ?? response)
+
+    setLeaders((current) =>
+      reindexClanLeaders([
+        ...current,
+        {
+          ...created,
+          type: leaderForm.type,
+          display_order: nextDisplayOrder,
+          error: '',
+        },
+      ]),
+    )
+  }
+
+  const handleDeleteLeader = async (leader) => {
+    await deleteClanLeader(id, leader.id)
+    setLeaders((current) =>
+      reindexClanLeaders(current.filter((entry) => entry.id !== leader.id)),
+    )
+  }
+
+  const handleMoveLeader = async (leader, direction) => {
+    const previousLeaders = leaders
+    const nextLeaders = moveClanLeader(previousLeaders, leader.id, direction)
+
+    setLeaders(nextLeaders)
+
+    try {
+      await reorderClanLeaders(id, buildClanLeaderReorderPayload(nextLeaders))
+    } catch (error) {
+      setLeaders(previousLeaders)
+      throw error
+    }
+  }
+
+  const handleSubmit = async (action) => {
+    setErrorMessage('')
+    setSubmitAction(action)
+
+    if (!hasChanges && action !== 'publish') {
       setErrorMessage('No changes to update.')
       return
     }
@@ -373,21 +216,11 @@ function AdminClansEditPage() {
       return
     }
 
-    if (leaderMessage || hasLeaderErrors) {
-      const message =
-        leaderMessage || 'Resolve leader errors before saving the clan.'
-      setErrorMessage(message)
-      // Keep the user on the edit page to fix the leader errors.
-      window.alert(message)
-      return
-    }
-
     const formData = new FormData()
     formData.append('name', formState.name)
     formData.append('intro', formState.caption)
     formData.append('history', formState.body)
-    // Force publish on successful save when leaving auto-draft mode.
-    formData.append('published', 'true')
+    formData.append('published', String(action === 'publish'))
     if (formState.image) {
       formData.append('image', formState.image)
     }
@@ -398,16 +231,16 @@ function AdminClansEditPage() {
       if (response?.success === false) {
         throw new Error(response?.message || 'Unable to update clan.')
       }
-      // Confirm success before redirecting back to the list.
-      setFormState((current) => ({ ...current, published: true }))
-      setAutoDrafted(false)
-      window.alert('Clan edited successfully')
+
+      window.alert(
+        action === 'draft'
+          ? 'Clan draft saved successfully'
+          : 'Clan published successfully',
+      )
       navigate('/admin/clans', { replace: true })
     } catch (error) {
-
       const message = error.message || 'Unable to update clan.'
       setErrorMessage(message)
-      // Keep the user on the edit page to correct issues.
       window.alert(message)
     } finally {
       setIsSubmitting(false)
@@ -433,16 +266,19 @@ function AdminClansEditPage() {
   const formContent = (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="text-xl font-semibold break-words md:text-2xl">Edit Family Clan</h1>
+        <h1 className="text-xl font-semibold break-words md:text-2xl">
+          Edit Family Clan
+        </h1>
         <p className="text-sm text-muted-foreground">
           Manage clan details, leaders, and publishing status.
         </p>
       </header>
-      <form onSubmit={handleSubmit}>
+
+      <form>
         <Card>
           <CardContent className="space-y-5 md:space-y-6">
             <InlineError message={errorMessage} />
-            <InlineError message={leaderMessage} />
+
             <div className="space-y-5 rounded-lg border border-border bg-background p-4 md:space-y-6 md:p-5">
               <FormField label="Name" htmlFor="name" required>
                 <Input
@@ -477,545 +313,46 @@ function AdminClansEditPage() {
                 </FormField>
               </div>
 
-              <FormField
-                label="Replace image (optional)"
-                htmlFor="image"
-                helpText={
-                  formState.existingImageUrl ? (
-                    <span>
-                      Current image:{' '}
-                      <a
-                        href={formState.existingImageUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-primary underline-offset-4 hover:underline"
-                      >
-                        View
-                      </a>
-                    </span>
-                  ) : null
-                }
-              >
-                <div className="rounded-lg border border-border bg-background p-4">
-                  <Input
-                    id="image"
-                    name="image"
-                    type="file"
+              <FormField label="Replace image (optional)" htmlFor="image">
+                <div className="rounded-xl border border-border bg-background/60">
+                  <PhotoUploadField
+                    label=""
+                    value={formState.image?.name || ''}
+                    valueType="text"
+                    valueId="image"
+                    valuePlaceholder="Select image"
+                    fileId="image-file"
+                    fileName="image"
+                    acceptedFileTypes="image/*"
                     onChange={handleFileChange}
+                    existingAssetUrl={formState.existingImageUrl}
                   />
                 </div>
               </FormField>
             </div>
 
-            <div className="space-y-6 rounded-lg border border-border bg-background p-4 md:p-5">
-              <div>
-                <h2 className="text-base font-semibold">Leaders</h2>
-                <p className="text-sm text-muted-foreground">
-                  Manage and organize current and past clan leaders.
-                </p>
-              </div>
-
-              <div className="space-y-4 rounded-lg border border-border bg-background p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-base font-semibold">Current Leaders</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Manage the current leadership order.
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => addDraftLeader('current')}
-                >
-                  Add leader
-                </Button>
-              </div>
-              <div className="space-y-4">
-                {leaders.current.map((leader, index) => (
-                  <div
-                    key={leader.id}
-                    className="space-y-4 rounded-lg border border-border bg-background p-4"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className="text-sm font-semibold">
-                        Leader {index + 1}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleSaveLeader('current', leader)}
-                          loading={Boolean(leader.isSaving)}
-                        >
-                          {leader.isSaving ? 'Saving...' : 'Save leader'}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleDeleteLeader('current', leader.id)}
-                        >
-                          Delete
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleReorder('current', 'up', leader.id)}
-                          disabled={index === 0}
-                        >
-                          Move up
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            handleReorder('current', 'down', leader.id)
-                          }
-                          disabled={index === leaders.current.length - 1}
-                        >
-                          Move down
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="grid gap-5 md:grid-cols-2">
-                      <FormField label="Name (optional)">
-                        <Input
-                          type="text"
-                          value={leader.name || ''}
-                          onChange={(event) =>
-                            updateLeaderState('current', leader.id, {
-                              name: event.target.value,
-                            })
-                          }
-                        />
-                      </FormField>
-                      <FormField label="Title (optional)">
-                        <Input
-                          type="text"
-                          value={leader.title || ''}
-                          onChange={(event) =>
-                            updateLeaderState('current', leader.id, {
-                              title: event.target.value,
-                            })
-                          }
-                        />
-                      </FormField>
-                    </div>
-                    <FormField label="Position" errorText={leader.error} required>
-                      <Input
-                        type="text"
-                        value={leader.position || ''}
-                        onChange={(event) =>
-                          updateLeaderState('current', leader.id, {
-                            position: event.target.value,
-                            error: '',
-                          })
-                        }
-                        required
-                      />
-                    </FormField>
-                    <FormField
-                      label="Replace image (optional)"
-                      helpText={
-                        leader.existingImageUrl ? (
-                          <span>
-                            Current image:{' '}
-                            <a
-                              href={leader.existingImageUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-primary underline-offset-4 hover:underline"
-                            >
-                              View
-                            </a>
-                          </span>
-                        ) : null
-                      }
-                    >
-                      <div className="rounded-lg border border-border bg-background p-4">
-                        <Input
-                          type="file"
-                          onChange={(event) =>
-                            updateLeaderState('current', leader.id, {
-                              image: event.target.files?.[0] || null,
-                            })
-                          }
-                        />
-                      </div>
-                    </FormField>
-                  </div>
-                ))}
-
-                {draftLeaders.current.map((leader, index) => (
-                  <div
-                    key={leader.id}
-                    className="space-y-4 rounded-lg border border-border bg-background p-4"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className="text-sm font-semibold">
-                        Draft leader {index + 1}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleCreateLeader('current', leader)}
-                          loading={Boolean(leader.isSaving)}
-                        >
-                          {leader.isSaving ? 'Saving...' : 'Save leader'}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="danger"
-                          size="sm"
-                          onClick={() => removeDraftLeader('current', leader.id)}
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="grid gap-5 md:grid-cols-2">
-                      <FormField label="Name (optional)">
-                        <Input
-                          type="text"
-                          value={leader.name || ''}
-                          onChange={(event) =>
-                            updateLeaderState(
-                              'current',
-                              leader.id,
-                              { name: event.target.value },
-                              true
-                            )
-                          }
-                        />
-                      </FormField>
-                      <FormField label="Title (optional)">
-                        <Input
-                          type="text"
-                          value={leader.title || ''}
-                          onChange={(event) =>
-                            updateLeaderState(
-                              'current',
-                              leader.id,
-                              { title: event.target.value },
-                              true
-                            )
-                          }
-                        />
-                      </FormField>
-                    </div>
-                    <FormField label="Position" errorText={leader.error} required>
-                      <Input
-                        type="text"
-                        value={leader.position || ''}
-                        onChange={(event) =>
-                          updateLeaderState(
-                            'current',
-                            leader.id,
-                            {
-                              position: event.target.value,
-                              error: '',
-                            },
-                            true
-                          )
-                        }
-                        required
-                      />
-                    </FormField>
-                    <FormField label="Image (optional)">
-                      <div className="rounded-lg border border-border bg-background p-4">
-                        <Input
-                          type="file"
-                          onChange={(event) =>
-                            updateLeaderState(
-                              'current',
-                              leader.id,
-                              {
-                                image: event.target.files?.[0] || null,
-                              },
-                              true
-                            )
-                          }
-                        />
-                      </div>
-                    </FormField>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-4 rounded-lg border border-border bg-background p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-base font-semibold">Past Leaders</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Track previous leadership positions and imagery.
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => addDraftLeader('past')}
-                >
-                  Add leader
-                </Button>
-              </div>
-              <div className="space-y-4">
-                {leaders.past.map((leader, index) => (
-                  <div
-                    key={leader.id}
-                    className="space-y-4 rounded-lg border border-border bg-background p-4"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className="text-sm font-semibold">
-                        Leader {index + 1}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleSaveLeader('past', leader)}
-                          loading={Boolean(leader.isSaving)}
-                        >
-                          {leader.isSaving ? 'Saving...' : 'Save leader'}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleDeleteLeader('past', leader.id)}
-                        >
-                          Delete
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleReorder('past', 'up', leader.id)}
-                          disabled={index === 0}
-                        >
-                          Move up
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleReorder('past', 'down', leader.id)}
-                          disabled={index === leaders.past.length - 1}
-                        >
-                          Move down
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="grid gap-5 md:grid-cols-2">
-                      <FormField label="Name (optional)">
-                        <Input
-                          type="text"
-                          value={leader.name || ''}
-                          onChange={(event) =>
-                            updateLeaderState('past', leader.id, {
-                              name: event.target.value,
-                            })
-                          }
-                        />
-                      </FormField>
-                      <FormField label="Title (optional)">
-                        <Input
-                          type="text"
-                          value={leader.title || ''}
-                          onChange={(event) =>
-                            updateLeaderState('past', leader.id, {
-                              title: event.target.value,
-                            })
-                          }
-                        />
-                      </FormField>
-                    </div>
-                    <FormField label="Position" errorText={leader.error} required>
-                      <Input
-                        type="text"
-                        value={leader.position || ''}
-                        onChange={(event) =>
-                          updateLeaderState('past', leader.id, {
-                            position: event.target.value,
-                            error: '',
-                          })
-                        }
-                        required
-                      />
-                    </FormField>
-                    <FormField
-                      label="Replace image (optional)"
-                      helpText={
-                        leader.existingImageUrl ? (
-                          <span>
-                            Current image:{' '}
-                            <a
-                              href={leader.existingImageUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-primary underline-offset-4 hover:underline"
-                            >
-                              View
-                            </a>
-                          </span>
-                        ) : null
-                      }
-                    >
-                      <div className="rounded-lg border border-border bg-background p-4">
-                        <Input
-                          type="file"
-                          onChange={(event) =>
-                            updateLeaderState('past', leader.id, {
-                              image: event.target.files?.[0] || null,
-                            })
-                          }
-                        />
-                      </div>
-                    </FormField>
-                  </div>
-                ))}
-
-                {draftLeaders.past.map((leader, index) => (
-                  <div
-                    key={leader.id}
-                    className="space-y-4 rounded-lg border border-border bg-background p-4"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className="text-sm font-semibold">
-                        Draft leader {index + 1}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleCreateLeader('past', leader)}
-                          loading={Boolean(leader.isSaving)}
-                        >
-                          {leader.isSaving ? 'Saving...' : 'Save leader'}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="danger"
-                          size="sm"
-                          onClick={() => removeDraftLeader('past', leader.id)}
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="grid gap-5 md:grid-cols-2">
-                      <FormField label="Name (optional)">
-                        <Input
-                          type="text"
-                          value={leader.name || ''}
-                          onChange={(event) =>
-                            updateLeaderState(
-                              'past',
-                              leader.id,
-                              { name: event.target.value },
-                              true
-                            )
-                          }
-                        />
-                      </FormField>
-                      <FormField label="Title (optional)">
-                        <Input
-                          type="text"
-                          value={leader.title || ''}
-                          onChange={(event) =>
-                            updateLeaderState(
-                              'past',
-                              leader.id,
-                              { title: event.target.value },
-                              true
-                            )
-                          }
-                        />
-                      </FormField>
-                    </div>
-                    <FormField label="Position" errorText={leader.error} required>
-                      <Input
-                        type="text"
-                        value={leader.position || ''}
-                        onChange={(event) =>
-                          updateLeaderState(
-                            'past',
-                            leader.id,
-                            {
-                              position: event.target.value,
-                              error: '',
-                            },
-                            true
-                          )
-                        }
-                        required
-                      />
-                    </FormField>
-                    <FormField label="Image (optional)">
-                      <div className="rounded-lg border border-border bg-background p-4">
-                        <Input
-                          type="file"
-                          onChange={(event) =>
-                            updateLeaderState(
-                              'past',
-                              leader.id,
-                              {
-                                image: event.target.files?.[0] || null,
-                              },
-                              true
-                            )
-                          }
-                        />
-                      </div>
-                    </FormField>
-                  </div>
-                ))}
-              </div>
-            </div>
-            </div>
+            <ClanLeadersManager
+              leaders={leaders}
+              onSubmitLeader={handleLeaderSubmit}
+              onDeleteLeader={handleDeleteLeader}
+              onMoveLeader={handleMoveLeader}
+              description="Create, edit, search, filter, and reorder every current and past leader from one unified table."
+              emptyDescription={'Click "Add leader" to create the first clan leadership record.'}
+            />
           </CardContent>
-          <CardFooter className="flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
-            <FormField label="Published" htmlFor="published">
-              <div className="flex items-center gap-2">
-                <input
-                  id="published"
-                  name="published"
-                  type="checkbox"
-                  checked={formState.published}
-                  onChange={handleChange}
-                  disabled={autoDrafted}
-                  className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-                <span className="text-sm text-muted-foreground">
-                  Publishing is enabled after saving changes.
-                </span>
-              </div>
-            </FormField>
-            <div className="flex items-center justify-end gap-3">
-              <Button
-                variant="secondary"
-                type="button"
-                onClick={() => navigate('/admin/clans')}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                type="submit"
-                loading={isSubmitting}
-                disabled={!hasChanges}
-              >
-                {isSubmitting ? 'Saving...' : 'Save changes'}
-              </Button>
-            </div>
+
+          <CardFooter>
+            <FormActions
+              mode="publish"
+              onCancel={() => navigate('/admin/clans')}
+              onAction={(action) => {
+                void handleSubmit(action)
+              }}
+              isSubmitting={isSubmitting}
+              submitAction={submitAction}
+              disableCancel={isSubmitting}
+              disableDraft={!hasChanges}
+            />
           </CardFooter>
         </Card>
       </form>
@@ -1027,7 +364,8 @@ function AdminClansEditPage() {
       resource="clans"
       itemId={id}
       query={location.search}
-      storageKey="clans-preview-pane-width">
+      storageKey="clans-preview-pane-width"
+    >
       {formContent}
     </AdminInlinePreviewLayout>
   )

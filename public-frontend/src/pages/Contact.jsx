@@ -3,6 +3,8 @@ import { getContactFaqs, getContactInfo } from '../api/endpoints.js'
 import ContactInfoCard from '../components/contact/ContactInfoCard.jsx'
 import FaqAccordion from '../components/contact/FaqAccordion.jsx'
 import SectionHeader from '../components/contact/SectionHeader.jsx'
+import RevealItem from '../components/motion/RevealItem.jsx'
+import StaggerGridReveal from '../components/motion/StaggerGridReveal.jsx'
 import { Skeleton } from '../components/ui/index.jsx'
 import useCmsPreviewRefresh from '../lib/useCmsPreviewRefresh.js'
 
@@ -353,17 +355,18 @@ function Contact() {
               Unable to load contact information right now.
             </p>
           ) : (
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
+            <StaggerGridReveal className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
               {cards.map((card) => (
-                <ContactInfoCard
-                  key={card.key}
-                  icon={card.icon}
-                  title={card.title}
-                  lines={card.lines}
-                  badgeClassName={card.badgeClassName}
-                />
+                <RevealItem key={card.key}>
+                  <ContactInfoCard
+                    icon={card.icon}
+                    title={card.title}
+                    lines={card.lines}
+                    badgeClassName={card.badgeClassName}
+                  />
+                </RevealItem>
               ))}
-            </div>
+            </StaggerGridReveal>
           )}
         </section>
 

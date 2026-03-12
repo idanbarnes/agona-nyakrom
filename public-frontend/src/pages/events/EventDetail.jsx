@@ -13,13 +13,17 @@ import {
   CardContent,
   CardFooter,
   CardSkeleton,
+  DetailPageCTA,
   EmptyState,
   ErrorState,
   ImageWithFallback,
   StateGate,
 } from '../../components/ui/index.jsx'
-import { buildIcsEvent, downloadIcs } from '../../utils/calendar.js'
+import RevealItem from '../../components/motion/RevealItem.jsx'
+import StaggerGridReveal from '../../components/motion/StaggerGridReveal.jsx'
+import { buildIcsEvent, downloadIcs, hasCalendarDate } from '../../utils/calendar.js'
 import ImageLightbox from '../../components/ImageLightbox.jsx'
+import { downloadRemoteFile, openFileFallback } from '../../utils/download.js'
 
 const RELATED_COUNT = 3
 const backArrow = String.fromCharCode(8592)
@@ -68,6 +72,70 @@ function normalizeEventState(event) {
   return eventStart.getTime() >= todayStart.getTime() ? 'UPCOMING' : 'PAST'
 }
 
+function CalendarIcon({ className = 'h-4 w-4' }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <rect
+        x="3.5"
+        y="5"
+        width="17"
+        height="15.5"
+        rx="2.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M8 3.5v3M16 3.5v3M3.5 9.5h17"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+    </svg>
+  )
+}
+
+function ShareIcon({ className = 'h-[18px] w-[18px]' }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <circle
+        cx="18"
+        cy="5"
+        r="2.25"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      />
+      <circle
+        cx="6"
+        cy="12"
+        r="2.25"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      />
+      <circle
+        cx="18"
+        cy="19"
+        r="2.25"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      />
+      <path
+        d="m8.1 11 7.8-4.5m-7.8 6 7.8 4.5"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.5"
+      />
+    </svg>
+  )
+}
+
 // Build a share payload with a short description snippet.
 function buildSharePayload(item, url) {
   const description = item?.excerpt || item?.body || ''
@@ -102,7 +170,7 @@ function ShareMenu({ url, title, text }) {
         href={`https://wa.me/?text=${encodedText}%20${encodedUrl}`}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-secondary px-3 text-xs font-medium text-secondary-foreground transition hover:bg-secondary/80"
+        className="inline-flex h-10 items-center justify-center rounded-xl border border-border/70 bg-surface px-3.5 text-xs font-semibold text-foreground transition hover:border-[#7BC77D] hover:bg-[#EDF8EE] hover:text-[#1E6B31]"
       >
         WhatsApp
       </a>
@@ -110,7 +178,7 @@ function ShareMenu({ url, title, text }) {
         href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-secondary px-3 text-xs font-medium text-secondary-foreground transition hover:bg-secondary/80"
+        className="inline-flex h-10 items-center justify-center rounded-xl border border-border/70 bg-surface px-3.5 text-xs font-semibold text-foreground transition hover:border-[#A9C8FF] hover:bg-[#EFF6FF] hover:text-[#2457B5]"
       >
         Facebook
       </a>
@@ -118,14 +186,14 @@ function ShareMenu({ url, title, text }) {
         href={`https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-secondary px-3 text-xs font-medium text-secondary-foreground transition hover:bg-secondary/80"
+        className="inline-flex h-10 items-center justify-center rounded-xl border border-border/70 bg-surface px-3.5 text-xs font-semibold text-foreground transition hover:border-[#1F2937] hover:bg-[#111827] hover:text-white"
       >
         X
       </a>
       <button
         type="button"
         onClick={handleCopy}
-        className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-secondary px-3 text-xs font-medium text-secondary-foreground transition hover:bg-secondary/80"
+        className="inline-flex h-10 items-center justify-center rounded-xl border border-border/70 bg-surface px-3.5 text-xs font-semibold text-foreground transition hover:border-[#E7B76D] hover:bg-accent/60 hover:text-[#9A5600]"
       >
         {copied ? 'Copied!' : 'Copy link'}
       </button>
@@ -140,11 +208,11 @@ function EventImage({ event }) {
 
   if (!flyer) {
     return (
-      <div className="flex h-full w-full items-center justify-center rounded-xl bg-muted text-muted-foreground">
+      <div className="flex h-full w-full items-center justify-center rounded-[20px] border border-dashed border-border/80 bg-background/70 text-muted-foreground">
         <svg
           viewBox="0 0 24 24"
-          width="32"
-          height="32"
+          width="38"
+          height="38"
           aria-hidden="true"
           className="text-muted-foreground"
         >
@@ -161,7 +229,7 @@ function EventImage({ event }) {
     <ImageWithFallback
       src={resolveAssetUrl(flyer)}
       alt={event?.flyer_alt_text || `${title} flyer`}
-      className="h-full w-full rounded-xl object-cover"
+      className="h-full w-full rounded-[20px] object-contain"
       fallbackText={title}
     />
   )
@@ -175,7 +243,8 @@ function EventDetail() {
   const [error, setError] = useState(null)
   const [shareUrl, setShareUrl] = useState('')
   const [shareOpen, setShareOpen] = useState(false)
-  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [previewImage, setPreviewImage] = useState(null)
+  const [flyerDownloading, setFlyerDownloading] = useState(false)
 
   useEffect(() => {
     setShareUrl(window.location.href)
@@ -260,22 +329,40 @@ function EventDetail() {
 
   const state = normalizeEventState(item)
   const dateLabel = formatDate(item?.event_date)
-  const showCalendar = state !== 'PAST'
+  const showCalendar = state !== 'PAST' && hasCalendarDate(item?.event_date)
   const hasFlyer = Boolean(item?.flyer_image_path)
   const flyerUrl = hasFlyer ? resolveAssetUrl(item.flyer_image_path) : ''
   const sharePayload = useMemo(
     () => buildSharePayload(item, shareUrl),
     [item, shareUrl],
   )
+  const eventUrl = useMemo(() => {
+    if (shareUrl) {
+      return shareUrl
+    }
+
+    if (typeof window !== 'undefined') {
+      const slugValue = item?.slug || slug
+      if (slugValue) {
+        return `${window.location.origin}/events/${slugValue}`
+      }
+    }
+
+    return ''
+  }, [item?.slug, shareUrl, slug])
 
   const handleCalendar = () => {
+    if (!showCalendar) {
+      return
+    }
+
     const ics = buildIcsEvent({
       title: item?.title || 'Community Event',
       description: item?.excerpt || item?.body || '',
-      date: item?.event_date || null,
+      date: item?.event_date,
       uid: `${item?.slug || item?.id || 'event'}@agona-nyakrom`,
+      url: eventUrl,
       isAllDay: true,
-      isComingSoon: !item?.event_date,
     })
 
     downloadIcs({ filename: `event-${item?.slug || 'event'}.ics`, content: ics })
@@ -297,10 +384,43 @@ function EventDetail() {
     setShareOpen((current) => !current)
   }
 
+  const handleFlyerDownload = useCallback(async () => {
+    if (!flyerUrl || flyerDownloading) {
+      return
+    }
+
+    setFlyerDownloading(true)
+
+    try {
+      await downloadRemoteFile({
+        url: flyerUrl,
+        filename: item?.slug ? `event-${item.slug}` : item?.title || 'event-flyer',
+        fallbackBaseName: 'event-flyer',
+      })
+    } catch {
+      openFileFallback(flyerUrl)
+    } finally {
+      setFlyerDownloading(false)
+    }
+  }, [flyerDownloading, flyerUrl, item?.slug, item?.title])
+
+  const handlePreviewImage = useCallback(
+    (src, alt, caption) => {
+      if (!src) {
+        return
+      }
+
+      setPreviewImage({ src, alt, caption })
+    },
+    [],
+  )
+
   const content = item?.body || item?.excerpt || ''
+  const stateLabel =
+    state === 'PAST' ? 'Past' : state === 'UPCOMING' ? 'Upcoming' : 'Coming Soon'
 
   return (
-    <section className="container py-8 md:py-12">
+    <section className="container py-6 md:py-10">
       <StateGate
         loading={loading}
         error={error}
@@ -321,28 +441,40 @@ function EventDetail() {
           />
         }
       >
-        <div className="space-y-8">
+        <div className="mx-auto max-w-6xl space-y-8">
           <Link
             to="/announcements-events"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            className="inline-flex items-center rounded-full border border-transparent px-1 text-sm font-medium text-muted-foreground transition hover:border-border/60 hover:bg-surface hover:px-3 hover:text-foreground"
           >
             {backArrow} Back to Announcements & Events
           </Link>
 
-          <div className="space-y-6">
-            <div className="aspect-[16/9] w-full">
-              <EventImage event={item} />
-            </div>
-            <div className="space-y-4">
-              {item?.event_tag ? (
-                <Badge variant="muted">{item.event_tag}</Badge>
-              ) : null}
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div className="space-y-2">
-                  <h1 className="text-2xl font-semibold text-foreground break-words md:text-4xl">
-                    {item?.title || 'Event detail'}
-                  </h1>
-                  <div className="flex flex-wrap items-center gap-2">
+          <article className="relative overflow-hidden rounded-[28px] border border-border/70 bg-surface shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-r from-primary/10 via-transparent to-accent/70"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -left-12 bottom-8 h-32 w-32 rounded-full bg-accent/70 blur-3xl"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-10 top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl"
+            />
+
+            <div className="relative grid gap-8 p-5 sm:p-7 lg:p-8 xl:grid-cols-[minmax(0,1.05fr),minmax(320px,0.95fr)] xl:items-start xl:gap-10 xl:p-10">
+              <div className="order-2 space-y-6 xl:order-1">
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {item?.event_tag ? (
+                      <Badge
+                        variant="muted"
+                        className="px-3 py-1 text-[0.72rem] uppercase tracking-[0.18em]"
+                      >
+                        {item.event_tag}
+                      </Badge>
+                    ) : null}
                     <Badge
                       variant={
                         state === 'PAST'
@@ -351,23 +483,32 @@ function EventDetail() {
                             ? 'success'
                             : 'warning'
                       }
+                      className="px-3 py-1 text-[0.72rem] uppercase tracking-[0.18em]"
                     >
-                      {state === 'PAST'
-                        ? 'Past'
-                        : state === 'UPCOMING'
-                          ? 'Upcoming'
-                          : 'Coming Soon'}
+                      {stateLabel}
                     </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {state === 'COMING_SOON'
-                        ? 'Date: To be announced'
-                        : `Date: ${dateLabel}`}
+                    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur">
+                      <CalendarIcon className="h-3.5 w-3.5" />
+                      <span>
+                        {state === 'COMING_SOON'
+                          ? 'Date: To be announced'
+                          : `Date: ${dateLabel}`}
+                      </span>
                     </span>
                   </div>
+
+                  <h1 className="max-w-3xl break-words text-3xl font-semibold tracking-tight text-foreground md:text-5xl">
+                    {item?.title || 'Event detail'}
+                  </h1>
                 </div>
-                <div className="flex flex-wrap gap-2 md:justify-end">
+
+                <div className="flex flex-wrap gap-3">
                   {showCalendar ? (
-                    <Button variant="secondary" onClick={handleCalendar}>
+                    <Button
+                      variant="secondary"
+                      className="rounded-xl border border-border/70 bg-background/80 px-5"
+                      onClick={handleCalendar}
+                    >
                       Add to Calendar
                     </Button>
                   ) : null}
@@ -375,155 +516,223 @@ function EventDetail() {
                     <>
                       <Button
                         variant="secondary"
-                        onClick={() => setLightboxOpen(true)}
-                      >
-                        View Image
-                      </Button>
-                      <a
-                        href={flyerUrl}
-                        download
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex h-10 items-center justify-center rounded-md border border-border bg-secondary px-4 text-sm font-medium text-secondary-foreground transition hover:bg-secondary/80"
+                        className="rounded-xl border border-border/70 bg-background/80 px-5"
+                        onClick={handleFlyerDownload}
+                        loading={flyerDownloading}
+                        disabled={flyerDownloading}
                       >
                         Download Flyer
-                      </a>
+                      </Button>
                     </>
                   ) : null}
-                  <Button variant="ghost" onClick={handleShare}>
-                    Share
-                  </Button>
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    aria-label={`Share ${item?.title || 'this event'}`}
+                    aria-expanded={shareOpen}
+                    aria-haspopup="menu"
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border/70 bg-background/70 px-5 text-sm font-medium text-foreground transition-[color,background-color,border-color,transform,box-shadow,opacity] duration-200 ease-out hover:-translate-y-[1px] hover:bg-background active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    <ShareIcon className="h-[18px] w-[18px] shrink-0" />
+                    <span className="whitespace-nowrap">Share</span>
+                  </button>
+                </div>
+
+                {shareOpen ? (
+                  <div className="rounded-[22px] border border-border/70 bg-background/75 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur">
+                    <ShareMenu
+                      url={shareUrl}
+                      title={sharePayload.title}
+                      text={sharePayload.text}
+                    />
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="order-1 xl:order-2">
+                <div className="rounded-[24px] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(249,245,239,0.96))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] sm:p-4">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handlePreviewImage(
+                        flyerUrl,
+                        item?.flyer_alt_text || `${item?.title || 'Event'} flyer`,
+                        item?.title || 'Event flyer',
+                      )
+                    }
+                    aria-label={`View image for ${item?.title || 'this event'}`}
+                    className="block w-full cursor-zoom-in rounded-[20px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    <div className="aspect-[16/11] overflow-hidden rounded-[20px] border border-border/60 bg-white/80 shadow-[0_14px_30px_rgba(15,23,42,0.08)] sm:aspect-[4/3] xl:aspect-[4/5]">
+                      <EventImage event={item} />
+                    </div>
+                  </button>
                 </div>
               </div>
-              {shareOpen ? (
-                <ShareMenu
-                  url={shareUrl}
-                  title={sharePayload.title}
-                  text={sharePayload.text}
-                />
-              ) : null}
             </div>
-          </div>
+          </article>
 
-          <div className="grid gap-8 lg:grid-cols-[2fr,1fr]">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr),320px]">
+            <Card className="overflow-hidden rounded-[24px] border border-border/70 bg-surface shadow-[0_14px_36px_rgba(15,23,42,0.07)]">
+              <CardContent className="space-y-5 p-5 sm:p-7 lg:p-8">
+                <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                  About this event
+                </h2>
+                {content ? (
+                  <div className="whitespace-pre-line text-[1.02rem] leading-8 text-foreground/90">
+                    {content}
+                  </div>
+                ) : (
+                  <p className="text-sm leading-7 text-muted-foreground">
+                    No additional information provided yet.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-foreground">
-                About this event
-              </h2>
-              {content ? (
-                <div className="leading-7 text-foreground whitespace-pre-line">
-                  {content}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No additional information provided yet.
-                </p>
-              )}
-            </div>
-            <div className="space-y-4">
-              <Card>
-                <CardContent className="space-y-3">
-                  <h2 className="text-lg font-semibold text-foreground">Event Info</h2>
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <div>
-                      <span className="font-medium text-foreground">Status:</span>{' '}
-                      {state === 'PAST'
-                        ? 'Past'
-                        : state === 'UPCOMING'
-                          ? 'Upcoming'
-                          : 'Coming Soon'}
+              <Card className="overflow-hidden rounded-[24px] border border-border/70 bg-surface shadow-[0_14px_36px_rgba(15,23,42,0.07)]">
+                <CardContent className="space-y-5 p-5 sm:p-6">
+                  <h2 className="text-lg font-semibold tracking-tight text-foreground">
+                    Event Info
+                  </h2>
+                  <div className="space-y-3">
+                    <div className="rounded-2xl border border-border/70 bg-background/55 px-4 py-3">
+                      <div className="flex items-start justify-between gap-4">
+                        <span className="text-sm font-medium text-muted-foreground">
+                          Status
+                        </span>
+                        <span className="text-sm font-semibold text-foreground">
+                          {stateLabel}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="font-medium text-foreground">Date:</span>{' '}
-                      {state === 'COMING_SOON'
-                        ? 'To be announced'
-                        : dateLabel}
+                    <div className="rounded-2xl border border-border/70 bg-background/55 px-4 py-3">
+                      <div className="flex items-start justify-between gap-4">
+                        <span className="text-sm font-medium text-muted-foreground">
+                          Date
+                        </span>
+                        <span className="text-right text-sm font-semibold text-foreground">
+                          {state === 'COMING_SOON' ? 'To be announced' : dateLabel}
+                        </span>
+                      </div>
                     </div>
                     {item?.event_tag ? (
-                      <div>
-                        <span className="font-medium text-foreground">Tag:</span>{' '}
-                        {item.event_tag}
+                      <div className="rounded-2xl border border-border/70 bg-background/55 px-4 py-3">
+                        <div className="flex items-start justify-between gap-4">
+                          <span className="text-sm font-medium text-muted-foreground">
+                            Tag
+                          </span>
+                          <span className="text-right text-sm font-semibold text-foreground">
+                            {item.event_tag}
+                          </span>
+                        </div>
                       </div>
                     ) : null}
                   </div>
-                  <Button variant="secondary" onClick={handleShare}>
-                    Share
-                  </Button>
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    aria-label={`Share ${item?.title || 'this event'}`}
+                    aria-expanded={shareOpen}
+                    aria-haspopup="menu"
+                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border/70 bg-background/80 px-4 text-sm font-medium text-foreground transition-[color,background-color,border-color,transform,box-shadow,opacity] duration-200 ease-out hover:-translate-y-[1px] hover:bg-background active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    <ShareIcon className="h-[18px] w-[18px] shrink-0" />
+                    <span className="whitespace-nowrap">Share</span>
+                  </button>
                 </CardContent>
               </Card>
+
               {state === 'PAST' ? (
-                <p className="text-sm text-muted-foreground">
+                <div className="rounded-2xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm leading-6 text-foreground/80">
                   This event has already taken place. Date shown for reference.
-                </p>
+                </div>
               ) : null}
             </div>
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-foreground">More Events</h2>
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+              More Events
+            </h2>
             {related.length ? (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <StaggerGridReveal className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {related.map((event) => (
-                  <Card key={event.slug || event.id} className="overflow-hidden">
-                    <div className="aspect-[16/9] w-full">
-                      {event.flyer_image_path ? (
-                        <ImageWithFallback
-                          src={resolveAssetUrl(event.flyer_image_path)}
-                          alt={
-                            event.flyer_alt_text || `${event.title || 'Event'} flyer`
-                          }
-                          className="h-full w-full object-cover"
-                          fallbackText={event.title || 'Event'}
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
-                          <svg
-                            viewBox="0 0 24 24"
-                            width="24"
-                            height="24"
-                            aria-hidden="true"
-                            className="text-muted-foreground"
-                          >
-                            <path
-                              d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm0 2v10h16V7H4Zm2 2h5v3H6V9Zm0 4h9v2H6v-2Z"
-                              fill="currentColor"
-                            />
-                          </svg>
+                  <RevealItem key={event.slug || event.id}>
+                    <Card className="group flex h-full flex-col overflow-hidden rounded-[22px] border border-border/70 bg-surface shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+                      <div className="border-b border-border/70 bg-[linear-gradient(180deg,rgba(245,239,230,0.7),rgba(255,255,255,0.9))] p-3">
+                        <div className="aspect-[16/10] w-full overflow-hidden rounded-[18px] border border-border/60 bg-white/80">
+                          {event.flyer_image_path ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handlePreviewImage(
+                                  resolveAssetUrl(event.flyer_image_path),
+                                  event.flyer_alt_text ||
+                                    `${event.title || 'Event'} flyer`,
+                                  event.title || 'Event flyer',
+                                )
+                              }
+                              aria-label={`View image for ${event.title || 'this event'}`}
+                              className="h-full w-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                            >
+                              <ImageWithFallback
+                                src={resolveAssetUrl(event.flyer_image_path)}
+                                alt={
+                                  event.flyer_alt_text || `${event.title || 'Event'} flyer`
+                                }
+                                className="h-full w-full transform-gpu object-contain p-3 transition-transform duration-200 ease-out group-hover:scale-[1.02]"
+                                fallbackText={event.title || 'Event'}
+                              />
+                            </button>
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-background/70 text-muted-foreground">
+                              <svg
+                                viewBox="0 0 24 24"
+                                width="26"
+                                height="26"
+                                aria-hidden="true"
+                                className="text-muted-foreground"
+                              >
+                                <path
+                                  d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm0 2v10h16V7H4Zm2 2h5v3H6V9Zm0 4h9v2H6v-2Z"
+                                  fill="currentColor"
+                                />
+                              </svg>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <CardContent className="space-y-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-base font-semibold text-foreground">
-                          {event.title || 'Event'}
-                        </h3>
-                        {event.event_tag ? (
-                          <Badge variant="muted">{event.event_tag}</Badge>
-                        ) : null}
                       </div>
-                      {normalizeEventState(event) === 'COMING_SOON' ? (
-                        <p className="text-xs text-muted-foreground">
-                          Date: To be announced
-                        </p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">
-                          {formatDate(event.event_date)}
-                        </p>
-                      )}
-                    </CardContent>
-                    <CardFooter className="justify-start">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        as={Link}
-                        to={`/events/${event.slug}`}
-                      >
-                        View Details
-                      </Button>
-                    </CardFooter>
-                  </Card>
+                      <CardContent className="flex flex-1 flex-col space-y-3 p-5">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                          <h3 className="text-lg font-semibold leading-snug text-foreground transition-colors group-hover:text-[#B45309]">
+                            {event.title || 'Event'}
+                          </h3>
+                          {event.event_tag ? (
+                            <Badge variant="muted">{event.event_tag}</Badge>
+                          ) : null}
+                        </div>
+                        {normalizeEventState(event) === 'COMING_SOON' ? (
+                          <p className="text-sm text-muted-foreground">
+                            Date: To be announced
+                          </p>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            {formatDate(event.event_date)}
+                          </p>
+                        )}
+                      </CardContent>
+                      <CardFooter className="justify-start px-5 pb-5 pt-0">
+                        <DetailPageCTA
+                          to={`/events/${event.slug}`}
+                          label="View Details"
+                        />
+                      </CardFooter>
+                    </Card>
+                  </RevealItem>
                 ))}
-              </div>
+              </StaggerGridReveal>
             ) : (
               <p className="text-sm text-muted-foreground">
                 No related events available.
@@ -533,12 +742,13 @@ function EventDetail() {
         </div>
       </StateGate>
 
-      {hasFlyer ? (
+      {previewImage?.src ? (
         <ImageLightbox
-          open={lightboxOpen}
-          onClose={() => setLightboxOpen(false)}
-          src={flyerUrl}
-          alt={item?.flyer_alt_text || `${item?.title || 'Event'} flyer`}
+          open={Boolean(previewImage?.src)}
+          onClose={() => setPreviewImage(null)}
+          src={previewImage.src}
+          alt={previewImage.alt}
+          caption={previewImage.caption}
         />
       ) : null}
     </section>
@@ -546,7 +756,3 @@ function EventDetail() {
 }
 
 export default EventDetail
-
-
-
-

@@ -2,7 +2,7 @@ import React from 'react'
 import { cn } from '../../lib/cn.js'
 
 const baseStyles =
-  'inline-flex items-center justify-center gap-2 rounded-md border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50'
+  'inline-flex items-center justify-center gap-2 rounded-md border text-sm font-medium transition-[color,background-color,border-color,transform,box-shadow,opacity] duration-200 ease-out hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98] motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50'
 
 const variantStyles = {
   primary:
@@ -36,6 +36,7 @@ export function Button({
 }) {
   const isDisabled = disabled || loading
   const isButton = Comp === 'button'
+  const isIconButton = size === 'icon'
 
   return (
     <Comp
@@ -49,21 +50,36 @@ export function Button({
         variantStyles[variant],
         sizeStyles[size],
         loading ? 'cursor-wait' : '',
+        isDisabled ? 'hover:translate-y-0 active:scale-100' : '',
         !isButton && isDisabled ? 'pointer-events-none opacity-50' : '',
         className,
       )}
       {...props}
     >
-      {loading ? (
-        <span className="flex items-center gap-2">
+      {isIconButton ? (
+        loading ? (
           <span
             aria-hidden="true"
             className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
           />
-          <span className="whitespace-nowrap">{children}</span>
-        </span>
+        ) : (
+          children
+        )
       ) : (
-        children
+        <span className={cn('inline-flex items-center', loading ? 'gap-2' : 'gap-0')}>
+          <span
+            aria-hidden="true"
+            className={cn(
+              'inline-flex items-center justify-center rounded-full border-current border-t-transparent transition-[width,height,opacity,border-width] duration-200',
+              loading
+                ? 'h-4 w-4 animate-spin border-2 opacity-100'
+                : 'h-0 w-0 border-0 opacity-0',
+            )}
+          />
+          <span className={cn('whitespace-nowrap', loading ? 'opacity-90' : 'opacity-100')}>
+            {children}
+          </span>
+        </span>
       )}
     </Comp>
   )

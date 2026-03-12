@@ -6,9 +6,10 @@ import {
 } from '../../services/api/adminLandmarksApi.js'
 import { getAuthToken } from '../../lib/auth.js'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
+import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
+import FormActions from '../../components/ui/form-actions.jsx'
 import {
-  Button,
   Card,
   CardContent,
   CardFooter,
@@ -25,13 +26,12 @@ function AdminLandmarksEditPage() {
   const [formState, setFormState] = useState({
     name: '',
     description: '',
-    published: false,
     image: null,
     existingImageUrl: '',
   })
-  const [autoDrafted, setAutoDrafted] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitAction, setSubmitAction] = useState('publish')
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
@@ -66,9 +66,7 @@ function AdminLandmarksEditPage() {
         }
 
         setInitialState(nextState)
-        // Auto-draft the UI when entering edit mode.
-        setFormState({ ...nextState, published: false })
-        setAutoDrafted(true)
+        setFormState(nextState)
       } catch (error) {
 
         setErrorMessage(error.message || 'Unable to load landmark.')
@@ -86,13 +84,11 @@ function AdminLandmarksEditPage() {
     }
 
     return (
-      autoDrafted ||
       formState.name !== initialState.name ||
       formState.description !== initialState.description ||
-      formState.published !== initialState.published ||
       Boolean(formState.image)
     )
-  }, [autoDrafted, formState, initialState])
+  }, [formState, initialState])
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target
@@ -105,11 +101,13 @@ function AdminLandmarksEditPage() {
     setFormState((current) => ({ ...current, image: file }))
   }
 
-  const handleSubmit = async (event) => {
-    event.preventDefault()
+  const handleSubmit = async (action) => {
     setErrorMessage('')
+    setSubmitAction(action)
 
-    if (!hasChanges) {
+    const allowPublishWithoutFieldChanges = action === 'publish'
+
+    if (!hasChanges && !allowPublishWithoutFieldChanges) {
       setErrorMessage('No changes to update.')
       return
     }
@@ -122,8 +120,7 @@ function AdminLandmarksEditPage() {
     const formData = new FormData()
     formData.append('name', formState.name.trim())
     formData.append('description', formState.description.trim())
-    // Force publish on successful save when leaving auto-draft mode.
-    formData.append('published', 'true')
+    formData.append('published', String(action === 'publish'))
     if (formState.image) {
       formData.append('image', formState.image)
     }
@@ -134,9 +131,11 @@ function AdminLandmarksEditPage() {
       if (response?.success === false) {
         throw new Error(response?.message || 'Unable to update landmark.')
       }
-      setFormState((current) => ({ ...current, published: true }))
-      setAutoDrafted(false)
-      window.alert('Landmark edited successfully')
+      window.alert(
+        action === 'draft'
+          ? 'Landmark draft saved successfully'
+          : 'Landmark published successfully',
+      )
       navigate('/admin/landmarks', { replace: true })
     } catch (error) {
 
@@ -170,7 +169,7 @@ function AdminLandmarksEditPage() {
           Adjust the landmark description and media as needed.
         </p>
       </header>
-      <form onSubmit={handleSubmit}>
+      <form>
         <Card>
           <CardContent className="space-y-5 md:space-y-6">
             <InlineError message={errorMessage} />
@@ -194,68 +193,33 @@ function AdminLandmarksEditPage() {
               />
             </FormField>
 
-            <FormField label="Published" htmlFor="published">
-              <div className="flex items-center gap-2">
-                <input
-                  id="published"
-                  name="published"
-                  type="checkbox"
-                  checked={formState.published}
-                  onChange={handleChange}
-                  disabled={autoDrafted}
-                  className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-                <span className="text-sm text-muted-foreground">
-                  Publishing is enabled after saving changes.
-                </span>
-              </div>
-            </FormField>
-
-            <FormField
-              label="Replace image (optional)"
-              htmlFor="image"
-              helpText={
-                formState.existingImageUrl ? (
-                  <span>
-                    Current image:{' '}
-                    <a
-                      href={formState.existingImageUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary underline-offset-4 hover:underline"
-                    >
-                      View
-                    </a>
-                  </span>
-                ) : null
-              }
-            >
-              <div className="rounded-lg border border-border bg-background p-4">
-                <Input
-                  id="image"
-                  name="image"
-                  type="file"
-                  onChange={handleFileChange}
-                />
-              </div>
-            </FormField>
+            <div className="rounded-xl border border-border bg-background/60">
+              <PhotoUploadField
+                label="Replace image (optional)"
+                value={formState.image?.name || ''}
+                valueType="text"
+                valueId="image"
+                valuePlaceholder="Select image"
+                fileId="image-file"
+                fileName="image"
+                acceptedFileTypes="image/*"
+                onChange={handleFileChange}
+                existingAssetUrl={formState.existingImageUrl}
+              />
+            </div>
           </CardContent>
           <CardFooter>
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={() => navigate('/admin/landmarks')}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              type="submit"
-              loading={isSubmitting}
-              disabled={!hasChanges}
-            >
-              {isSubmitting ? 'Saving...' : 'Update Landmark'}
-            </Button>
+            <FormActions
+              mode="publish"
+              onCancel={() => navigate('/admin/landmarks')}
+              onAction={(action) => {
+                void handleSubmit(action)
+              }}
+              isSubmitting={isSubmitting}
+              submitAction={submitAction}
+              disableCancel={isSubmitting}
+              disableDraft={!hasChanges}
+            />
           </CardFooter>
         </Card>
       </form>

@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import {
   getAnnouncementsEvents,
   getPublicAnnouncements,
   getPublicEvents,
 } from '../api/endpoints.js'
+import AnimatedHeroIntro from '../components/motion/AnimatedHeroIntro.jsx'
+import ImageLightbox from '../components/ImageLightbox.jsx'
+import RevealItem from '../components/motion/RevealItem.jsx'
+import StaggerGridReveal from '../components/motion/StaggerGridReveal.jsx'
 import { resolveAssetUrl } from '../lib/apiBase.js'
 import {
   Badge,
@@ -13,12 +16,15 @@ import {
   CardContent,
   CardFooter,
   CardSkeleton,
+  DetailPageCTA,
   EmptyState,
   ErrorState,
   ImageWithFallback,
+  Input,
   StateGate,
 } from '../components/ui/index.jsx'
-import { buildIcsEvent, downloadIcs } from '../utils/calendar.js'
+import { buildIcsEvent, downloadIcs, hasCalendarDate } from '../utils/calendar.js'
+import { downloadRemoteFile, openFileFallback } from '../utils/download.js'
 
 const TABS = [
   { key: 'all', label: 'All' },
@@ -28,6 +34,24 @@ const TABS = [
 ]
 
 const DEFAULT_PAST_LIMIT = 6
+
+function SearchIcon({ className = 'h-5 w-5' }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+  )
+}
 
 function formatDate(value) {
   if (!value) {
@@ -101,6 +125,38 @@ function getEventSlug(event) {
   return event?.slug || event?.id || 'event'
 }
 
+function matchesSearch(value, normalizedSearch) {
+  if (!normalizedSearch) {
+    return true
+  }
+
+  const haystack = String(value || '').toLowerCase()
+  return haystack.includes(normalizedSearch)
+}
+
+function matchesEventSearch(event, normalizedSearch) {
+  if (!normalizedSearch) {
+    return true
+  }
+
+  return [
+    event?.title,
+    event?.event_tag,
+    event?.excerpt,
+    event?.body,
+  ].some((value) => matchesSearch(value, normalizedSearch))
+}
+
+function matchesAnnouncementSearch(item, normalizedSearch) {
+  if (!normalizedSearch) {
+    return true
+  }
+
+  return [item?.title, item?.excerpt, item?.body].some((value) =>
+    matchesSearch(value, normalizedSearch),
+  )
+}
+
 function EventImage({ event }) {
   const flyer = event?.flyer_image_path
   const title = event?.title || 'Event flyer'
@@ -128,28 +184,62 @@ function EventImage({ event }) {
     <ImageWithFallback
       src={resolveAssetUrl(flyer)}
       alt={event?.flyer_alt_text || `${title} flyer`}
-      className="h-full w-full rounded-t-lg object-cover"
+      className="h-full w-full transform-gpu rounded-t-lg object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03]"
       fallbackText={title}
     />
   )
 }
 
-function EventCard({ event, variant = 'compact', showCalendar }) {
+function EventCard({
+  event,
+  variant = 'compact',
+  showCalendar,
+  onPreviewImage,
+}) {
   const slug = getEventSlug(event)
   const dateLabel = formatDate(event?.event_date)
   const hasFlyer = Boolean(event?.flyer_image_path)
+  const flyerUrl = hasFlyer ? resolveAssetUrl(event.flyer_image_path) : ''
+  const [flyerDownloading, setFlyerDownloading] = useState(false)
+  const canAddToCalendar = showCalendar && hasCalendarDate(event?.event_date)
 
   const handleCalendar = () => {
+    if (!canAddToCalendar) {
+      return
+    }
+
+    const eventUrl =
+      typeof window !== 'undefined' ? `${window.location.origin}/events/${slug}` : ''
     const ics = buildIcsEvent({
       title: event?.title || 'Community Event',
       description: event?.excerpt || event?.body || '',
-      date: event?.event_date || null,
+      date: event?.event_date,
       uid: `${slug}@agona-nyakrom`,
+      url: eventUrl,
       isAllDay: true,
-      isComingSoon: !event?.event_date,
     })
 
     downloadIcs({ filename: `event-${slug}.ics`, content: ics })
+  }
+
+  const handleFlyerDownload = async () => {
+    if (!flyerUrl || flyerDownloading) {
+      return
+    }
+
+    setFlyerDownloading(true)
+
+    try {
+      await downloadRemoteFile({
+        url: flyerUrl,
+        filename: event?.slug ? `event-${event.slug}` : event?.title || 'event-flyer',
+        fallbackBaseName: 'event-flyer',
+      })
+    } catch {
+      openFileFallback(flyerUrl)
+    } finally {
+      setFlyerDownloading(false)
+    }
   }
 
   const contentStyle = {
@@ -160,9 +250,26 @@ function EventCard({ event, variant = 'compact', showCalendar }) {
   }
 
   return (
-    <Card className="flex h-full flex-col overflow-hidden">
-      <div className="aspect-[16/9] w-full">
-        <EventImage event={event} />
+    <Card className="group flex h-full flex-col overflow-hidden border border-border/70 shadow-sm">
+      <div className="aspect-[16/9] w-full overflow-hidden">
+        {hasFlyer ? (
+          <button
+            type="button"
+            onClick={() =>
+              onPreviewImage?.({
+                src: flyerUrl,
+                alt: event?.flyer_alt_text || `${event?.title || 'Event'} flyer`,
+                caption: event?.title || 'Event flyer',
+              })
+            }
+            aria-label={`View image for ${event?.title || 'this event'}`}
+            className="h-full w-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <EventImage event={event} />
+          </button>
+        ) : (
+          <EventImage event={event} />
+        )}
       </div>
       <CardContent className="flex flex-1 flex-col gap-3 pt-4">
         <div className="space-y-2">
@@ -188,34 +295,33 @@ function EventCard({ event, variant = 'compact', showCalendar }) {
         ) : null}
       </CardContent>
       <CardFooter className="flex flex-wrap justify-start gap-2">
-        {showCalendar ? (
+        {canAddToCalendar ? (
           <Button variant="secondary" size="sm" onClick={handleCalendar}>
             Add to Calendar
           </Button>
         ) : null}
         {hasFlyer ? (
-          <a
-            href={resolveAssetUrl(event.flyer_image_path)}
-            download
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-secondary px-3 text-xs font-medium text-secondary-foreground transition hover:bg-secondary/80"
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleFlyerDownload}
+            loading={flyerDownloading}
+            disabled={flyerDownloading}
           >
             Download Flyer
-          </a>
+          </Button>
         ) : null}
-        <Button variant="ghost" size="sm" as={Link} to={`/events/${slug}`}>
-          View Details
-        </Button>
+        <DetailPageCTA to={`/events/${slug}`} label="View Details" />
       </CardFooter>
     </Card>
   )
 }
 
-function AnnouncementCard({ item }) {
+function AnnouncementCard({ item, onPreviewImage }) {
   const hasFlyer = Boolean(item?.flyer_image_path)
   const dateLabel = formatDate(item?.created_at || item?.published_at)
   const slug = item?.slug || item?.id || 'announcement'
+  const flyerUrl = hasFlyer ? resolveAssetUrl(item.flyer_image_path) : ''
 
   const contentStyle = {
     display: '-webkit-box',
@@ -225,14 +331,29 @@ function AnnouncementCard({ item }) {
   }
 
   return (
-    <Card className="flex h-full flex-col overflow-hidden">
+    <Card className="group flex h-full flex-col overflow-hidden border border-border/70 shadow-sm">
       {hasFlyer ? (
-        <ImageWithFallback
-          src={resolveAssetUrl(item.flyer_image_path)}
-          alt={item?.flyer_alt_text || `${item?.title || 'Announcement'} flyer`}
-          className="h-40 w-full object-cover"
-          fallbackText={item?.title || 'Announcement'}
-        />
+        <div className="overflow-hidden">
+          <button
+            type="button"
+            onClick={() =>
+              onPreviewImage?.({
+                src: flyerUrl,
+                alt: item?.flyer_alt_text || `${item?.title || 'Announcement'} flyer`,
+                caption: item?.title || 'Announcement flyer',
+              })
+            }
+            aria-label={`View image for ${item?.title || 'this announcement'}`}
+            className="h-full w-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <ImageWithFallback
+              src={flyerUrl}
+              alt={item?.flyer_alt_text || `${item?.title || 'Announcement'} flyer`}
+              className="h-40 w-full transform-gpu object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03]"
+              fallbackText={item?.title || 'Announcement'}
+            />
+          </button>
+        </div>
       ) : (
         <div className="flex h-40 w-full items-center justify-center bg-muted text-muted-foreground">
           <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-background">
@@ -267,14 +388,7 @@ function AnnouncementCard({ item }) {
         ) : null}
       </CardContent>
       <CardFooter className="justify-start">
-        <Button
-          variant="ghost"
-          size="sm"
-          as={Link}
-          to={`/announcements/${slug}`}
-        >
-          View Details
-        </Button>
+        <DetailPageCTA to={`/announcements/${slug}`} label="View Details" />
       </CardFooter>
     </Card>
   )
@@ -288,9 +402,11 @@ function AnnouncementsEventsPage() {
     past: [],
   })
   const [announcements, setAnnouncements] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
   const [showAllPast, setShowAllPast] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [previewImage, setPreviewImage] = useState(null)
 
   useEffect(() => {
     let isMounted = true
@@ -322,7 +438,7 @@ function AnnouncementsEventsPage() {
         }
 
         throw new Error('Invalid response')
-      } catch (err) {
+      } catch {
         try {
           const [eventsResponse, announcementsResponse] = await Promise.all([
             getPublicEvents({ state: 'all', limit: 50 }),
@@ -370,46 +486,230 @@ function AnnouncementsEventsPage() {
       events.comingSoon.length || events.upcoming.length || events.past.length,
     [events],
   )
+  const deferredSearchTerm = useDeferredValue(searchTerm)
+  const normalizedSearch = deferredSearchTerm.trim().toLowerCase()
+  const totalEventsCount =
+    events.comingSoon.length + events.upcoming.length + events.past.length
+  const totalAnnouncementsCount = announcements.length
 
   const visibleComingSoon =
     activeTab === 'all' || activeTab === 'coming_soon'
-      ? events.comingSoon
+      ? events.comingSoon.filter((event) =>
+          matchesEventSearch(event, normalizedSearch),
+        )
       : []
   const visibleUpcoming =
-    activeTab === 'all' || activeTab === 'upcoming' ? events.upcoming : []
+    activeTab === 'all' || activeTab === 'upcoming'
+      ? events.upcoming.filter((event) => matchesEventSearch(event, normalizedSearch))
+      : []
   const visiblePast =
-    activeTab === 'all' || activeTab === 'past' ? events.past : []
+    activeTab === 'all' || activeTab === 'past'
+      ? events.past.filter((event) => matchesEventSearch(event, normalizedSearch))
+      : []
+
+  const visibleAnnouncements = useMemo(
+    () =>
+      announcements.filter((item) =>
+        matchesAnnouncementSearch(item, normalizedSearch),
+      ),
+    [announcements, normalizedSearch],
+  )
 
   const pastVisibleItems = showAllPast
     ? visiblePast
     : visiblePast.slice(0, DEFAULT_PAST_LIMIT)
+  const filteredEventsCount =
+    visibleComingSoon.length + visibleUpcoming.length + visiblePast.length
+  const searchResultLabel = normalizedSearch
+    ? `${filteredEventsCount + visibleAnnouncements.length} result${
+        filteredEventsCount + visibleAnnouncements.length === 1 ? '' : 's'
+      }`
+    : 'Search events and announcements'
+
+  useEffect(() => {
+    setShowAllPast(false)
+  }, [activeTab, normalizedSearch])
 
   return (
     <section className="container py-8 md:py-12">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground break-words md:text-3xl">
-          Announcements & Events
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Stay up to date on community announcements and upcoming events.
-        </p>
+      <div className="overflow-hidden rounded-[2rem] border border-[#E8D7BE] bg-[radial-gradient(circle_at_top_left,_rgba(217,119,6,0.14),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(120,53,15,0.12),_transparent_34%),linear-gradient(135deg,_#fffaf2_0%,_#fffefb_48%,_#f5ede1_100%)] shadow-[0_24px_60px_rgba(120,53,15,0.12)]">
+        <div className="grid gap-8 px-5 py-6 sm:px-7 sm:py-8 lg:grid-cols-[minmax(0,1.05fr),minmax(320px,0.95fr)] lg:items-center lg:px-10 lg:py-10">
+          <AnimatedHeroIntro
+            className="space-y-5"
+            entry="left"
+            visualEntry="up"
+            headline={
+              <div className="space-y-4">
+                <span className="inline-flex items-center rounded-full border border-amber-200 bg-white/85 px-4 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-amber-700 shadow-sm backdrop-blur">
+                  Community Updates
+                </span>
+                <div className="space-y-3">
+                  <h1 className="max-w-2xl break-words text-4xl font-semibold leading-[0.95] tracking-tight text-stone-950 sm:text-5xl lg:text-[3.7rem]">
+                    Announcements and events in one clear community hub.
+                  </h1>
+                  <p className="max-w-xl text-sm leading-7 text-stone-600 sm:text-base">
+                    Browse official notices, upcoming gatherings, and past events,
+                    then search the list to jump directly to what matters.
+                  </p>
+                </div>
+              </div>
+            }
+            subtext={
+              <div className="flex flex-wrap gap-3">
+                <div className="rounded-2xl border border-amber-100 bg-white/85 px-4 py-3 shadow-sm backdrop-blur">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-stone-400">
+                    Events
+                  </p>
+                  <p className="mt-1 text-base font-semibold text-stone-900">
+                    {loading ? 'Loading events' : `${totalEventsCount} listed`}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-amber-100 bg-white/75 px-4 py-3 shadow-sm">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-stone-400">
+                    Announcements
+                  </p>
+                  <p className="mt-1 text-base font-semibold text-stone-900">
+                    {loading
+                      ? 'Loading updates'
+                      : `${totalAnnouncementsCount} posted`}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-amber-100 bg-white/75 px-4 py-3 shadow-sm">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-stone-400">
+                    Search
+                  </p>
+                  <p className="mt-1 text-base font-semibold text-stone-900">
+                    {searchResultLabel}
+                  </p>
+                </div>
+              </div>
+            }
+            actions={
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    as="a"
+                    href="#announcements-events-content"
+                    className="rounded-full border-transparent bg-amber-700 px-5 text-sm font-semibold text-white hover:bg-amber-800"
+                  >
+                    Browse Updates
+                  </Button>
+                  <p className="text-sm text-stone-500">
+                    Search titles, tags, and descriptions across the page.
+                  </p>
+                </div>
+
+                <div className="rounded-[1.5rem] border border-amber-100 bg-white/80 p-3 shadow-sm backdrop-blur sm:p-4">
+                  <label
+                    htmlFor="announcements-events-search"
+                    className="mb-2 block text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-stone-500"
+                  >
+                    Search Announcements and Events
+                  </label>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <div className="relative flex-1">
+                      <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                      <Input
+                        id="announcements-events-search"
+                        type="search"
+                        value={searchTerm}
+                        onChange={(event) => setSearchTerm(event.target.value)}
+                        placeholder="Search by title, tag, or keyword"
+                        aria-label="Search announcements and events"
+                        className="h-12 rounded-full border-stone-200 bg-white pl-11 pr-4 text-sm shadow-none"
+                      />
+                    </div>
+                    {searchTerm ? (
+                      <Button
+                        variant="ghost"
+                        onClick={() => setSearchTerm('')}
+                        className="h-12 rounded-full border border-stone-200 bg-white px-5 text-sm font-semibold text-stone-700 hover:bg-stone-50"
+                      >
+                        Clear
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            }
+            visual={
+              <div className="relative">
+                <div className="pointer-events-none absolute -left-6 top-6 h-24 w-24 rounded-full bg-amber-200/45 blur-3xl" />
+                <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-stone-300/35 blur-2xl" />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <article className="relative overflow-hidden rounded-[1.75rem] border border-white/80 bg-white/90 p-5 shadow-[0_18px_40px_rgba(120,53,15,0.16)] sm:col-span-2">
+                    <p className="text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-amber-700">
+                      Browse by event status
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2.5">
+                      {TABS.map((tab) => (
+                        <span
+                          key={`hero-${tab.key}`}
+                          className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold ${
+                            activeTab === tab.key
+                              ? 'bg-amber-700 text-white'
+                              : 'border border-stone-200 bg-stone-50 text-stone-700'
+                          }`}
+                        >
+                          {tab.label}
+                        </span>
+                      ))}
+                    </div>
+                  </article>
+
+                  <article className="overflow-hidden rounded-[1.5rem] border border-white/80 bg-[#fff7ea] p-5 shadow-[0_16px_34px_rgba(120,53,15,0.12)]">
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-stone-400">
+                      Coming soon
+                    </p>
+                    <p className="mt-3 text-3xl font-semibold tracking-tight text-stone-950">
+                      {loading ? '...' : events.comingSoon.length}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-stone-600">
+                      Early previews of community gatherings and activities.
+                    </p>
+                  </article>
+
+                  <article className="overflow-hidden rounded-[1.5rem] border border-white/80 bg-white/90 p-5 shadow-[0_16px_34px_rgba(120,53,15,0.12)]">
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-stone-400">
+                      Upcoming
+                    </p>
+                    <p className="mt-3 text-3xl font-semibold tracking-tight text-stone-950">
+                      {loading ? '...' : events.upcoming.length}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-stone-600">
+                      Events with confirmed dates ready to explore in full.
+                    </p>
+                  </article>
+                </div>
+              </div>
+            }
+          />
+        </div>
       </div>
 
-      <div className="mt-8 space-y-12">
+      <div className="mt-8 space-y-12" id="announcements-events-content">
         <section className="space-y-6">
-          <div className="flex flex-wrap items-center gap-2">
-            {TABS.map((tab) => (
-              <Button
-                key={tab.key}
-                type="button"
-                variant={activeTab === tab.key ? 'primary' : 'secondary'}
-                size="sm"
-                onClick={() => setActiveTab(tab.key)}
-                aria-pressed={activeTab === tab.key}
-              >
-                {tab.label}
-              </Button>
-            ))}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-1">
+              <h2 className="text-xl font-semibold text-foreground">Events</h2>
+              <p className="text-sm text-muted-foreground">
+                Filter by event timeline and search within the current list.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {TABS.map((tab) => (
+                <Button
+                  key={tab.key}
+                  type="button"
+                  variant={activeTab === tab.key ? 'primary' : 'secondary'}
+                  size="sm"
+                  onClick={() => setActiveTab(tab.key)}
+                  aria-pressed={activeTab === tab.key}
+                >
+                  {tab.label}
+                </Button>
+              ))}
+            </div>
           </div>
 
           <StateGate
@@ -433,38 +733,61 @@ function AnnouncementsEventsPage() {
               />
             }
           >
-            <div className="space-y-10">
+            {filteredEventsCount === 0 ? (
+              <EmptyState
+                title={
+                  normalizedSearch ? 'No matching events found.' : 'No events published yet.'
+                }
+                description={
+                  normalizedSearch
+                    ? `No event matched "${searchTerm.trim()}". Try another keyword or clear the search.`
+                    : 'Check back soon for upcoming community gatherings.'
+                }
+                action={
+                  normalizedSearch ? (
+                    <Button variant="secondary" onClick={() => setSearchTerm('')}>
+                      Clear search
+                    </Button>
+                  ) : null
+                }
+              />
+            ) : (
+              <div className="space-y-10">
               {visibleComingSoon.length ? (
                 <div className="space-y-4">
                   <h2 className="text-xl font-semibold text-foreground">
                     Coming Soon
                   </h2>
-                  <div className="grid gap-6 sm:grid-cols-2">
+                  <StaggerGridReveal className="grid gap-6 sm:grid-cols-2">
                     {visibleComingSoon.map((event) => (
-                      <EventCard
-                        key={event.id || event.slug || event.title}
-                        event={event}
-                        variant="compact"
-                        showCalendar
-                      />
+                      <RevealItem key={event.id || event.slug || event.title}>
+                        <EventCard
+                          event={event}
+                          variant="compact"
+                          showCalendar
+                          onPreviewImage={setPreviewImage}
+                        />
+                      </RevealItem>
                     ))}
-                  </div>
+                  </StaggerGridReveal>
                 </div>
               ) : null}
 
               {visibleUpcoming.length ? (
                 <div className="space-y-4">
                   <h2 className="text-xl font-semibold text-foreground">Upcoming</h2>
-                  <div className="grid gap-6 lg:grid-cols-2">
+                  <StaggerGridReveal className="grid gap-6 lg:grid-cols-2">
                     {visibleUpcoming.map((event) => (
-                      <EventCard
-                        key={event.id || event.slug || event.title}
-                        event={event}
-                        variant="large"
-                        showCalendar
-                      />
+                      <RevealItem key={event.id || event.slug || event.title}>
+                        <EventCard
+                          event={event}
+                          variant="large"
+                          showCalendar
+                          onPreviewImage={setPreviewImage}
+                        />
+                      </RevealItem>
                     ))}
-                  </div>
+                  </StaggerGridReveal>
                 </div>
               ) : null}
 
@@ -473,16 +796,18 @@ function AnnouncementsEventsPage() {
                   <h2 className="text-xl font-semibold text-foreground">
                     Past Events
                   </h2>
-                  <div className="grid gap-6 sm:grid-cols-2">
+                  <StaggerGridReveal className="grid gap-6 sm:grid-cols-2">
                     {pastVisibleItems.map((event) => (
-                      <EventCard
-                        key={event.id || event.slug || event.title}
-                        event={event}
-                        variant="compact"
-                        showCalendar={false}
-                      />
+                      <RevealItem key={event.id || event.slug || event.title}>
+                        <EventCard
+                          event={event}
+                          variant="compact"
+                          showCalendar={false}
+                          onPreviewImage={setPreviewImage}
+                        />
+                      </RevealItem>
                     ))}
-                  </div>
+                  </StaggerGridReveal>
                   {visiblePast.length > DEFAULT_PAST_LIMIT ? (
                     <div>
                       <Button
@@ -498,7 +823,8 @@ function AnnouncementsEventsPage() {
                   ) : null}
                 </div>
               ) : null}
-            </div>
+              </div>
+            )}
           </StateGate>
         </section>
 
@@ -530,17 +856,51 @@ function AnnouncementsEventsPage() {
               />
             }
           >
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {announcements.map((item) => (
-                <AnnouncementCard
-                  key={item.id || item.slug || item.title}
-                  item={item}
-                />
-              ))}
-            </div>
+            {visibleAnnouncements.length === 0 ? (
+              <EmptyState
+                title={
+                  normalizedSearch
+                    ? 'No matching announcements found.'
+                    : 'No announcements at the moment.'
+                }
+                description={
+                  normalizedSearch
+                    ? `No announcement matched "${searchTerm.trim()}". Try another keyword or clear the search.`
+                    : 'Please check back soon for updates.'
+                }
+                action={
+                  normalizedSearch ? (
+                    <Button variant="secondary" onClick={() => setSearchTerm('')}>
+                      Clear search
+                    </Button>
+                  ) : null
+                }
+              />
+            ) : (
+              <StaggerGridReveal className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {visibleAnnouncements.map((item) => (
+                  <RevealItem key={item.id || item.slug || item.title}>
+                    <AnnouncementCard
+                      item={item}
+                      onPreviewImage={setPreviewImage}
+                    />
+                  </RevealItem>
+                ))}
+              </StaggerGridReveal>
+            )}
           </StateGate>
         </section>
       </div>
+
+      {previewImage?.src ? (
+        <ImageLightbox
+          open={Boolean(previewImage?.src)}
+          onClose={() => setPreviewImage(null)}
+          src={previewImage.src}
+          alt={previewImage.alt}
+          caption={previewImage.caption}
+        />
+      ) : null}
     </section>
   )
 }

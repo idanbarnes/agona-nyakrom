@@ -7,6 +7,7 @@ import {
   uploadAboutInlineImage,
 } from '../../services/api/adminAboutNyakromApi.js'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
+import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 
 const labels = {
   history: 'History',
@@ -92,9 +93,20 @@ export default function AdminAboutPageEditor() {
         <label className="flex items-center gap-2"><input type="checkbox" name="published" checked={Boolean(state.published)} onChange={onChange} />Published</label>
         <input name="seo_meta_title" placeholder="SEO Meta Title (optional)" value={state.seo_meta_title || ''} onChange={onChange} className="w-full rounded border px-3 py-2" />
         <textarea name="seo_meta_description" placeholder="SEO Meta Description (optional)" value={state.seo_meta_description || ''} onChange={onChange} className="w-full rounded border px-3 py-2" />
-        <div className="space-y-2">
-          <input name="seo_share_image" placeholder="SEO Share Image URL (optional)" value={state.seo_share_image || ''} onChange={onChange} className="w-full rounded border px-3 py-2" />
-          <label className="inline-flex cursor-pointer rounded border px-2 py-1 text-xs">Upload SEO Share Image<input type="file" accept="image/*" className="hidden" onChange={insertSeoImage} /></label>
+        <div className="rounded-xl border border-border bg-background/60">
+          <PhotoUploadField
+            label="SEO Share Image URL (optional)"
+            value={state.seo_share_image || ''}
+            valueType="url"
+            valueName="seo_share_image"
+            onValueChange={onChange}
+            valuePlaceholder="https://example.com/share-image.jpg"
+            fileId="seo_share_image_file"
+            fileName="seo_share_image_file"
+            acceptedFileTypes="image/*"
+            onChange={insertSeoImage}
+            existingAssetUrl={state.seo_share_image || ''}
+          />
         </div>
         <button className="rounded bg-black px-4 py-2 text-white" disabled={saving} type="submit">{saving ? 'Saving...' : 'Save'}</button>
       </form>

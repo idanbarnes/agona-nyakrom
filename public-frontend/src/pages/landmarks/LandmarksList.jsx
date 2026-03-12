@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { getLandmarks } from '../../api/endpoints.js'
+import RevealItem from '../../components/motion/RevealItem.jsx'
+import StaggerGridReveal from '../../components/motion/StaggerGridReveal.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
 import {
   Card,
   CardSkeleton,
+  DetailPageCTA,
   EmptyState,
   ErrorState,
   ImageWithFallback,
@@ -141,41 +143,41 @@ function LandmarksList() {
             />
           }
         >
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <StaggerGridReveal className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => {
               const name = item?.name || 'Untitled'
               const slug = item?.slug
               const thumbnail = item?.images?.thumbnail || item?.thumbnail
 
               return (
-                <Card
-                  key={item?.id || slug || name}
-                  className="group relative overflow-hidden rounded-xl border-0 shadow-sm transition hover:shadow-md"
-                >
-                  <ImageWithFallback
-                    src={thumbnail ? resolveAssetUrl(thumbnail) : null}
-                    alt={name || 'Landmark portrait'}
-                    className="h-[22rem] w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-                    fallbackText="No image"
-                  />
-                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 p-4">
-                    <h2 className="text-base font-semibold text-white md:text-lg">
-                      {name}
-                    </h2>
-                    {slug ? (
-                      <Link
-                        to={`/landmarks/${slug}`}
-                        className="rounded-full border border-white/70 bg-transparent px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition hover:bg-white/15"
-                      >
-                        Read details
-                      </Link>
-                    ) : null}
-                  </div>
-                </Card>
+                <RevealItem key={item?.id || slug || name}>
+                  <Card className="group relative overflow-hidden rounded-xl border border-white/10 bg-surface shadow-sm">
+                    <div className="overflow-hidden">
+                      <ImageWithFallback
+                        src={thumbnail ? resolveAssetUrl(thumbnail) : null}
+                        alt={name || 'Landmark portrait'}
+                        className="h-[22rem] w-full transform-gpu object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03]"
+                        fallbackText="No image"
+                      />
+                    </div>
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 p-4">
+                      <h2 className="text-base font-semibold text-white md:text-lg">
+                        {name}
+                      </h2>
+                      {slug ? (
+                        <DetailPageCTA
+                          to={`/landmarks/${slug}`}
+                          label="Read details"
+                          className="rounded-full px-3 py-1.5 text-xs font-medium [&>span]:gap-0 [&>span>span:first-child]:hidden"
+                        />
+                      ) : null}
+                    </div>
+                  </Card>
+                </RevealItem>
               )
             })}
-          </div>
+          </StaggerGridReveal>
         </StateGate>
 
         <Pagination

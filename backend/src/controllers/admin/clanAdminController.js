@@ -1,6 +1,7 @@
 const clanAdminService = require('../../services/admin/clanAdminService');
 const clanLeaderService = require('../../services/admin/clanLeaderAdminService');
 const mediaService = require('../../services/mediaService');
+const { getPaginationParams } = require('../../utils/pagination');
 const { requireFields } = require('../../utils/validators');
 const { generateSlug } = require('../../utils/slugify');
 const { success, error } = require('../../utils/response');
@@ -146,8 +147,17 @@ const deleteClan = async (req, res) => {
 // GET /all
 const getAllClans = async (req, res) => {
   try {
-    const items = await clanAdminService.getAll();
-    return success(res, items, 'Clans fetched successfully');
+    const { page, limit, offset } = getPaginationParams(req);
+    const [items, total] = await Promise.all([
+      clanAdminService.getAll({ limit, offset }),
+      clanAdminService.countAll(),
+    ]);
+
+    return success(
+      res,
+      { items, pagination: { page, limit, total } },
+      'Clans fetched successfully'
+    );
   } catch (err) {
     console.error('Error fetching clans (admin):', err.message);
     return error(res, 'Failed to fetch clans', 500);

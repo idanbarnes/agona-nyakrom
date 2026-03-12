@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getHistory, saveHistory } from '../../services/api/adminHistoryApi.js'
 import { getAuthToken } from '../../lib/auth.js'
+import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 
 function AdminHistoryPage() {
   const navigate = useNavigate()
@@ -184,16 +185,20 @@ function AdminHistoryPage() {
           Published
         </label>
 
-        <label htmlFor="image">Image (optional)</label>
-        <input id="image" name="image" type="file" onChange={handleFileChange} />
-        {formState.existingImageUrl ? (
-          <p>
-            Current image:{' '}
-            <a href={formState.existingImageUrl} target="_blank" rel="noreferrer">
-              View
-            </a>
-          </p>
-        ) : null}
+        <div className="rounded-xl border border-border bg-background/60">
+          <PhotoUploadField
+            label="Image (optional)"
+            value={formState.image?.name || ''}
+            valueType="text"
+            valueId="image"
+            valuePlaceholder="Select image"
+            fileId="image-file"
+            fileName="image"
+            acceptedFileTypes="image/*"
+            onChange={handleFileChange}
+            existingAssetUrl={formState.existingImageUrl}
+          />
+        </div>
 
         <button type="submit" disabled={isSaving}>
           {isSaving ? 'Saving...' : 'Save history'}

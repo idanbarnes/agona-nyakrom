@@ -5,14 +5,15 @@ import { getAuthToken } from '../../lib/auth.js'
 import { buildApiUrl } from '../../lib/apiClient.js'
 import SearchableSelect from '../../components/SearchableSelect.jsx'
 import { eventTags } from '../../constants/eventTags.js'
+import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
+import FormActions from '../../components/ui/form-actions.jsx'
 import {
   Button,
   Card,
   CardContent,
   CardFooter,
   FormField,
-  ImageWithFallback,
   InlineError,
   Input,
   Textarea,
@@ -79,13 +80,12 @@ function AdminEventFormPage({ mode = 'create' }) {
     event_tag: '',
     event_date: '',
     flyer_alt_text: '',
-    is_published: false,
     flyer_image: null,
     existingFlyerUrl: '',
   })
-  const [autoDrafted, setAutoDrafted] = useState(false)
   const [isLoading, setIsLoading] = useState(mode === 'edit')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitAction, setSubmitAction] = useState('publish')
   const [errorMessage, setErrorMessage] = useState('')
   const [fileError, setFileError] = useState('')
   const [previewUrl, setPreviewUrl] = useState('')
@@ -124,8 +124,7 @@ function AdminEventFormPage({ mode = 'create' }) {
         }
 
         setInitialState(nextState)
-        setFormState({ ...nextState, is_published: false })
-        setAutoDrafted(true)
+        setFormState(nextState)
       } catch (error) {
 
         setErrorMessage(error.message || 'Unable to load event.')
@@ -159,7 +158,6 @@ function AdminEventFormPage({ mode = 'create' }) {
     }
 
     return (
-      autoDrafted ||
       formState.title !== initialState.title ||
       formState.slug !== initialState.slug ||
       formState.excerpt !== initialState.excerpt ||
@@ -167,10 +165,9 @@ function AdminEventFormPage({ mode = 'create' }) {
       formState.event_tag !== initialState.event_tag ||
       formState.event_date !== initialState.event_date ||
       formState.flyer_alt_text !== initialState.flyer_alt_text ||
-      formState.is_published !== initialState.is_published ||
       Boolean(formState.flyer_image)
     )
-  }, [autoDrafted, formState, initialState, mode])
+  }, [formState, initialState, mode])
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target
@@ -190,9 +187,9 @@ function AdminEventFormPage({ mode = 'create' }) {
     setFormState((current) => ({ ...current, flyer_image: file }))
   }
 
-  const handleSubmit = async (event) => {
-    event.preventDefault()
+  const handleSubmit = async (action) => {
     setErrorMessage('')
+    setSubmitAction(action)
 
     if (!formState.title.trim()) {
       setErrorMessage('Title is required.')
@@ -204,7 +201,10 @@ function AdminEventFormPage({ mode = 'create' }) {
       return
     }
 
-    if (mode === 'edit' && !hasChanges) {
+    const allowPublishWithoutFieldChanges =
+      mode === 'edit' && action === 'publish'
+
+    if (mode === 'edit' && !hasChanges && !allowPublishWithoutFieldChanges) {
       setErrorMessage('No changes to update.')
       return
     }
@@ -228,11 +228,7 @@ function AdminEventFormPage({ mode = 'create' }) {
     }
     formData.append('flyer_alt_text', formState.flyer_alt_text)
 
-    if (mode === 'edit') {
-      formData.append('is_published', 'true')
-    } else {
-      formData.append('is_published', String(formState.is_published))
-    }
+    formData.append('is_published', String(action === 'publish'))
 
     if (formState.flyer_image) {
       formData.append('flyer_image', formState.flyer_image)
@@ -242,17 +238,28 @@ function AdminEventFormPage({ mode = 'create' }) {
     try {
       if (mode === 'edit') {
         await updateEvent(id, formData)
-        setFormState((current) => ({ ...current, is_published: true }))
-        setAutoDrafted(false)
-        window.alert('Event updated successfully')
+        window.alert(
+          action === 'draft'
+            ? 'Event draft saved successfully'
+            : 'Event published successfully',
+        )
       } else {
         await createEvent(formData)
-        window.alert('Event created successfully')
+        window.alert(
+          action === 'draft'
+            ? 'Event draft saved successfully'
+            : 'Event published successfully',
+        )
       }
 
       navigate('/admin/events', {
         replace: true,
-        state: { successMessage: `Event ${mode === 'edit' ? 'updated' : 'created'}.` },
+        state: {
+          successMessage:
+            action === 'draft'
+              ? 'Event draft saved.'
+              : `Event ${mode === 'edit' ? 'updated and published' : 'published'}.`,
+        },
       })
     } catch (error) {
 
@@ -292,7 +299,7 @@ function AdminEventFormPage({ mode = 'create' }) {
             : 'Share upcoming and community events with a clear title and date.'}
         </p>
       </header>
-      <form onSubmit={handleSubmit}>
+      <form>
         <Card>
           <CardContent className="space-y-5 md:space-y-6">
             <InlineError message={errorMessage} />
@@ -417,25 +424,24 @@ function AdminEventFormPage({ mode = 'create' }) {
             </FormField>
 
             <FormField label="Flyer image (optional)" htmlFor="flyer_image">
-              <div className="rounded-lg border border-border bg-background p-4 space-y-3">
-                <Input
-                  id="flyer_image"
-                  name="flyer_image"
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
+              <div className="rounded-xl border border-border bg-background/60">
+                <PhotoUploadField
+                  label=""
+                  value={formState.flyer_image?.name || ''}
+                  valueType="text"
+                  valueId="flyer_image"
+                  valuePlaceholder="Select image"
+                  fileId="flyer_image_file"
+                  fileName="flyer_image"
+                  acceptedFileTypes="image/png,image/jpeg,image/webp"
                   onChange={handleFileChange}
+                  helperText="Max 5MB. JPG, PNG, or WebP."
+                  previewSrc={previewUrl || formState.existingFlyerUrl}
+                  previewAlt={formState.flyer_alt_text || 'Event flyer preview'}
+                  previewFallback="No flyer"
+                  previewClassName="h-24 w-32 rounded-md object-cover"
+                  error={fileError}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Max 5MB. JPG, PNG, or WebP.
-                </p>
-                <div className="flex items-center gap-4">
-                  <ImageWithFallback
-                    src={previewUrl || formState.existingFlyerUrl}
-                    alt={formState.flyer_alt_text || 'Event flyer preview'}
-                    className="h-24 w-32 rounded-md object-cover"
-                    fallbackText="No flyer"
-                  />
-                </div>
               </div>
             </FormField>
 
@@ -449,47 +455,19 @@ function AdminEventFormPage({ mode = 'create' }) {
               />
             </FormField>
 
-            <FormField label="Published" htmlFor="is_published">
-              <div className="flex items-center gap-2">
-                <input
-                  id="is_published"
-                  name="is_published"
-                  type="checkbox"
-                  checked={formState.is_published}
-                  onChange={handleChange}
-                  disabled={autoDrafted}
-                  className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-                <span className="text-sm text-muted-foreground">
-                  {autoDrafted
-                    ? 'Publishing is enabled after saving changes.'
-                    : 'Make this event visible on the public site.'}
-                </span>
-              </div>
-            </FormField>
           </CardContent>
           <CardFooter>
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={() => navigate('/admin/events')}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              type="submit"
-              loading={isSubmitting}
-              disabled={mode === 'edit' && !hasChanges}
-            >
-              {isSubmitting
-                ? mode === 'edit'
-                  ? 'Saving...'
-                  : 'Creating...'
-                : mode === 'edit'
-                  ? 'Save changes'
-                  : 'Create event'}
-            </Button>
+            <FormActions
+              mode="publish"
+              onCancel={() => navigate('/admin/events')}
+              onAction={(action) => {
+                void handleSubmit(action)
+              }}
+              isSubmitting={isSubmitting}
+              submitAction={submitAction}
+              disableCancel={isSubmitting}
+              disableDraft={mode === 'edit' && !hasChanges}
+            />
           </CardFooter>
         </Card>
       </form>

@@ -111,3 +111,14 @@ export const updateLeaderDisplayOrder = async (id, display_order) => {
   })
   return parse(response)
 }
+
+export const uploadLeaderInlineImage = async (file) => {
+  const formData = new FormData()
+  formData.append('image', file)
+  const response = await fetch(buildUrl('/api/admin/leaders/upload-image'), {
+    method: 'POST',
+    headers: { Accept: 'application/json', ...authHeaders() },
+    body: formData,
+  })
+  return parse(response)
+}

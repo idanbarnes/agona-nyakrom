@@ -25,6 +25,33 @@ export const ICON_KEY_OPTIONS = [
   { value: 'events', label: 'Events' },
 ]
 
+export const WHO_WE_ARE_STAT_ICON_OPTIONS = [
+  { value: 'users', label: 'Users' },
+  { value: 'heart', label: 'Heart' },
+  { value: 'award', label: 'Award' },
+  { value: 'trending_up', label: 'Trending Up' },
+]
+
+const DEFAULT_WHO_WE_ARE_STATS = [
+  { icon_key: 'users', label: 'Population', value: '50,000+' },
+  { icon_key: 'heart', label: 'Clans', value: '12' },
+  { icon_key: 'award', label: 'Asafo Companies', value: '7' },
+  { icon_key: 'trending_up', label: 'Years of History', value: '300+' },
+]
+
+const DEFAULT_WHO_WE_ARE_GALLERY = [
+  { image_id: '', alt_text: 'Kente Cloth Ceremony' },
+  { image_id: '', alt_text: 'Historical Monument' },
+  { image_id: '', alt_text: 'Elder Wisdom' },
+  { image_id: '', alt_text: 'Traditional Festival' },
+]
+
+export const getWhoWeAreDefaultStats = () =>
+  DEFAULT_WHO_WE_ARE_STATS.map((item) => ({ ...item }))
+
+export const getWhoWeAreDefaultGallery = () =>
+  DEFAULT_WHO_WE_ARE_GALLERY.map((item) => ({ ...item }))
+
 export const COMMON_FIELDS = [
   'block_type',
   'display_order',
@@ -42,6 +69,9 @@ const TYPE_DEFAULTS = {
   layout_variant: 'image_right',
   media_alt_text: '',
   media_image_id: '',
+  who_we_are_paragraph_one: '',
+  who_we_are_stats: getWhoWeAreDefaultStats(),
+  who_we_are_gallery: getWhoWeAreDefaultGallery(),
   hof_selection_mode: 'random',
   hof_items_count: 3,
   hof_manual_item_ids: [],
@@ -67,8 +97,29 @@ const TYPE_DEFAULTS = {
   gateway_columns_mobile: 1,
 }
 
+const TEXT_CONTENT_BLOCK_TYPES = ['editorial_feature', 'welcome']
+
 export const getBlockTypeConfig = () => ({
   editorial_feature: {
+    fields: [
+      'body',
+      'cta_label',
+      'cta_href',
+      'layout_variant',
+      'media_alt_text',
+      'media_image_id',
+    ],
+  },
+  who_we_are: {
+    fields: [
+      'cta_label',
+      'cta_href',
+      'who_we_are_paragraph_one',
+      'who_we_are_stats',
+      'who_we_are_gallery',
+    ],
+  },
+  welcome: {
     fields: [
       'body',
       'cta_label',
@@ -119,22 +170,36 @@ export const getBlockTypeConfig = () => ({
   },
 })
 
+const cloneDefaultValue = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((item) =>
+      item && typeof item === 'object' ? { ...item } : item
+    )
+  }
+  return value
+}
+
 export const resetTypeSpecificFields = (formState, blockType) => {
   const config = getBlockTypeConfig()[blockType] || { fields: [] }
   const nextState = { ...formState }
 
   Object.keys(TYPE_DEFAULTS).forEach((key) => {
     if (!config.fields.includes(key)) {
-      nextState[key] = TYPE_DEFAULTS[key]
+      nextState[key] = cloneDefaultValue(TYPE_DEFAULTS[key])
     }
   })
 
-  if (blockType !== 'editorial_feature') {
+  if (!TEXT_CONTENT_BLOCK_TYPES.includes(blockType)) {
     nextState.media_image_id = TYPE_DEFAULTS.media_image_id
   }
 
   if (blockType !== 'gateway_links') {
-    nextState.gateway_items = TYPE_DEFAULTS.gateway_items
+    nextState.gateway_items = cloneDefaultValue(TYPE_DEFAULTS.gateway_items)
+  }
+
+  if (blockType !== 'who_we_are') {
+    nextState.who_we_are_stats = cloneDefaultValue(TYPE_DEFAULTS.who_we_are_stats)
+    nextState.who_we_are_gallery = cloneDefaultValue(TYPE_DEFAULTS.who_we_are_gallery)
   }
 
   return nextState
@@ -163,6 +228,22 @@ export const sanitizeGatewayItems = (items) =>
     }))
     .filter((item) => item.label || item.href)
 
+export const sanitizeWhoWeAreStats = (items) =>
+  (Array.isArray(items) ? items : []).map((item) => ({
+    icon_key: String(item?.icon_key || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, '_'),
+    label: item?.label?.trim() || '',
+    value: item?.value?.trim() || '',
+  }))
+
+export const sanitizeWhoWeAreGallery = (items) =>
+  (Array.isArray(items) ? items : []).map((item) => ({
+    image_id: item?.image_id?.trim() || '',
+    alt_text: item?.alt_text?.trim() || '',
+  }))
+
 export const buildPayload = (formState, blockType) => {
   const basePayload = {
     block_type: formState.block_type,
@@ -190,6 +271,23 @@ export const buildPayload = (formState, blockType) => {
     addField('layout_variant', formState.layout_variant)
     addField('media_alt_text', formState.media_alt_text?.trim() || '')
     addField('media_image_id', formState.media_image_id?.trim() || '')
+  }
+
+  if (config.fields.includes('who_we_are_paragraph_one')) {
+    addField('cta_label', formState.cta_label?.trim() || '')
+    addField('cta_href', formState.cta_href?.trim() || '')
+    addField(
+      'who_we_are_paragraph_one',
+      formState.who_we_are_paragraph_one?.trim() || ''
+    )
+    addField(
+      'who_we_are_stats',
+      sanitizeWhoWeAreStats(formState.who_we_are_stats)
+    )
+    addField(
+      'who_we_are_gallery',
+      sanitizeWhoWeAreGallery(formState.who_we_are_gallery)
+    )
   }
 
   if (config.fields.includes('hof_selection_mode')) {
@@ -252,14 +350,61 @@ export const validateByType = (formState, blockType) => {
     errors.push('Display order is required.')
   }
 
-  if (blockType === 'editorial_feature') {
+  if (TEXT_CONTENT_BLOCK_TYPES.includes(blockType)) {
     if (!formState.body?.trim()) {
-      errors.push('Body is required for editorial features.')
+      errors.push('Body is required for this block type.')
     }
     const hasLabel = Boolean(formState.cta_label?.trim())
     const hasHref = Boolean(formState.cta_href?.trim())
     if (hasLabel !== hasHref) {
       errors.push('CTA label and link must both be provided.')
+    }
+  }
+
+  if (blockType === 'who_we_are') {
+    if (!formState.title?.trim()) {
+      errors.push('Title is required for Who We Are.')
+    }
+    if (!formState.subtitle?.trim()) {
+      errors.push('Subtitle is required for Who We Are.')
+    }
+    if (!formState.who_we_are_paragraph_one?.trim()) {
+      errors.push('Paragraph one is required for Who We Are.')
+    }
+
+    const hasPrimaryLabel = Boolean(formState.cta_label?.trim())
+    const hasPrimaryHref = Boolean(formState.cta_href?.trim())
+    if (!hasPrimaryLabel || !hasPrimaryHref) {
+      errors.push('Primary CTA label and link are required for Who We Are.')
+    }
+
+    const iconOptions = new Set(
+      WHO_WE_ARE_STAT_ICON_OPTIONS.map((option) => option.value)
+    )
+    const stats = sanitizeWhoWeAreStats(formState.who_we_are_stats)
+    if (stats.length !== 4) {
+      errors.push('Who We Are requires exactly 4 stats.')
+    } else {
+      stats.forEach((item, index) => {
+        if (!item.icon_key || !iconOptions.has(item.icon_key)) {
+          errors.push(`Stat ${index + 1} must use a valid icon.`)
+        }
+        if (!item.label || !item.value) {
+          errors.push(`Stat ${index + 1} requires a label and value.`)
+        }
+      })
+    }
+
+    const gallery = sanitizeWhoWeAreGallery(formState.who_we_are_gallery)
+    if (gallery.length !== 4) {
+      errors.push('Who We Are requires exactly 4 gallery images.')
+    } else {
+      gallery.forEach((item, index) => {
+        const file = formState.who_we_are_gallery_files?.[index]
+        if (!item.image_id && !file) {
+          errors.push(`Gallery image ${index + 1} is required.`)
+        }
+      })
     }
   }
 

@@ -1,5 +1,6 @@
 // Public homepage blocks are rendered here from GET /api/public/homepage; admin controls blocks via /admin/homepage-sections.
-import { useEffect, useMemo, useState } from 'react'
+import { createElement, useCallback, useEffect, useMemo, useState } from 'react'
+import { AnimatePresence, motion as Motion, useReducedMotion } from 'framer-motion'
 import {
   getAnnouncementsEvents,
   getCarousel,
@@ -14,6 +15,10 @@ import {
   ImageWithFallback,
   Skeleton,
 } from '../components/ui/index.jsx'
+import AnimatedHeroIntro from '../components/motion/AnimatedHeroIntro.jsx'
+import RevealItem from '../components/motion/RevealItem.jsx'
+import StaggerGridReveal from '../components/motion/StaggerGridReveal.jsx'
+import RichTextRenderer from '../components/RichTextRenderer.jsx'
 import { resolveAssetUrl } from '../lib/apiBase.js'
 import { cn } from '../lib/cn.js'
 import { usePublicSettings } from '../layouts/publicSettingsContext.js'
@@ -45,11 +50,42 @@ function normalizeSlides(payload) {
 
   const data = payload?.data || payload
 
-  if (Array.isArray(data)) {
-    return data
+  const arrayCandidates = [
+    data,
+    data?.items,
+    data?.slides,
+    data?.heroSlides,
+    data?.carouselSlides,
+  ]
+
+  for (const candidate of arrayCandidates) {
+    if (Array.isArray(candidate)) {
+      return candidate
+    }
   }
 
-  return data?.items || data?.slides || []
+  if (data && typeof data === 'object') {
+    const singleCandidate =
+      data?.slide ||
+      data?.heroSlide ||
+      data?.carouselSlide
+
+    if (singleCandidate && typeof singleCandidate === 'object') {
+      return [singleCandidate]
+    }
+
+    if (
+      data?.title ||
+      data?.subtitle ||
+      data?.caption ||
+      data?.image ||
+      data?.image_url
+    ) {
+      return [data]
+    }
+  }
+
+  return []
 }
 
 // Prefer processed banner variants, falling back through common image sizes.
@@ -136,6 +172,48 @@ function selectItemImage(item) {
   )
 }
 
+function splitParagraphs(value) {
+  if (!value || typeof value !== 'string') {
+    return []
+  }
+
+  return value
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+}
+
+function stripHtml(value) {
+  if (!value || typeof value !== 'string') {
+    return ''
+  }
+
+  return value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+function truncateText(value, maxLength = 150) {
+  if (!value) {
+    return ''
+  }
+
+  if (value.length <= maxLength) {
+    return value
+  }
+
+  return `${value.slice(0, maxLength).trimEnd()}...`
+}
+
+function getHallOfFameStoryText(item) {
+  const rawStory =
+    item?.body ||
+    item?.bio ||
+    item?.achievements ||
+    item?.excerpt ||
+    ''
+  const story = truncateText(stripHtml(rawStory), 165)
+  return story
+}
+
 const BLOCK_VARIANT_CLASSES = {
   default: 'bg-transparent',
   muted: 'bg-muted/50',
@@ -171,9 +249,12 @@ const GATEWAY_GRID_DESKTOP = {
 }
 
 const DEFAULT_SECTION_PADDING = 'py-12 md:py-16 lg:py-24'
+const CAROUSEL_AUTOPLAY_MS = 5500
+const SWIPE_OFFSET_THRESHOLD = 72
+const SWIPE_VELOCITY_THRESHOLD = 520
 
 function Section({
-  as: Comp = 'section',
+  as = 'section',
   children,
   className,
   containerClassName,
@@ -193,10 +274,10 @@ function Section({
     containerClassName,
   )
 
-  return (
-    <Comp className={sectionClasses}>
-      <div className={resolvedContainerClass}>{children}</div>
-    </Comp>
+  return createElement(
+    as,
+    { className: sectionClasses },
+    <div className={resolvedContainerClass}>{children}</div>,
   )
 }
 
@@ -416,10 +497,141 @@ function resolveGatewayIcon(item) {
   return mapping[normalized] || item.badge || '➜'
 }
 
+const DEFAULT_WHO_WE_ARE_STATS = [
+  { icon_key: 'users', label: 'Population', value: '50,000+' },
+  { icon_key: 'heart', label: 'Clans', value: '12' },
+  { icon_key: 'award', label: 'Asafo Companies', value: '7' },
+  { icon_key: 'trending_up', label: 'Years of History', value: '300+' },
+]
+
+const DEFAULT_WHO_WE_ARE_GALLERY = [
+  { image_id: '', alt_text: 'Kente Cloth Ceremony' },
+  { image_id: '', alt_text: 'Historical Monument' },
+  { image_id: '', alt_text: 'Elder Wisdom' },
+  { image_id: '', alt_text: 'Traditional Festival' },
+]
+
+function normalizeWhoWeAreStats(rawStats) {
+  const source =
+    Array.isArray(rawStats) && rawStats.length > 0
+      ? rawStats
+      : DEFAULT_WHO_WE_ARE_STATS
+
+  return DEFAULT_WHO_WE_ARE_STATS.map((fallback, index) => {
+    const item = source[index] || {}
+    return {
+      icon_key: String(item?.icon_key || fallback.icon_key).trim().toLowerCase(),
+      label: item?.label || fallback.label,
+      value: item?.value || fallback.value,
+    }
+  })
+}
+
+function normalizeWhoWeAreGallery(rawGallery) {
+  const source =
+    Array.isArray(rawGallery) && rawGallery.length > 0
+      ? rawGallery
+      : DEFAULT_WHO_WE_ARE_GALLERY
+
+  return DEFAULT_WHO_WE_ARE_GALLERY.map((fallback, index) => {
+    const item = source[index] || {}
+    return {
+      image_id: item?.image_id || fallback.image_id,
+      alt_text: item?.alt_text || fallback.alt_text,
+    }
+  })
+}
+
+function WhoWeAreStatIcon({ iconKey, className }) {
+  if (iconKey === 'heart') {
+    return (
+      <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+        <path
+          d="M20.8 6.5a5 5 0 0 0-7.1 0L12 8.2l-1.7-1.7a5 5 0 1 0-7.1 7.1l1.7 1.7L12 22l7.1-6.7 1.7-1.7a5 5 0 0 0 0-7.1Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    )
+  }
+
+  if (iconKey === 'award') {
+    return (
+      <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+        <circle
+          cx="12"
+          cy="8"
+          r="5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+        />
+        <path
+          d="m9.5 13.5-2 7L12 18l4.5 2.5-2-7"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    )
+  }
+
+  if (iconKey === 'trending_up') {
+    return (
+      <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+        <path
+          d="M3 17 10 10l4 4 7-7"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M14 7h7v7"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    )
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path
+        d="M15 21v-6a3 3 0 0 0-6 0v6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M5 21v-3a3 3 0 0 1 3-3M19 21v-3a3 3 0 0 0-3-3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
 function Home() {
   const [homepage, setHomepage] = useState(null)
   const [slides, setSlides] = useState([])
   const [activeSlide, setActiveSlide] = useState(0)
+  const [slideDirection, setSlideDirection] = useState(1)
+  const [isAutoplayPaused, setIsAutoplayPaused] = useState(false)
   const [carouselLoading, setCarouselLoading] = useState(true)
   const [carouselError, setCarouselError] = useState(null)
   const [highlightNews, setHighlightNews] = useState([])
@@ -427,15 +639,14 @@ function Home() {
   const [highlightAnnouncements, setHighlightAnnouncements] = useState([])
   const [highlightLoading, setHighlightLoading] = useState(true)
   const [highlightError, setHighlightError] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const reduceMotion = useReducedMotion()
   const { settings } = usePublicSettings()
 
   useEffect(() => {
     let isMounted = true
 
     const loadHomepage = async () => {
-      setLoading(true)
       setError(null)
       setCarouselLoading(true)
       setCarouselError(null)
@@ -462,7 +673,6 @@ function Home() {
       }
 
       setCarouselLoading(false)
-      setLoading(false)
     }
 
     loadHomepage()
@@ -541,23 +751,58 @@ function Home() {
     }
   }, [])
 
-  useEffect(() => {
-    if (slides.length > 0 && activeSlide >= slides.length) {
-      setActiveSlide(0)
+  const slideCount = slides.length
+  const safeActiveSlide =
+    slideCount > 0 ? ((activeSlide % slideCount) + slideCount) % slideCount : 0
+
+  const goToSlide = useCallback(
+    (nextIndex) => {
+      if (slideCount === 0) {
+        return
+      }
+
+      const wrappedIndex = ((nextIndex % slideCount) + slideCount) % slideCount
+      const direction =
+        wrappedIndex === safeActiveSlide ? slideDirection : wrappedIndex > safeActiveSlide ? 1 : -1
+
+      setSlideDirection(direction)
+      setActiveSlide(wrappedIndex)
+    },
+    [safeActiveSlide, slideCount, slideDirection],
+  )
+
+  const goToNextSlide = useCallback(() => {
+    if (slideCount < 2) {
+      return
     }
-  }, [activeSlide, slides.length])
+
+    setSlideDirection(1)
+    setActiveSlide((prev) => (prev + 1) % slideCount)
+  }, [slideCount])
+
+  const goToPreviousSlide = useCallback(() => {
+    if (slideCount < 2) {
+      return
+    }
+
+    setSlideDirection(-1)
+    setActiveSlide((prev) => (prev - 1 + slideCount) % slideCount)
+  }, [slideCount])
 
   useEffect(() => {
-    if (slides.length < 2) {
+    if (slideCount < 2 || reduceMotion || isAutoplayPaused) {
       return undefined
     }
 
     const timer = window.setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % slides.length)
-    }, 7000)
+      setSlideDirection(1)
+      setActiveSlide((prev) => (prev + 1) % slideCount)
+    }, CAROUSEL_AUTOPLAY_MS)
 
-    return () => window.clearInterval(timer)
-  }, [slides.length])
+    return () => {
+      window.clearInterval(timer)
+    }
+  }, [slideCount, reduceMotion, isAutoplayPaused])
 
   const hero = homepage?.hero || homepage?.heroSection || {}
   const heroTitle = pickFirstString(
@@ -608,7 +853,13 @@ function Home() {
     return normalizeFeatured(featured)
   }, [homepage])
 
-  const activeSlideData = slides[activeSlide]
+  const activeSlideData = slides[safeActiveSlide]
+  const activeSlideKey =
+    activeSlideData?.id ||
+    activeSlideData?.slug ||
+    activeSlideData?.image ||
+    activeSlideData?.image_url ||
+    safeActiveSlide
   const slideTitle = pickFirstString(
     activeSlideData?.title,
     activeSlideData?.name,
@@ -625,6 +876,14 @@ function Home() {
     activeSlideData?.cta_url,
     activeSlideData?.ctaUrl,
   )
+  const slideSecondaryCtaText = pickFirstString(
+    activeSlideData?.secondary_cta_text,
+    activeSlideData?.secondaryCtaText,
+  )
+  const slideSecondaryCtaUrl = pickFirstString(
+    activeSlideData?.secondary_cta_url,
+    activeSlideData?.secondaryCtaUrl,
+  )
   const slideImages = selectSlideImages(activeSlideData)
   const primarySlideImage =
     slideImages.desktop || slideImages.tablet || slideImages.mobile
@@ -636,22 +895,15 @@ function Home() {
   ]
     .filter(Boolean)
     .join(', ')
+  const slideTransition = reduceMotion
+    ? { duration: 0.2, ease: 'easeOut' }
+    : { duration: 0.45, ease: 'easeInOut' }
 
   const showHero =
     heroTitle ||
     heroSubtitle ||
     (heroCtaText && heroCtaLink) ||
     settings?.siteName
-
-  if (loading) {
-    return (
-      <section className="container space-y-3 py-6 md:py-10">
-        <p className="text-sm text-muted-foreground">
-          Loading homepage data...
-        </p>
-      </section>
-    )
-  }
 
   if (error) {
     return (
@@ -669,12 +921,13 @@ function Home() {
   return (
     <div className="bg-background text-foreground">
       <Section
-        paddingClassName="pt-10 pb-12 md:pt-12 md:pb-16 lg:pt-16 lg:pb-20"
-        containerClassName={CONTAINER_WIDTH_CLASSES.wide}
+        paddingClassName="pt-0 pb-12 md:pb-16 lg:pb-20"
+        containerClassName="w-full"
+        fullBleed
       >
         {carouselLoading ? (
-          <div className="overflow-hidden rounded-[20px] border border-border bg-surface shadow-sm">
-            <div className="flex h-[55vh] flex-col justify-end p-6 md:h-[65vh] md:p-10 lg:h-[80vh]">
+          <div className="overflow-hidden rounded-none bg-surface shadow-sm">
+            <div className="flex h-[65vh] flex-col justify-end p-6 md:h-[75vh] md:p-10 lg:h-[90vh]">
               <div className="space-y-4">
                 <Skeleton className="h-6 w-2/3 bg-muted/70" />
                 <Skeleton className="h-4 w-1/2 bg-muted/70" />
@@ -683,71 +936,216 @@ function Home() {
             </div>
           </div>
         ) : slides.length === 0 ? (
-          <div className="rounded-[18px] border border-dashed border-border bg-muted/40 px-6 py-10 text-center text-sm text-muted-foreground">
+          <div className="rounded-none border border-dashed border-border bg-muted/40 px-6 py-10 text-center text-sm text-muted-foreground">
             No slides available.
           </div>
         ) : (
-          <article className="relative h-[55vh] overflow-hidden rounded-[20px] border border-border/70 bg-surface shadow-xl shadow-black/10 md:h-[65vh] lg:h-[80vh]">
-            <ImageWithFallback
-              src={slideImageUrl}
-              alt={slideTitle || 'Carousel slide'}
-              fallbackText="No image"
-              srcSet={slideSrcSet || undefined}
-              sizes="(max-width: 768px) 768px, (max-width: 1024px) 1280px, 1920px"
-              className="h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/45 to-black/20" />
-            <div className="absolute inset-0 flex items-end">
-              <div className="max-w-full space-y-4 px-6 pt-6 pb-20 text-white md:max-w-[60%] md:p-10">
-                {slideTitle && (
-                  <h1 className="text-4xl font-bold leading-tight break-words md:text-5xl lg:text-[56px]">
-                    {slideTitle}
-                  </h1>
-                )}
-                {slideSubtitle && (
-                  <p className="text-base text-white/90 md:text-lg">
-                    {slideSubtitle}
-                  </p>
-                )}
-                {slideCtaText && slideCtaUrl && (
-                  <div>
-                    <Button
-                      as="a"
-                      href={slideCtaUrl}
-                      variant="primary"
-                      className="h-12 rounded-full px-6 text-base shadow-lg shadow-black/25 transition hover:-translate-y-0.5 hover:bg-[#B45309]"
-                    >
-                      {slideCtaText}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 px-3 md:bottom-4 md:px-5 lg:bottom-5">
-              <nav
-                aria-label="Carousel controls"
-                className="mx-auto flex w-fit items-center justify-center rounded-full border border-white/12 bg-black/12 px-2 py-1 shadow-md shadow-black/10 backdrop-blur-sm md:bg-black/15"
+          <article
+            className="group/carousel relative h-[65vh] overflow-hidden rounded-none bg-surface shadow-xl shadow-black/10 md:h-[75vh] lg:h-[90vh]"
+            role="region"
+            aria-roledescription="carousel"
+            aria-label="Homepage hero carousel"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === 'ArrowRight') {
+                event.preventDefault()
+                goToNextSlide()
+              } else if (event.key === 'ArrowLeft') {
+                event.preventDefault()
+                goToPreviousSlide()
+              }
+            }}
+          >
+            <AnimatePresence initial={false} mode="wait">
+              <Motion.div
+                key={activeSlideKey}
+                className="absolute inset-0"
+                initial={{
+                  opacity: 0,
+                  scale: reduceMotion ? 1 : 1.015,
+                }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{
+                  opacity: 0,
+                  scale: reduceMotion ? 1 : 0.985,
+                }}
+                transition={slideTransition}
+                drag={slideCount > 1 ? 'x' : false}
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.12}
+                onDragEnd={(_, info) => {
+                  const offsetX = info?.offset?.x || 0
+                  const velocityX = info?.velocity?.x || 0
+
+                  if (
+                    offsetX <= -SWIPE_OFFSET_THRESHOLD ||
+                    velocityX <= -SWIPE_VELOCITY_THRESHOLD
+                  ) {
+                    goToNextSlide()
+                    return
+                  }
+
+                  if (
+                    offsetX >= SWIPE_OFFSET_THRESHOLD ||
+                    velocityX >= SWIPE_VELOCITY_THRESHOLD
+                  ) {
+                    goToPreviousSlide()
+                    return
+                  }
+                }}
+                onClick={(event) => {
+                  const isInteractiveTarget = event.target.closest(
+                    'a, button, [role="button"], [data-carousel-control="true"]',
+                  )
+
+                  if (!isInteractiveTarget && slideCount > 1 && !reduceMotion) {
+                    setIsAutoplayPaused((prev) => !prev)
+                  }
+                }}
+                style={{ touchAction: 'pan-y' }}
               >
-                <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-white/12 bg-black/15 px-2 py-1 md:gap-1.5 md:px-2.5">
+                <ImageWithFallback
+                  src={slideImageUrl}
+                  alt={slideTitle || 'Carousel slide'}
+                  fallbackText="No image"
+                  srcSet={slideSrcSet || undefined}
+                  sizes="(max-width: 768px) 768px, (max-width: 1024px) 1280px, 1920px"
+                  className="h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/45 to-black/20" />
+                <div className="absolute inset-0 flex items-end">
+                  <AnimatedHeroIntro
+                    className="max-w-full space-y-4 px-6 pt-6 pb-20 text-white md:max-w-[60%] md:p-10"
+                    entry="left"
+                    visualEntry="up"
+                    headline={
+                      slideTitle ? (
+                        <h1 className="text-4xl font-bold leading-tight break-words md:text-5xl lg:text-[56px]">
+                          {slideTitle}
+                        </h1>
+                      ) : null
+                    }
+                    subtext={
+                      slideSubtitle ? (
+                        <p className="text-base text-white/90 md:text-lg">{slideSubtitle}</p>
+                      ) : null
+                    }
+                    actions={
+                      slideCtaText && slideCtaUrl ? (
+                        <div className="flex flex-wrap gap-3">
+                          <Button
+                            as="a"
+                            href={slideCtaUrl}
+                            variant="primary"
+                            className="h-12 rounded-full px-6 text-base shadow-lg shadow-black/25 transition hover:bg-[#B45309]"
+                          >
+                            {slideCtaText}
+                          </Button>
+                          {slideSecondaryCtaText && slideSecondaryCtaUrl ? (
+                            <Button
+                              as="a"
+                              href={slideSecondaryCtaUrl}
+                              variant="ghost"
+                              className="h-12 rounded-full border border-white/55 bg-white/8 px-6 text-base text-white backdrop-blur-sm transition hover:bg-white/20"
+                            >
+                              {slideSecondaryCtaText}
+                            </Button>
+                          ) : null}
+                        </div>
+                      ) : null
+                    }
+                    visual={
+                      <div
+                        aria-hidden="true"
+                        className="h-1.5 w-20 rounded-full bg-white/55 shadow-[0_0_18px_rgba(255,255,255,0.2)]"
+                      />
+                    }
+                  />
+                </div>
+              </Motion.div>
+            </AnimatePresence>
+
+            <p className="sr-only" aria-live="polite" aria-atomic="true">
+              Slide {safeActiveSlide + 1} of {slideCount}
+              {slideTitle ? `: ${slideTitle}` : ''}
+            </p>
+
+            {slideCount > 1 ? (
+              <>
+                <div className="pointer-events-none absolute inset-y-0 left-0 z-20 hidden items-center pl-3 opacity-0 transition-opacity duration-300 md:flex md:group-hover/carousel:opacity-100 md:focus-within:opacity-100">
+                  <button
+                    type="button"
+                    onClick={goToPreviousSlide}
+                    data-carousel-control="true"
+                    className="pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/35 bg-black/25 text-white backdrop-blur-sm transition-[background-color,transform] duration-200 ease-out hover:-translate-y-[1px] hover:bg-black/40 active:translate-y-0 active:scale-[0.98] motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/40"
+                    aria-label="Previous slide"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
+                      <path
+                        d="m15 5-7 7 7 7"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="pointer-events-none absolute inset-y-0 right-0 z-20 hidden items-center pr-3 opacity-0 transition-opacity duration-300 md:flex md:group-hover/carousel:opacity-100 md:focus-within:opacity-100">
+                  <button
+                    type="button"
+                    onClick={goToNextSlide}
+                    data-carousel-control="true"
+                    className="pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/35 bg-black/25 text-white backdrop-blur-sm transition-[background-color,transform] duration-200 ease-out hover:-translate-y-[1px] hover:bg-black/40 active:translate-y-0 active:scale-[0.98] motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/40"
+                    aria-label="Next slide"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
+                      <path
+                        d="m9 5 7 7-7 7"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </>
+            ) : null}
+
+            <div className="pointer-events-none absolute inset-x-0 bottom-2 z-20 px-3 md:bottom-4 md:px-5 lg:bottom-5">
+              <nav
+                aria-label="Carousel slide indicators"
+                className="mx-auto flex w-fit items-center justify-center"
+              >
+                <div className="pointer-events-auto flex items-center gap-1">
                   {slides.map((slide, index) => (
                     <button
                       key={slide?.id || slide?.slug || index}
                       type="button"
-                      onClick={() => setActiveSlide(index)}
-                      className="flex h-4 w-5 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/40 md:h-4 md:w-6"
+                      onClick={() => goToSlide(index)}
+                      data-carousel-control="true"
+                      className="flex h-11 w-11 items-center justify-center rounded-full transition-transform duration-200 ease-out hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98] motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/40 md:h-8 md:w-8"
                       aria-label={`Go to slide ${index + 1}`}
-                      aria-current={index === activeSlide ? 'true' : undefined}
+                      aria-current={index === safeActiveSlide ? 'true' : undefined}
                     >
                       <span
-                        className={`h-1 w-full rounded-full transition ${
-                          index === activeSlide ? 'bg-white/90' : 'bg-white/40'
-                        }`}
+                        className={cn(
+                          'h-1.5 rounded-full transition-all duration-300',
+                          index === safeActiveSlide
+                            ? 'w-6 bg-white/95'
+                            : 'w-4 bg-white/45 hover:bg-white/65',
+                        )}
                       />
                     </button>
                   ))}
                 </div>
               </nav>
             </div>
+
           </article>
         )}
         {carouselError && (
@@ -779,7 +1177,7 @@ function Home() {
                 as="a"
                 href={heroCtaLink}
                 variant="ghost"
-                className="h-11 rounded-full border border-primary/20 px-5 text-primary transition hover:-translate-y-0.5 hover:bg-[#FDEAD2]"
+                className="h-11 rounded-full border border-primary/20 px-5 text-primary transition hover:bg-[#FDEAD2]"
               >
                 {heroCtaText}
               </Button>
@@ -808,6 +1206,77 @@ function Home() {
             const sectionBody = pickFirstString(block.body, '')
             const ctaLabel = pickFirstString(block.cta_label, '')
             const ctaHref = pickFirstString(block.cta_href, '')
+
+            if (block.block_type === 'welcome') {
+              const imageUrl = block.media_image_id
+                ? resolveAssetUrl(block.media_image_id)
+                : ''
+              const hasImage = Boolean(imageUrl) && block.layout_variant !== 'text_only'
+              const imagePositionClass =
+                block.layout_variant === 'image_right'
+                  ? 'lg:flex-row'
+                  : 'lg:flex-row-reverse'
+              const paragraphs = splitParagraphs(sectionBody)
+              const messageLabel = sectionSubtitle || 'Message from Leadership'
+              const messageTitle = sectionTitle || 'A Vision for Our Future'
+              const leaderName = ctaLabel || 'Nana Kwame Asante'
+              const leaderRole = ctaHref || 'Paramount Chief of Nyakrom'
+
+              return (
+                <Section
+                  key={block.id}
+                  themeVariant={themeVariant}
+                  backgroundClassName="bg-[#F2EFE4]"
+                  containerClassName={containerClass}
+                  fullBleed={isFullBleed}
+                >
+                  <div
+                    className={`flex flex-col gap-8 ${imagePositionClass} ${
+                      hasImage ? 'lg:items-start' : ''
+                    }`}
+                  >
+                    <div className="flex-1 space-y-6">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-[#E7DAB2] px-4 py-2 text-sm font-medium text-[#B45309]">
+                        <span aria-hidden="true">&quot;&quot;</span>
+                        {messageLabel}
+                      </span>
+                      <h2 className="text-3xl font-semibold leading-tight break-words text-foreground md:text-5xl">
+                        {messageTitle}
+                      </h2>
+                      <div className="space-y-4 text-base leading-relaxed text-muted-foreground md:text-[1.05rem]">
+                        {paragraphs.length > 0 ? (
+                          paragraphs.map((paragraph, index) => (
+                            <p key={`${block.id}-paragraph-${index}`}>{paragraph}</p>
+                          ))
+                        ) : (
+                          <p>
+                            {sectionBody ||
+                              'Share your leadership message for the Nyakrom community here.'}
+                          </p>
+                        )}
+                      </div>
+                      <div className="pt-2">
+                        <div className="mb-4 h-px bg-[#DDC88A]" />
+                        <p className="text-2xl font-medium text-foreground">{leaderName}</p>
+                        <p className="text-lg text-[#B45309]">{leaderRole}</p>
+                      </div>
+                    </div>
+                    {hasImage && (
+                      <div className="flex-1">
+                        <div className="aspect-[5/4] w-full overflow-hidden rounded-[20px] bg-surface shadow-[0_16px_36px_rgba(15,23,42,0.12)]">
+                          <ImageWithFallback
+                            src={imageUrl}
+                            alt={block.media_alt_text || 'Welcome image'}
+                            fallbackText="No image"
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </Section>
+              )
+            }
 
             if (block.block_type === 'editorial_feature') {
               const imageUrl = block.media_image_id
@@ -857,7 +1326,7 @@ function Home() {
                           as="a"
                           href={ctaHref}
                           variant="primary"
-                          className="h-12 rounded-full px-6 text-base shadow-sm transition hover:-translate-y-0.5 hover:bg-[#B45309] hover:shadow-lg"
+                          className="h-12 rounded-full px-6 text-base shadow-sm transition hover:bg-[#B45309] hover:shadow-lg"
                         >
                           {ctaLabel}
                         </Button>
@@ -880,9 +1349,16 @@ function Home() {
               )
             }
 
-            if (block.block_type === 'hall_of_fame_spotlight') {
-              const items = Array.isArray(block.hof_items) ? block.hof_items : []
-              const showCta = block.hof_show_cta !== false
+            if (block.block_type === 'who_we_are') {
+              const primaryCtaLabel = ctaLabel || 'Learn More About Us'
+              const primaryCtaHref = ctaHref || '/about/who-we-are'
+              const paragraphOne = pickFirstString(
+                block.who_we_are_paragraph_one,
+                sectionBody,
+                '',
+              )
+              const stats = normalizeWhoWeAreStats(block.who_we_are_stats)
+              const gallery = normalizeWhoWeAreGallery(block.who_we_are_gallery)
 
               return (
                 <Section
@@ -891,67 +1367,259 @@ function Home() {
                   backgroundClassName="bg-white"
                   containerClassName={containerClass}
                   fullBleed={isFullBleed}
+                  paddingClassName="py-20"
                 >
-                  <div className="flex flex-wrap items-end justify-between gap-6">
-                    <div className="max-w-2xl space-y-2">
-                      <h2 className="text-3xl font-semibold leading-snug break-words md:text-4xl">
-                        {sectionTitle || 'Hall of Fame'}
-                      </h2>
-                      {sectionSubtitle && (
-                        <p className="text-base text-muted-foreground md:text-lg">
-                          {sectionSubtitle}
+                  <div className="mb-16 text-center">
+                    <h2 className="text-4xl font-medium text-foreground">
+                      {sectionTitle || 'Who We Are'}
+                    </h2>
+                    <p className="mx-auto mt-4 max-w-3xl text-xl text-muted-foreground">
+                      {sectionSubtitle ||
+                        'A vibrant community rooted in tradition, united in purpose, and committed to excellence'}
+                    </p>
+                  </div>
+
+                  <div className="mb-16 grid grid-cols-2 gap-8 lg:grid-cols-4">
+                    {stats.map((stat, index) => (
+                      <div key={`${block.id}-stat-${index}`} className="text-center">
+                        <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#FEF3C7]">
+                          <WhoWeAreStatIcon
+                            iconKey={stat.icon_key}
+                            className="h-8 w-8 text-[#D97706]"
+                          />
+                        </div>
+                        <p className="mb-2 text-3xl font-medium text-[#D97706]">
+                          {stat.value}
                         </p>
-                      )}
+                        <p className="text-muted-foreground">{stat.label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
+                    <div className="space-y-6">
+                      <div className="text-muted-foreground [&_.rich-text-content]:text-lg [&_.rich-text-content]:leading-relaxed">
+                        <RichTextRenderer html={paragraphOne} />
+                      </div>
+                      <div className="flex flex-wrap gap-4">
+                        <a
+                          href={primaryCtaHref}
+                          className="rounded-md bg-[#D97706] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[#B45309]"
+                        >
+                          {primaryCtaLabel}
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-4">
+                        {[gallery[0], gallery[1]].map((item, index) => {
+                          const imageUrl = item?.image_id
+                            ? resolveAssetUrl(item.image_id)
+                            : ''
+                          const aspectClass = index === 0 ? 'aspect-square' : 'aspect-[4/3]'
+                          return (
+                            <div
+                              key={`${block.id}-gallery-left-${index}`}
+                              className={`${aspectClass} overflow-hidden rounded-lg bg-muted/30`}
+                            >
+                              {imageUrl ? (
+                                <ImageWithFallback
+                                  src={imageUrl}
+                                  alt={item?.alt_text || `Who We Are image ${index + 1}`}
+                                  fallbackText="No image"
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                                  No image
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      <div className="space-y-4 pt-8">
+                        {[gallery[2], gallery[3]].map((item, index) => {
+                          const imageUrl = item?.image_id
+                            ? resolveAssetUrl(item.image_id)
+                            : ''
+                          const aspectClass = index === 0 ? 'aspect-[4/3]' : 'aspect-square'
+                          return (
+                            <div
+                              key={`${block.id}-gallery-right-${index}`}
+                              className={`${aspectClass} overflow-hidden rounded-lg bg-muted/30`}
+                            >
+                              {imageUrl ? (
+                                <ImageWithFallback
+                                  src={imageUrl}
+                                  alt={item?.alt_text || `Who We Are image ${index + 3}`}
+                                  fallbackText="No image"
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                                  No image
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </Section>
+              )
+            }
+
+            if (block.block_type === 'hall_of_fame_spotlight') {
+              const items = Array.isArray(block.hof_items) ? block.hof_items : []
+              const showCta = block.hof_show_cta !== false
+              const ctaText = block.hof_cta_label || 'View All Members'
+              const ctaLink = block.hof_cta_href || '/hall-of-fame'
+
+              return (
+                <Section
+                  key={block.id}
+                  themeVariant={themeVariant}
+                  backgroundClassName="bg-gradient-to-b from-white to-[#FFF6EB]"
+                  containerClassName={containerClass}
+                  fullBleed={isFullBleed}
+                >
+                  <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                    <div className="max-w-3xl space-y-3">
+                      <h2 className="text-4xl font-semibold leading-tight break-words md:text-5xl">
+                        {sectionTitle || 'Hall of Fame Spotlight'}
+                      </h2>
+                      <p className="text-base text-muted-foreground md:text-lg">
+                        {sectionSubtitle ||
+                          'Celebrating the extraordinary individuals who have shaped our community through dedication, service, and achievement.'}
+                      </p>
                     </div>
                     {showCta && (
-                      <Button
-                        as="a"
-                        href={block.hof_cta_href || '/hall-of-fame'}
-                        variant="ghost"
-                        className="h-11 rounded-full border border-primary/20 px-5 text-primary transition hover:-translate-y-0.5 hover:bg-[#FDEAD2]"
+                      <a
+                        href={ctaLink}
+                        className="hidden h-12 items-center gap-2 self-start rounded-md bg-[#D97706] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#B45309] md:inline-flex"
                       >
-                        {block.hof_cta_label || 'View Hall of Fame'}
-                      </Button>
+                        <span>{ctaText}</span>
+                        <svg
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                          className="h-5 w-5"
+                        >
+                          <path
+                            d="m13 5 7 7-7 7M4 12h16"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </a>
                     )}
                   </div>
-                  <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+
+                  <StaggerGridReveal className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
                     {items.map((item, index) => {
                       const imagePath = selectItemImage(item)
                       const imageUrl = imagePath ? resolveAssetUrl(imagePath) : ''
+                      const memberName = item?.name || item?.title || 'Honoree'
+                      const memberRole = item?.title || ''
+                      const memberStory = getHallOfFameStoryText(item)
+                      const href = item?.href || '/hall-of-fame'
+
                       return (
-                        <a
-                          key={item?.id || item?.href || index}
-                          href={item?.href || '/hall-of-fame'}
-                          className="group flex h-full flex-col overflow-hidden rounded-[16px] border border-[#E7DED3] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(0,0,0,0.1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          <div className="aspect-[4/3] w-full overflow-hidden rounded-[14px] bg-muted/40">
-                            {imageUrl ? (
-                              <ImageWithFallback
-                                src={imageUrl}
-                                alt={item?.name || item?.title || 'Hall of Fame entry'}
-                                fallbackText="No image"
-                                className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                              />
-                            ) : (
-                              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                                No image
+                        <RevealItem key={item?.id || item?.href || index}>
+                          <a
+                            href={href}
+                            className="group block h-full rounded-lg border border-border/70 bg-white shadow-sm transition-[border-color,box-shadow] duration-200 ease-out hover:border-border hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <div className="relative h-80 overflow-hidden rounded-t-lg bg-muted/40">
+                              {imageUrl ? (
+                                <ImageWithFallback
+                                  src={imageUrl}
+                                  alt={`${memberName} portrait`}
+                                  fallbackText="No image"
+                                  className="h-full w-full transform-gpu object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03]"
+                                />
+                              ) : (
+                                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                                  No image
+                                </div>
+                              )}
+
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-60 transition-opacity group-hover:opacity-70" />
+
+                            </div>
+
+                            <div className="flex min-h-[14rem] flex-col p-6">
+                              <h3 className="text-2xl font-semibold text-foreground transition-colors group-hover:text-[#D97706]">
+                                {memberName}
+                              </h3>
+                              {memberRole && (
+                                <p className="mt-2 text-sm text-[#B45309]">
+                                  {memberRole}
+                                </p>
+                              )}
+
+                              {memberStory && (
+                                <p className="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground">
+                                  {memberStory}
+                                </p>
+                              )}
+
+                              <div className="mt-4 border-t border-border/70 pt-4">
+                                <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#D97706] transition-all group-hover:gap-3">
+                                  Read Full Story
+                                  <svg
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                    className="h-4 w-4"
+                                  >
+                                    <path
+                                      d="m13 5 7 7-7 7M4 12h16"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="1.8"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                </span>
                               </div>
-                            )}
-                          </div>
-                          <div className="mt-4 space-y-1">
-                            <p className="text-xl font-semibold text-foreground">
-                              {item?.name || item?.title || 'Honoree'}
-                            </p>
-                            {item?.label && (
-                              <p className="text-sm text-muted-foreground">
-                                {item.label}
-                              </p>
-                            )}
-                          </div>
-                        </a>
+                            </div>
+                          </a>
+                        </RevealItem>
                       )
                     })}
-                  </div>
+                  </StaggerGridReveal>
+
+                  {showCta && (
+                    <div className="mt-10 text-center md:hidden">
+                      <a
+                        href={ctaLink}
+                        className="inline-flex h-12 items-center gap-2 rounded-md bg-[#D97706] px-7 text-sm font-semibold text-white transition-colors hover:bg-[#B45309]"
+                      >
+                        <span>{ctaText}</span>
+                        <svg
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                          className="h-5 w-5"
+                        >
+                          <path
+                            d="m13 5 7 7-7 7M4 12h16"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </a>
+                    </div>
+                  )}
                 </Section>
               )
             }
@@ -1012,7 +1680,7 @@ function Home() {
                     ) : null}
                   </div>
 
-                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  <StaggerGridReveal className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {cards.map((card) => {
                       const items = Array.isArray(card.items) ? card.items : []
                       const featured = items[0]
@@ -1020,205 +1688,204 @@ function Home() {
                       const missingCompactCount = Math.max(0, 2 - compactItems.length)
 
                       return (
-                        <Card
-                          key={card.key}
-                          className="flex h-full flex-col overflow-hidden rounded-[18px] border border-border/70 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
-                        >
-                          <div className="flex items-center gap-3 border-b border-border/70 px-5 py-4">
-                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FDEAD2] text-primary">
-                              <CategoryIcon
-                                type={card.type}
-                                className="h-4 w-4"
-                              />
-                            </span>
-                            <h3 className="text-base font-semibold text-foreground">
-                              {card.title}
-                            </h3>
-                          </div>
-
-                          <CardContent className="flex flex-1 flex-col gap-4 px-5 py-4">
-                            {highlightLoading && items.length === 0 ? (
-                              <div className="space-y-4">
-                                <Skeleton className="aspect-[16/9] w-full rounded-[14px]" />
-                                <Skeleton className="h-4 w-5/6" />
-                                <Skeleton className="h-4 w-4/6" />
-                                <div className="space-y-3">
-                                  <Skeleton className="h-14 w-full rounded-md" />
-                                  <Skeleton className="h-14 w-full rounded-md" />
-                                </div>
-                              </div>
-                            ) : items.length === 0 ? (
-                              <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center text-sm text-muted-foreground">
-                                <CategoryPlaceholder
+                        <RevealItem key={card.key}>
+                          <Card className="group flex h-full flex-col overflow-hidden rounded-[18px] border border-border/70 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                            <div className="flex items-center gap-3 border-b border-border/70 px-5 py-4">
+                              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FDEAD2] text-primary">
+                                <CategoryIcon
                                   type={card.type}
-                                  className="h-20 w-20 rounded-full"
-                                  label={`No ${card.title} posted yet.`}
+                                  className="h-4 w-4"
                                 />
-                                <p>{`No ${card.title.toLowerCase()} posted yet.`}</p>
-                                {highlightError ? (
-                                  <p className="text-xs text-muted-foreground">
-                                    Unable to load updates right now.
-                                  </p>
-                                ) : null}
-                              </div>
-                            ) : (
-                              <>
-                                <a
-                                  href={
-                                    featured?.slug
-                                      ? `${card.detailBase}/${featured.slug}`
-                                      : card.listHref
-                                  }
-                                  className="group block"
-                                  aria-label={
-                                    featured?.excerpt
-                                      ? `${featured?.title}: ${featured.excerpt}`
-                                      : featured?.title || `View ${card.title}`
-                                  }
-                                >
-                                  <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[14px]">
-                                    {(() => {
+                              </span>
+                              <h3 className="text-base font-semibold text-foreground">
+                                {card.title}
+                              </h3>
+                            </div>
+
+                            <CardContent className="flex flex-1 flex-col gap-4 px-5 py-4">
+                              {highlightLoading && items.length === 0 ? (
+                                <div className="space-y-4">
+                                  <Skeleton className="aspect-[16/9] w-full rounded-[14px]" />
+                                  <Skeleton className="h-4 w-5/6" />
+                                  <Skeleton className="h-4 w-4/6" />
+                                  <div className="space-y-3">
+                                    <Skeleton className="h-14 w-full rounded-md" />
+                                    <Skeleton className="h-14 w-full rounded-md" />
+                                  </div>
+                                </div>
+                              ) : items.length === 0 ? (
+                                <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center text-sm text-muted-foreground">
+                                  <CategoryPlaceholder
+                                    type={card.type}
+                                    className="h-20 w-20 rounded-full"
+                                    label={`No ${card.title} posted yet.`}
+                                  />
+                                  <p>{`No ${card.title.toLowerCase()} posted yet.`}</p>
+                                  {highlightError ? (
+                                    <p className="text-xs text-muted-foreground">
+                                      Unable to load updates right now.
+                                    </p>
+                                  ) : null}
+                                </div>
+                              ) : (
+                                <>
+                                  <a
+                                    href={
+                                      featured?.slug
+                                        ? `${card.detailBase}/${featured.slug}`
+                                        : card.listHref
+                                    }
+                                    className="group block"
+                                    aria-label={
+                                      featured?.excerpt
+                                        ? `${featured?.title}: ${featured.excerpt}`
+                                        : featured?.title || `View ${card.title}`
+                                    }
+                                  >
+                                    <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[14px]">
+                                      {(() => {
+                                        const imagePath =
+                                          card.type === 'news'
+                                            ? selectItemImage(featured)
+                                            : selectFlyerImage(featured)
+                                        const imageUrl = imagePath
+                                          ? resolveAssetUrl(imagePath)
+                                          : ''
+                                        const altText =
+                                          card.type === 'news'
+                                            ? featured?.image_alt_text ||
+                                              `${featured?.title || card.title} image`
+                                            : featured?.flyer_alt_text ||
+                                              `${featured?.title || card.title} flyer`
+
+                                        return imageUrl ? (
+                                          <ImageWithFallback
+                                            src={imageUrl}
+                                            alt={altText}
+                                            fallbackText={featured?.title || card.title}
+                                            className="h-full w-full transform-gpu object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03]"
+                                          />
+                                        ) : (
+                                          <CategoryPlaceholder
+                                            type={card.type}
+                                            label={`No ${card.title} image`}
+                                          />
+                                        )
+                                      })()}
+                                      {card.type === 'events' && featured ? (
+                                        <span className="absolute right-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-sm backdrop-blur">
+                                          {getEventBadgeLabel(featured)}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                    <div className="mt-3 space-y-1">
+                                      {card.type === 'events' && featured ? (
+                                        <p className="text-xs text-muted-foreground">
+                                          {getEventMetaLabel(featured)}
+                                        </p>
+                                      ) : null}
+                                      <p
+                                        className="text-base font-semibold text-foreground"
+                                        style={clampTwo}
+                                      >
+                                        {featured?.title || `Latest ${card.title}`}
+                                      </p>
+                                    </div>
+                                  </a>
+
+                                  <div className="space-y-2">
+                                    {compactItems.map((item, index) => {
                                       const imagePath =
                                         card.type === 'news'
-                                          ? selectItemImage(featured)
-                                          : selectFlyerImage(featured)
+                                          ? selectItemImage(item)
+                                          : selectFlyerImage(item)
                                       const imageUrl = imagePath
                                         ? resolveAssetUrl(imagePath)
                                         : ''
                                       const altText =
                                         card.type === 'news'
-                                          ? featured?.image_alt_text ||
-                                            `${featured?.title || card.title} image`
-                                          : featured?.flyer_alt_text ||
-                                            `${featured?.title || card.title} flyer`
+                                          ? item?.image_alt_text ||
+                                            `${item?.title || card.title} image`
+                                          : item?.flyer_alt_text ||
+                                            `${item?.title || card.title} flyer`
+                                      const href = item?.slug
+                                        ? `${card.detailBase}/${item.slug}`
+                                        : card.listHref
 
-                                      return imageUrl ? (
-                                        <ImageWithFallback
-                                          src={imageUrl}
-                                          alt={altText}
-                                          fallbackText={featured?.title || card.title}
-                                          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                                        />
-                                      ) : (
-                                        <CategoryPlaceholder
-                                          type={card.type}
-                                          label={`No ${card.title} image`}
-                                        />
-                                      )
-                                    })()}
-                                    {card.type === 'events' && featured ? (
-                                      <span className="absolute right-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-sm backdrop-blur">
-                                        {getEventBadgeLabel(featured)}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                  <div className="mt-3 space-y-1">
-                                    {card.type === 'events' && featured ? (
-                                      <p className="text-xs text-muted-foreground">
-                                        {getEventMetaLabel(featured)}
-                                      </p>
-                                    ) : null}
-                                    <p
-                                      className="text-base font-semibold text-foreground"
-                                      style={clampTwo}
-                                    >
-                                      {featured?.title || `Latest ${card.title}`}
-                                    </p>
-                                  </div>
-                                </a>
-
-                                <div className="space-y-2">
-                                  {compactItems.map((item, index) => {
-                                    const imagePath =
-                                      card.type === 'news'
-                                        ? selectItemImage(item)
-                                        : selectFlyerImage(item)
-                                    const imageUrl = imagePath
-                                      ? resolveAssetUrl(imagePath)
-                                      : ''
-                                    const altText =
-                                      card.type === 'news'
-                                        ? item?.image_alt_text ||
-                                          `${item?.title || card.title} image`
-                                        : item?.flyer_alt_text ||
-                                          `${item?.title || card.title} flyer`
-                                    const href = item?.slug
-                                      ? `${card.detailBase}/${item.slug}`
-                                      : card.listHref
-
-                                    return (
-                                      <a
-                                        key={item?.id || item?.slug || index}
-                                        href={href}
-                                        className="group flex items-center gap-3 rounded-lg px-2 py-2 transition hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                        aria-label={
-                                          item?.excerpt
-                                            ? `${item?.title}: ${item.excerpt}`
-                                            : item?.title || `View ${card.title}`
-                                        }
-                                      >
-                                        <div className="h-14 w-16 shrink-0 overflow-hidden rounded-md">
-                                          {imageUrl ? (
-                                            <ImageWithFallback
-                                              src={imageUrl}
-                                              alt={altText}
-                                              fallbackText={item?.title || card.title}
-                                              className="h-full w-full object-cover"
-                                            />
-                                          ) : (
-                                            <CategoryPlaceholder
-                                              type={card.type}
-                                              className="rounded-md"
-                                              label={`No ${card.title} image`}
-                                            />
-                                          )}
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                          <p
-                                            className="text-sm font-medium text-foreground"
-                                            style={clampTwo}
-                                          >
-                                            {item?.title || `More ${card.title}`}
-                                          </p>
-                                          {card.type === 'events' ? (
-                                            <p className="mt-1 text-xs text-muted-foreground">
-                                              {getEventMetaLabel(item)}
+                                      return (
+                                        <a
+                                          key={item?.id || item?.slug || index}
+                                          href={href}
+                                          className="group flex items-center gap-3 rounded-lg px-2 py-2 transition hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                          aria-label={
+                                            item?.excerpt
+                                              ? `${item?.title}: ${item.excerpt}`
+                                              : item?.title || `View ${card.title}`
+                                          }
+                                        >
+                                          <div className="h-14 w-16 shrink-0 overflow-hidden rounded-md">
+                                            {imageUrl ? (
+                                              <ImageWithFallback
+                                                src={imageUrl}
+                                                alt={altText}
+                                                fallbackText={item?.title || card.title}
+                                                className="h-full w-full transform-gpu object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03]"
+                                              />
+                                            ) : (
+                                              <CategoryPlaceholder
+                                                type={card.type}
+                                                className="rounded-md"
+                                                label={`No ${card.title} image`}
+                                              />
+                                            )}
+                                          </div>
+                                          <div className="min-w-0 flex-1">
+                                            <p
+                                              className="text-sm font-medium text-foreground"
+                                              style={clampTwo}
+                                            >
+                                              {item?.title || `More ${card.title}`}
                                             </p>
-                                          ) : null}
+                                            {card.type === 'events' ? (
+                                              <p className="mt-1 text-xs text-muted-foreground">
+                                                {getEventMetaLabel(item)}
+                                              </p>
+                                            ) : null}
+                                          </div>
+                                        </a>
+                                      )
+                                    })}
+                                    {Array.from({ length: missingCompactCount }).map(
+                                      (_, index) => (
+                                        <div
+                                          key={`placeholder-${card.key}-${index}`}
+                                          className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm text-muted-foreground"
+                                        >
+                                          <div className="h-14 w-16 shrink-0 rounded-md bg-muted/30" />
+                                          <span>{`No more ${card.title.toLowerCase()} yet`}</span>
                                         </div>
-                                      </a>
-                                    )
-                                  })}
-                                  {Array.from({ length: missingCompactCount }).map(
-                                    (_, index) => (
-                                      <div
-                                        key={`placeholder-${card.key}-${index}`}
-                                        className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm text-muted-foreground"
-                                      >
-                                        <div className="h-14 w-16 shrink-0 rounded-md bg-muted/30" />
-                                        <span>{`No more ${card.title.toLowerCase()} yet`}</span>
-                                      </div>
-                                    ),
-                                  )}
-                                </div>
-                              </>
-                            )}
-                          </CardContent>
+                                      ),
+                                    )}
+                                  </div>
+                                </>
+                              )}
+                            </CardContent>
 
-                          <div className="mt-auto border-t border-border/70 px-5 py-3">
-                            <div className="flex justify-end">
-                              <a
-                                href={card.listHref}
-                                className="text-sm font-semibold text-primary transition hover:underline"
-                              >
-                                {`View all ${card.title}`}
-                              </a>
+                            <div className="mt-auto border-t border-border/70 px-5 py-3">
+                              <div className="flex justify-end">
+                                <a
+                                  href={card.listHref}
+                                  className="text-sm font-semibold text-primary transition hover:underline"
+                                >
+                                  {`View all ${card.title}`}
+                                </a>
+                              </div>
                             </div>
-                          </div>
-                        </Card>
+                          </Card>
+                        </RevealItem>
                       )
                     })}
-                  </div>
+                  </StaggerGridReveal>
                 </Section>
               )
             }
@@ -1326,14 +1993,14 @@ function Home() {
                         as="a"
                         href={ctaHref}
                         variant="ghost"
-                        className="h-11 rounded-full border border-primary/20 px-5 text-primary transition hover:-translate-y-0.5 hover:bg-[#FDEAD2]"
+                        className="h-11 rounded-full border border-primary/20 px-5 text-primary transition hover:bg-[#FDEAD2]"
                       >
                         {ctaLabel}
                       </Button>
                     )}
                   </div>
 
-                  <div
+                  <StaggerGridReveal
                     className={`mt-8 grid gap-6 ${mobileClass} ${tabletClass} ${desktopClass}`}
                   >
                     {items.map((item, index) => {
@@ -1341,47 +2008,48 @@ function Home() {
                         ? resolveAssetUrl(item.image_id)
                         : ''
                       return (
-                        <a
-                          key={item?.href || index}
-                          href={item?.href || '#'}
-                          className="group flex h-full flex-col justify-between rounded-[16px] border border-[#E7DED3] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(0,0,0,0.1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FDEAD2] text-xl transition duration-200 group-hover:scale-105">
-                              {imageUrl ? (
-                                <ImageWithFallback
-                                  src={imageUrl}
-                                  alt={item?.label || 'Gateway link'}
-                                  fallbackText=""
-                                  className="h-full w-full rounded-2xl object-cover"
-                                />
-                              ) : (
-                                <span>{resolveGatewayIcon(item)}</span>
+                        <RevealItem key={item?.href || index}>
+                          <a
+                            href={item?.href || '#'}
+                            className="group flex h-full flex-col justify-between rounded-[16px] border border-[#E7DED3] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-[border-color,box-shadow] duration-200 ease-out hover:border-[#dcccb7] hover:shadow-[0_6px_20px_rgba(0,0,0,0.1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-[#FDEAD2] text-xl">
+                                {imageUrl ? (
+                                  <ImageWithFallback
+                                    src={imageUrl}
+                                    alt={item?.label || 'Gateway link'}
+                                    fallbackText=""
+                                    className="h-full w-full transform-gpu rounded-2xl object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03]"
+                                  />
+                                ) : (
+                                  <span>{resolveGatewayIcon(item)}</span>
+                                )}
+                              </div>
+                              {item?.badge && (
+                                <span className="rounded-full bg-[#FDEAD2] px-2.5 py-1 text-xs font-medium text-primary">
+                                  {item.badge}
+                                </span>
                               )}
                             </div>
-                            {item?.badge && (
-                              <span className="rounded-full bg-[#FDEAD2] px-2.5 py-1 text-xs font-medium text-primary">
-                                {item.badge}
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-5 space-y-2">
-                            <p className="text-xl font-semibold text-foreground">
-                              {item?.label || 'Explore'}
-                            </p>
-                            {item?.description && (
-                              <p className="text-sm text-muted-foreground">
-                                {item.description}
+                            <div className="mt-5 space-y-2">
+                              <p className="text-xl font-semibold text-foreground">
+                                {item?.label || 'Explore'}
                               </p>
-                            )}
-                          </div>
-                          <div className="mt-5 text-sm font-medium text-primary transition group-hover:translate-x-1">
-                            Learn more -&gt;
-                          </div>
-                        </a>
+                              {item?.description && (
+                                <p className="text-sm text-muted-foreground">
+                                  {item.description}
+                                </p>
+                              )}
+                            </div>
+                            <div className="mt-5 text-sm font-medium text-primary transition group-hover:translate-x-1">
+                              Learn more -&gt;
+                            </div>
+                          </a>
+                        </RevealItem>
                       )
                     })}
-                  </div>
+                  </StaggerGridReveal>
                 </Section>
               )
             }
@@ -1495,7 +2163,7 @@ function Home() {
                 </div>
                 <div className="mt-6">
                   {Array.isArray(block?.items) ? (
-                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <StaggerGridReveal className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {block.items.map((item, itemIndex) => {
                         const itemLabel = formatItemLabel(item)
                         const itemImagePath = selectItemImage(item)
@@ -1504,29 +2172,28 @@ function Home() {
                           : ''
 
                         return (
-                          <Card
-                            key={item?.id || item?.slug || itemIndex}
-                            className="overflow-hidden rounded-[16px] border border-border/70 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
-                          >
-                            {itemImageUrl && (
-                              <div className="aspect-[4/3] w-full overflow-hidden bg-muted/40">
-                                <ImageWithFallback
-                                  src={itemImageUrl}
-                                  alt={itemLabel || 'Featured item'}
-                                  fallbackText="No image"
-                                  className="h-full w-full object-cover"
-                                />
-                              </div>
-                            )}
-                            <CardContent className="space-y-2">
-                              <p className="text-lg font-semibold text-foreground">
-                                {itemLabel}
-                              </p>
-                            </CardContent>
-                          </Card>
+                          <RevealItem key={item?.id || item?.slug || itemIndex}>
+                            <Card className="group overflow-hidden rounded-[16px] border border-border/70 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                              {itemImageUrl && (
+                                <div className="aspect-[4/3] w-full overflow-hidden bg-muted/40">
+                                  <ImageWithFallback
+                                    src={itemImageUrl}
+                                    alt={itemLabel || 'Featured item'}
+                                    fallbackText="No image"
+                                    className="h-full w-full transform-gpu object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03]"
+                                  />
+                                </div>
+                              )}
+                              <CardContent className="space-y-2">
+                                <p className="text-lg font-semibold text-foreground">
+                                  {itemLabel}
+                                </p>
+                              </CardContent>
+                            </Card>
+                          </RevealItem>
                         )
                       })}
-                    </div>
+                    </StaggerGridReveal>
                   ) : (
                     <Card className="rounded-[16px] border border-border/70 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
                       <CardContent>

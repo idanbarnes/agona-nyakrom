@@ -47,4 +47,5 @@ const upload = multer({
 module.exports = {
   single: (fieldName = 'image') => upload.single(fieldName),
   fields: (fieldDefinitions = []) => upload.fields(fieldDefinitions),
+  any: () => upload.any(),
 };

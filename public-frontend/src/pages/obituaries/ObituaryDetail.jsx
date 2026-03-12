@@ -708,11 +708,11 @@ function ObituaryDetail() {
                     <div className="shrink-0">
                       <Button
                         variant="ghost"
-                        className="h-9 rounded-md bg-neutral-200 px-3 text-sm font-medium text-neutral-700 hover:bg-neutral-300"
+                        className="h-12 rounded-xl border border-[#d7d7d7] bg-white px-5 text-[1.0625rem] font-semibold text-[#111111] shadow-none hover:translate-y-0 hover:bg-[#fafafa] active:translate-y-0 active:scale-100 [&>span]:gap-0 [&>span>span:first-child]:hidden [&>span>span:last-child]:inline-flex [&>span>span:last-child]:items-center [&>span>span:last-child]:gap-2"
                         aria-label="Share obituary"
                         onClick={handleShare}
                       >
-                        <Share2Icon className="h-5 w-5" />
+                        <Share2Icon className="h-[18px] w-[18px] text-[#111111]" />
                         <span>Share</span>
                       </Button>
                       <p className="mt-2 min-h-5 text-right text-xs text-neutral-600" aria-live="polite">

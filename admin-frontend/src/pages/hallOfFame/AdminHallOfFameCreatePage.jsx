@@ -13,11 +13,11 @@ function AdminHallOfFameCreatePage() {
     name: '',
     title: '',
     body: '',
-    published: false,
     image: null,
     existingImageUrl: '',
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitAction, setSubmitAction] = useState('publish')
   const [errorMessage, setErrorMessage] = useState('')
 
   const handleChange = (field, value) => {
@@ -29,8 +29,9 @@ function AdminHallOfFameCreatePage() {
     return uploaded?.data?.image_url || ''
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (action) => {
     setErrorMessage('')
+    setSubmitAction(action)
 
     if (!getAuthToken()) {
       navigate('/login', { replace: true })
@@ -41,7 +42,7 @@ function AdminHallOfFameCreatePage() {
     formData.append('name', formState.name.trim())
     formData.append('title', formState.title.trim())
     formData.append('body', formState.body)
-    formData.append('published', String(Boolean(formState.published)))
+    formData.append('published', String(action === 'publish'))
     if (formState.image) {
       formData.append('image', formState.image)
     }
@@ -54,7 +55,12 @@ function AdminHallOfFameCreatePage() {
       }
       navigate('/admin/hall-of-fame', {
         replace: true,
-        state: { successMessage: 'Hall of Fame entry created successfully.' },
+        state: {
+          successMessage:
+            action === 'draft'
+              ? 'Hall of Fame draft saved.'
+              : 'Hall of Fame entry published.',
+        },
       })
     } catch (error) {
 
@@ -70,11 +76,11 @@ function AdminHallOfFameCreatePage() {
       description="Add a portrait, name, title, and rich story for this honoree."
       value={formState}
       submitting={isSubmitting}
+      submitAction={submitAction}
       errorMessage={errorMessage}
-      submitLabel="Create entry"
       onChange={handleChange}
       onCancel={() => navigate('/admin/hall-of-fame')}
-      onSubmit={handleSubmit}
+      onSubmitAction={handleSubmit}
       onUploadImage={handleUploadBodyImage}
     />
   )

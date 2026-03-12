@@ -17,7 +17,7 @@ function ContactInfoCard({
     <Card
       tabIndex={0}
       className={cn(
-        'h-full rounded-2xl border border-border/80 bg-surface/95 shadow-[0_4px_16px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_14px_30px_rgba(15,23,42,0.12)] focus-visible:ring-2 focus-visible:ring-ring',
+        'h-full rounded-2xl border border-border/80 bg-surface/95 shadow-[0_4px_16px_rgba(15,23,42,0.06)] transition-[border-color,box-shadow] duration-200 ease-out hover:border-border hover:shadow-[0_14px_30px_rgba(15,23,42,0.12)] focus-visible:ring-2 focus-visible:ring-ring',
         className,
       )}
     >

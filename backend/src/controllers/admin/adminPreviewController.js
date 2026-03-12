@@ -3,10 +3,12 @@ const {
   listPreviewResources,
   normalizeResource,
 } = require('../../services/admin/adminPreviewRegistry');
+const carouselAdminService = require('../../services/admin/carouselAdminService');
 const { issuePreviewToken } = require('../../services/admin/adminPreviewTokenService');
 const { success, error } = require('../../utils/response');
 
 const PUBLIC_SITE_URL = process.env.PUBLIC_SITE_URL || '';
+const isCarouselResource = (value) => value === 'carousel' || value === 'carousels';
 
 const buildPublicUrl = (publicPathWithQuery) => {
   const path = String(publicPathWithQuery || '').trim();
@@ -39,7 +41,17 @@ const getPreview = async (req, res) => {
   const resourceInput = req.params?.resource;
   const requestedId = String(req.params?.id || '').trim();
   const normalizedResource = normalizeResource(resourceInput);
-  const resource = getPreviewResource(normalizedResource);
+  const fallbackCarouselResource = {
+    key: 'carousel',
+    loadById: (id) => carouselAdminService.getById(id),
+    canPreview: (record) => Boolean(record),
+    getPreviewId: (record, requestedResourceId) =>
+      String(record?.id ?? requestedResourceId ?? '').trim(),
+    toPublicPath: () => '/',
+  };
+  const resource =
+    getPreviewResource(normalizedResource) ||
+    (isCarouselResource(normalizedResource) ? fallbackCarouselResource : null);
 
   if (!requestedId) {
     return error(res, 'Preview id is required.', 400);

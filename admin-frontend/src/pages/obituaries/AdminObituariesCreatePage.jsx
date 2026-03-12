@@ -4,6 +4,8 @@ import { createObituary } from '../../services/api/adminObituariesApi.js'
 import { getAuthToken } from '../../lib/auth.js'
 import { useDraftAutosave } from '../../hooks/useDraftAutosave.js'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
+import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
+import FormActions from '../../components/ui/form-actions.jsx'
 import {
   Button,
   Card,
@@ -48,66 +50,8 @@ function ArrowLeftIcon({ className = 'h-4 w-4' }) {
   )
 }
 
-function UploadIcon({ className = 'h-4 w-4' }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
-    </svg>
-  )
-}
-
-function SaveIcon({ className = 'h-4 w-4' }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-      <polyline points="17 21 17 13 7 13 7 21" />
-      <polyline points="7 3 7 8 15 8" />
-    </svg>
-  )
-}
-
-function SendIcon({ className = 'h-4 w-4' }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <line x1="22" y1="2" x2="11" y2="13" />
-      <polygon points="22 2 15 22 11 13 2 9 22 2" />
-    </svg>
-  )
-}
-
 function AdminObituariesCreatePage() {
   const navigate = useNavigate()
-  const deceasedPhotoInputRef = useRef(null)
-  const posterPhotoInputRef = useRef(null)
   const previewUrlRef = useRef({ deceased: null, poster: null })
   const draftAppliedRef = useRef(false)
   const [formState, setFormState] = useState({
@@ -426,81 +370,35 @@ function AdminObituariesCreatePage() {
           </CardHeader>
           <CardContent>
             <div className="divide-y divide-border rounded-xl border border-border bg-background/60">
-              <div className="space-y-2 p-4">
-                <p className="text-sm font-medium text-foreground">Deceased Photo URL</p>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <Input
-                    id="deceased_photo_url"
-                    name="deceased_photo_url"
-                    type="url"
-                    value={formState.deceased_photo_url}
-                    onChange={handleChange}
-                    placeholder="https://example.com/photo.jpg"
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="h-10 shrink-0"
-                    onClick={() => deceasedPhotoInputRef.current?.click()}
-                  >
-                    <UploadIcon />
-                    Upload
-                  </Button>
-                  <Input
-                    ref={deceasedPhotoInputRef}
-                    id="deceased_photo_file"
-                    name="deceased_photo_file"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(event) => handleUploadFileChange('deceased', event)}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Photo of the deceased person. If left empty, a default photo will be
-                  used.
-                </p>
-              </div>
+              <PhotoUploadField
+                label="Deceased Photo URL"
+                value={formState.deceased_photo_url}
+                valueType="url"
+                valueId="deceased_photo_url"
+                valueName="deceased_photo_url"
+                onValueChange={handleChange}
+                valuePlaceholder="https://example.com/photo.jpg"
+                fileId="deceased_photo_file"
+                fileName="deceased_photo_file"
+                acceptedFileTypes="image/*"
+                onChange={(event) => handleUploadFileChange('deceased', event)}
+                helperText="Photo of the deceased person. If left empty, a default photo will be used."
+              />
 
-              <div className="space-y-2 p-4">
-                <p className="text-sm font-medium text-foreground">Obituary Poster Image URL</p>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <Input
-                    id="poster_image_url"
-                    name="poster_image_url"
-                    type="url"
-                    value={formState.poster_image_url}
-                    onChange={handleChange}
-                    placeholder="https://example.com/poster.jpg"
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="h-10 shrink-0"
-                    onClick={() => posterPhotoInputRef.current?.click()}
-                  >
-                    <UploadIcon />
-                    Upload
-                  </Button>
-                  <Input
-                    ref={posterPhotoInputRef}
-                    id="poster_image_file"
-                    name="poster_image_file"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(event) => handleUploadFileChange('poster', event)}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Decorative poster image for the obituary (e.g., flowers, memorial
-                  design). If left empty, a default image will be used.
-                </p>
-              </div>
+              <PhotoUploadField
+                label="Obituary Poster Image URL"
+                value={formState.poster_image_url}
+                valueType="url"
+                valueId="poster_image_url"
+                valueName="poster_image_url"
+                onValueChange={handleChange}
+                valuePlaceholder="https://example.com/poster.jpg"
+                fileId="poster_image_file"
+                fileName="poster_image_file"
+                acceptedFileTypes="image/*"
+                onChange={(event) => handleUploadFileChange('poster', event)}
+                helperText="Decorative poster image for the obituary (e.g., flowers, memorial design). If left empty, a default image will be used."
+              />
             </div>
           </CardContent>
         </Card>
@@ -593,41 +491,16 @@ function AdminObituariesCreatePage() {
           </CardContent>
         </Card>
 
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <Button
-            variant="secondary"
-            type="button"
-            onClick={() => navigate('/admin/obituaries')}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="secondary"
-            type="button"
-            loading={isSubmitting && submitAction === 'draft'}
-            disabled={isSubmitting}
-            onClick={() => {
-              void handleSubmit('draft')
-            }}
-          >
-            <SaveIcon />
-            Save as Draft
-          </Button>
-          <Button
-            variant="primary"
-            type="button"
-            className="border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:ring-emerald-600"
-            loading={isSubmitting && submitAction === 'publish'}
-            disabled={isSubmitting}
-            onClick={() => {
-              void handleSubmit('publish')
-            }}
-          >
-            <SendIcon />
-            Publish
-          </Button>
-        </div>
+        <FormActions
+          mode="publish"
+          onCancel={() => navigate('/admin/obituaries')}
+          onAction={(action) => {
+            void handleSubmit(action)
+          }}
+          isSubmitting={isSubmitting}
+          submitAction={submitAction}
+          disableCancel={isSubmitting}
+        />
       </form>
     </div>
   )

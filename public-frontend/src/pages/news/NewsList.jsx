@@ -2,8 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getNews } from '../../api/endpoints.js'
 import CmsCardImage from '../../components/media/CmsCardImage.jsx'
+import RevealItem from '../../components/motion/RevealItem.jsx'
+import StaggerGridReveal from '../../components/motion/StaggerGridReveal.jsx'
 import {
   CardSkeleton,
+  DetailPageCTA,
   EmptyState,
   ErrorState,
   Pagination,
@@ -98,21 +101,6 @@ function ShareIcon({ className = 'h-[18px] w-[18px]' }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth="2.5"
-      />
-    </svg>
-  )
-}
-
-function ArrowRightIcon({ className = 'h-4 w-4' }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
-      <path
-        d="M5 12h14m-6-6 6 6-6 6"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2.25"
       />
     </svg>
   )
@@ -301,14 +289,14 @@ function NewsCard({ item }) {
   }
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_36px_rgba(15,23,42,0.12)]">
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)] transition-[border-color,box-shadow] duration-200 ease-out hover:border-gray-300 hover:shadow-[0_12px_30px_rgba(15,23,42,0.1)]">
       <div className="relative overflow-hidden">
         <CmsCardImage
           src={imagePath}
           alt={item?.title || 'News thumbnail'}
           ratio="16/10"
           className="rounded-none bg-gray-100"
-          imgClassName="transition duration-700 group-hover:scale-105"
+          imgClassName="transform-gpu transition-transform duration-200 ease-out group-hover:scale-[1.03]"
           sizes="(min-width: 1280px) 30vw, (min-width: 768px) 50vw, 100vw"
         />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
@@ -347,17 +335,7 @@ function NewsCard({ item }) {
             </span>
           </div>
 
-          <div className="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
-            {canViewDetails ? (
-              <Link
-                to={detailsPath}
-                className="inline-flex h-10 items-center gap-2 rounded-lg bg-gray-900 px-4 text-sm font-semibold text-white transition hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
-              >
-                <span>Read more</span>
-                <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-0.5" />
-              </Link>
-            ) : null}
-
+          <div className="mt-4 flex items-center gap-3 border-t border-gray-100 pt-4">
             <div className="relative" ref={shareRef}>
               <button
                 type="button"
@@ -379,6 +357,15 @@ function NewsCard({ item }) {
                 />
               ) : null}
             </div>
+
+            {canViewDetails ? (
+              <DetailPageCTA
+                to={detailsPath}
+                label="Read More"
+                size="md"
+                className="ml-auto h-10 rounded-lg px-4 text-sm font-semibold [&>span]:gap-0 [&>span>span:first-child]:hidden"
+              />
+            ) : null}
           </div>
         </div>
       </div>
@@ -505,17 +492,20 @@ function NewsList() {
             />
           }
         >
-          <ul className="grid gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3">
+          <StaggerGridReveal
+            as="ul"
+            className="grid gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3"
+          >
             {visibleItems.map((item) => {
               const slug = item?.slug
 
               return (
-                <li key={item?.id || slug || item?.title}>
+                <RevealItem as="li" key={item?.id || slug || item?.title}>
                   <NewsCard item={item} />
-                </li>
+                </RevealItem>
               )
             })}
-          </ul>
+          </StaggerGridReveal>
         </StateGate>
 
         <Pagination

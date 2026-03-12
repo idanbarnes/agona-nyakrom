@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getClanDetail } from '../../api/endpoints.js'
+import ClanDetailHero from '../../components/clans/ClanDetailHero.jsx'
 import ImageLightbox from '../../components/ImageLightbox.jsx'
+import RevealItem from '../../components/motion/RevealItem.jsx'
+import StaggerGridReveal from '../../components/motion/StaggerGridReveal.jsx'
 import RichTextRenderer from '../../components/RichTextRenderer.jsx'
 import {
   Button,
@@ -15,6 +18,100 @@ import { resolveAssetUrl } from '../../lib/apiBase.js'
 import useCmsPreviewRefresh from '../../lib/useCmsPreviewRefresh.js'
 
 const EMPTY_LEADERS = { current: [], past: [] }
+
+function getLeaderImageUrl(leader) {
+  const leaderImagePath =
+    leader?.images?.large ||
+    leader?.images?.medium ||
+    leader?.images?.thumbnail ||
+    leader?.images?.original ||
+    leader?.image
+
+  return leaderImagePath ? resolveAssetUrl(leaderImagePath) : ''
+}
+
+function LeaderProfileCard({ leader, onPreview }) {
+  const leaderImageUrl = getLeaderImageUrl(leader)
+  const leaderName = leader?.name?.trim() || null
+  const leaderTitle = leader?.title?.trim() || null
+  const leaderRole = leader?.position?.trim() || 'Leader'
+  const displayHeading = leaderTitle || leaderRole
+  const badgeLabel = leaderRole !== displayHeading ? leaderRole : null
+  const displayName = leaderName && leaderName !== leaderTitle ? leaderName : null
+
+  return (
+    <Card className="group flex h-full flex-col overflow-hidden rounded-[1.4rem] border border-stone-200 bg-white p-0 shadow-[0_10px_30px_rgba(28,25,23,0.08)] transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:border-stone-300 hover:shadow-[0_18px_40px_rgba(28,25,23,0.14)]">
+      <button
+        type="button"
+        onClick={() =>
+          leaderImageUrl
+            ? onPreview({
+                src: leaderImageUrl,
+                alt: displayHeading,
+                caption: [badgeLabel, displayName].filter(Boolean).join(' - ') || leaderRole,
+              })
+            : null
+        }
+        className="relative block w-full overflow-hidden bg-stone-100 text-left"
+        aria-label={
+          leaderImageUrl
+            ? `View image of ${displayHeading}`
+            : `Image unavailable for ${displayHeading}`
+        }
+      >
+        <div className="aspect-[4/5] w-full bg-stone-100">
+          {leaderImageUrl ? (
+            <img
+              src={leaderImageUrl}
+              alt={displayHeading}
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover object-center transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm text-stone-500">
+              No image available
+            </div>
+          )}
+        </div>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-stone-950/30 via-stone-950/5 to-transparent" />
+      </button>
+
+      <div className="flex min-h-[8.5rem] flex-1 flex-col justify-between gap-3 px-4 py-4 sm:min-h-[9.25rem] sm:gap-4 sm:px-5 sm:py-5">
+        <div className="space-y-1.5 sm:space-y-2">
+          {badgeLabel ? (
+            <p
+              className="inline-flex max-w-full items-center truncate rounded-full bg-amber-50 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-[#D97706] sm:text-[0.68rem]"
+              title={badgeLabel}
+            >
+              {badgeLabel}
+            </p>
+          ) : null}
+          <div className="space-y-1.5">
+            <h3
+              className="line-clamp-2 text-xl font-semibold leading-tight text-stone-950 break-words sm:text-2xl"
+              title={displayHeading}
+            >
+              {displayHeading}
+            </h3>
+            {displayName ? (
+              <p
+                className="line-clamp-2 text-xs leading-5 text-stone-400 sm:text-sm sm:leading-6"
+                title={displayName}
+              >
+                {displayName}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        <p className="text-[0.68rem] font-medium uppercase tracking-[0.16em] text-stone-400 sm:text-xs sm:tracking-[0.18em]">
+          {leaderImageUrl ? 'Tap image to expand' : 'Portrait unavailable'}
+        </p>
+      </div>
+    </Card>
+  )
+}
 
 function ClanDetail() {
   const { slug } = useParams()
@@ -71,84 +168,33 @@ function ClanDetail() {
   const imageUrl = imagePath ? resolveAssetUrl(imagePath) : ''
 
   const renderLeaderSection = (title, leaders) => (
-    <section className="rounded-2xl border border-border/70 bg-surface p-5 shadow-sm sm:p-7">
-      <h2 className="text-xl font-semibold tracking-tight text-foreground md:text-2xl">
-        {title}
-      </h2>
-      {leaders.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">No {title.toLowerCase()} listed.</p>
-      ) : (
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {leaders.map((leader) => {
-            const leaderImagePath =
-              leader?.images?.large ||
-              leader?.images?.medium ||
-              leader?.images?.thumbnail ||
-              leader?.images?.original ||
-              leader?.image
-            const leaderImageUrl = leaderImagePath
-              ? resolveAssetUrl(leaderImagePath)
-              : ''
-
-            return (
-              <Card
-                key={leader.id || leader.name || leader.position}
-                className="overflow-hidden p-0"
-              >
-                <div className="grid h-full min-h-[18rem] grid-rows-[4fr,1fr]">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      leaderImageUrl
-                        ? setLightboxImage({
-                            src: leaderImageUrl,
-                            alt: leader.name || leader.position || 'Leader portrait',
-                            caption: leader.title || leader.position || '',
-                          })
-                        : null
-                    }
-                    className="relative h-full w-full overflow-hidden bg-muted/30 text-left"
-                    aria-label={
-                      leaderImageUrl
-                        ? `View image of ${leader.name || leader.position || 'leader'}`
-                        : 'Leader image unavailable'
-                    }
-                  >
-                    {leaderImageUrl ? (
-                      <img
-                        src={leaderImageUrl}
-                        alt={leader.name || leader.position || 'Leader portrait'}
-                        loading="lazy"
-                        decoding="async"
-                        className="h-full w-full object-cover transition duration-300 hover:scale-[1.02]"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center px-4 text-center text-xs text-muted-foreground">
-                        No image available
-                      </div>
-                    )}
-                  </button>
-
-                  <div className="flex flex-col justify-center gap-1 px-4 py-3">
-                    {leader.title ? (
-                      <p className="text-sm font-semibold tracking-wide text-foreground">
-                        {leader.title}
-                      </p>
-                    ) : null}
-                    <p className="text-xs font-medium uppercase tracking-[0.08em] text-primary">
-                      {leader.position || 'Leader'}
-                    </p>
-                    {leader.name ? (
-                      <p className="text-xs font-normal italic text-muted-foreground">
-                        {leader.name}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-              </Card>
-            )
-          })}
+    <section className="rounded-[1.75rem] border border-stone-200/80 bg-gradient-to-br from-white via-stone-50/60 to-white p-5 shadow-[0_14px_40px_rgba(28,25,23,0.08)] sm:p-7">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#D97706]">
+            Clan Leadership
+          </p>
+          <h2 className="mt-2 text-xl font-semibold tracking-tight text-stone-950 md:text-2xl">
+            {title}
+          </h2>
         </div>
+        <p className="text-sm text-stone-500">
+          {leaders.length} profile{leaders.length === 1 ? '' : 's'}
+        </p>
+      </div>
+      {leaders.length === 0 ? (
+        <p className="mt-4 text-sm text-stone-500">No {title.toLowerCase()} listed.</p>
+      ) : (
+        <StaggerGridReveal className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {leaders.map((leader) => (
+            <RevealItem key={leader.id || leader.name || leader.position}>
+              <LeaderProfileCard
+                leader={leader}
+                onPreview={(preview) => setLightboxImage(preview)}
+              />
+            </RevealItem>
+          ))}
+        </StaggerGridReveal>
       )}
     </section>
   )
@@ -183,48 +229,45 @@ function ClanDetail() {
         }
       >
         <article className="container mx-auto max-w-6xl space-y-6">
-          <div className="rounded-2xl border border-border/70 bg-surface p-5 shadow-sm sm:p-7 lg:p-9">
-            <div className="grid gap-6 md:grid-cols-[minmax(220px,300px),1fr] md:items-start lg:gap-10">
-              <div className="w-full overflow-hidden rounded-2xl border border-border/70 bg-muted/40">
-                <div className="aspect-[4/5]">
-                  {imageUrl ? (
-                    <img
-                      src={imageUrl}
-                      alt={`${clanName} emblem`}
-                      loading="lazy"
-                      decoding="async"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm text-muted-foreground">
-                      Clan emblem unavailable
-                    </div>
-                  )}
-                </div>
+          <ClanDetailHero
+            name={clanName}
+            caption={caption}
+            body={body}
+            imageUrl={imageUrl}
+            currentLeaderCount={currentLeaders.length}
+            pastLeaderCount={pastLeaders.length}
+          />
+
+          <section
+            id="clan-history"
+            className="rounded-[1.75rem] border border-stone-200/80 bg-white p-5 shadow-[0_14px_40px_rgba(28,25,23,0.08)] sm:p-7 lg:p-9"
+          >
+            <div className="max-w-4xl space-y-5">
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#D97706]">
+                  Clan History
+                </p>
+                <h2 className="text-2xl font-semibold tracking-tight text-stone-950 md:text-3xl">
+                  Story, identity, and belonging
+                </h2>
+                {caption ? (
+                  <p className="text-base leading-7 text-stone-600 md:text-lg">
+                    {caption}
+                  </p>
+                ) : null}
               </div>
 
-              <div className="space-y-5">
-                <header className="space-y-2">
-                  <h1 className="text-2xl font-semibold tracking-tight text-foreground break-words md:text-4xl">
-                    {clanName}
-                  </h1>
-                  {caption ? (
-                    <p className="text-base text-muted-foreground md:text-lg">{caption}</p>
-                  ) : null}
-                </header>
-
-                <div className="min-w-0">
-                  {body ? (
-                    <RichTextRenderer html={body} />
-                  ) : (
-                    <p className="text-muted-foreground">No content available.</p>
-                  )}
-                </div>
+              <div className="min-w-0 text-stone-700">
+                {body ? (
+                  <RichTextRenderer html={body} />
+                ) : (
+                  <p className="text-stone-500">No content available.</p>
+                )}
               </div>
             </div>
-          </div>
+          </section>
 
-          <div className="space-y-6">
+          <div className="space-y-6" id="clan-leadership">
             {renderLeaderSection('Current Leaders', currentLeaders)}
             {renderLeaderSection('Past Leaders', pastLeaders)}
           </div>

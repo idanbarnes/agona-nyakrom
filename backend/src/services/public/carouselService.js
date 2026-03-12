@@ -69,6 +69,18 @@ const findPublished = async () => {
   return rows.map(mapSlide);
 };
 
+const findById = async (id) => {
+  const { rows } = await pool.query(
+    `SELECT *
+     FROM carousel_slides
+     WHERE id = $1
+     LIMIT 1`,
+    [id]
+  );
+  return mapSlide(rows[0]);
+};
+
 module.exports = {
   findPublished,
+  findById,
 };

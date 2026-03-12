@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createBlock } from '../../services/api/adminHomepageBlocksApi.js'
 import { getAuthToken } from '../../lib/auth.js'
+import FormActions from '../../components/ui/form-actions.jsx'
 import {
-  Button,
   Card,
   CardContent,
   CardFooter,
@@ -13,21 +13,56 @@ import {
   Select,
   Textarea,
 } from '../../components/ui/index.jsx'
+import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
+import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 import GatewayCardsManager from './GatewayCardsManager.jsx'
 import {
   buildPayload,
+  getWhoWeAreDefaultGallery,
+  getWhoWeAreDefaultStats,
   resetTypeSpecificFields,
   validateByType,
+  WHO_WE_ARE_STAT_ICON_OPTIONS,
 } from './homepageBlockFormUtils.js'
 
 const BLOCK_TYPE_OPTIONS = [
   { value: '', label: 'Select block type' },
   { value: 'editorial_feature', label: 'Editorial Feature' },
+  { value: 'who_we_are', label: 'Who We Are' },
+  { value: 'welcome', label: 'Welcome' },
   { value: 'hall_of_fame_spotlight', label: 'Hall of Fame Spotlight' },
   { value: 'news_highlight', label: 'News Highlight' },
   { value: 'cultural_break', label: 'Cultural Break' },
   { value: 'gateway_links', label: 'Gateway Links' },
 ]
+
+const TEXT_CONTENT_BLOCK_TYPES = ['editorial_feature', 'welcome']
+const WELCOME_TEMPLATE = {
+  title: 'A Vision for Our Future',
+  subtitle: 'Message from Leadership',
+  body: [
+    'As we stand at the crossroads of tradition and modernity, Nyakrom continues to embody the values that have sustained our community for generations. Our rich cultural heritage serves as the foundation upon which we build a prosperous future for all.',
+    'Through unity, respect for our elders, and commitment to progress, we are creating opportunities that honor our past while embracing innovation. Our township thrives because of the dedication of every citizen who calls Nyakrom home.',
+    'Together, we are not just preserving history - we are making it.',
+  ].join('\n\n'),
+  cta_label: 'Nana Kwame Asante',
+  cta_href: 'Paramount Chief of Nyakrom',
+  layout_variant: 'image_left',
+  media_alt_text: 'Portrait representing Nyakrom leadership and heritage',
+}
+
+const applyWelcomeTemplate = (state) => ({
+  ...state,
+  title: state.title?.trim() ? state.title : WELCOME_TEMPLATE.title,
+  subtitle: state.subtitle?.trim() ? state.subtitle : WELCOME_TEMPLATE.subtitle,
+  body: state.body?.trim() ? state.body : WELCOME_TEMPLATE.body,
+  cta_label: state.cta_label?.trim() ? state.cta_label : WELCOME_TEMPLATE.cta_label,
+  cta_href: state.cta_href?.trim() ? state.cta_href : WELCOME_TEMPLATE.cta_href,
+  layout_variant: state.layout_variant || WELCOME_TEMPLATE.layout_variant,
+  media_alt_text: state.media_alt_text?.trim()
+    ? state.media_alt_text
+    : WELCOME_TEMPLATE.media_alt_text,
+})
 
 const THEME_VARIANTS = [
   { value: 'default', label: 'Default' },
@@ -59,6 +94,10 @@ function AdminHomepageSectionsCreatePage() {
     media_image_file: null,
     media_alt_text: '',
     layout_variant: 'image_right',
+    who_we_are_paragraph_one: '',
+    who_we_are_stats: getWhoWeAreDefaultStats(),
+    who_we_are_gallery: getWhoWeAreDefaultGallery(),
+    who_we_are_gallery_files: [null, null, null, null],
     hof_selection_mode: 'random',
     hof_items_count: 3,
     hof_manual_item_ids: [],
@@ -84,17 +123,32 @@ function AdminHomepageSectionsCreatePage() {
     gateway_columns_mobile: 1,
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitAction, setSubmitAction] = useState('publish')
   const [errorMessage, setErrorMessage] = useState('')
 
   const blockType = formState.block_type
+  const isTextContentBlock = TEXT_CONTENT_BLOCK_TYPES.includes(blockType)
+  const isWhoWeAreBlock = blockType === 'who_we_are'
+  const isWelcomeBlock = blockType === 'welcome'
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target
     const nextValue = type === 'checkbox' ? checked : value
     if (name === 'block_type') {
-      setFormState((current) =>
-        resetTypeSpecificFields({ ...current, [name]: nextValue }, nextValue)
-      )
+      setFormState((current) => {
+        const resetState = resetTypeSpecificFields(
+          { ...current, [name]: nextValue },
+          nextValue
+        )
+        const nextFormState = {
+          ...resetState,
+          who_we_are_gallery_files: [null, null, null, null],
+        }
+        if (nextValue === 'welcome') {
+          return applyWelcomeTemplate(nextFormState)
+        }
+        return nextFormState
+      })
       return
     }
     if (name === 'hof_selection_mode' && nextValue !== 'manual') {
@@ -138,9 +192,38 @@ function AdminHomepageSectionsCreatePage() {
     setFormState((current) => ({ ...current, media_image_file: file }))
   }
 
-  const handleSubmit = async (event) => {
-    event.preventDefault()
+  const handleWhoWeAreStatChange = (index, field, value) => {
+    setFormState((current) => ({
+      ...current,
+      who_we_are_stats: (current.who_we_are_stats || []).map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [field]: value } : item
+      ),
+    }))
+  }
+
+  const handleWhoWeAreGalleryChange = (index, field, value) => {
+    setFormState((current) => ({
+      ...current,
+      who_we_are_gallery: (current.who_we_are_gallery || []).map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [field]: value } : item
+      ),
+    }))
+  }
+
+  const handleWhoWeAreGalleryFileChange = (index, file) => {
+    setFormState((current) => {
+      const nextFiles = [...(current.who_we_are_gallery_files || [null, null, null, null])]
+      nextFiles[index] = file || null
+      return {
+        ...current,
+        who_we_are_gallery_files: nextFiles,
+      }
+    })
+  }
+
+  const handleSubmit = async (action) => {
     setErrorMessage('')
+    setSubmitAction(action)
 
     if (!getAuthToken()) {
       navigate('/login', { replace: true })
@@ -153,10 +236,16 @@ function AdminHomepageSectionsCreatePage() {
       return
     }
 
-    const payload = buildPayload(formState, blockType)
+    const payload = {
+      ...buildPayload(formState, blockType),
+      is_published: action === 'publish',
+    }
 
-    const hasFile =
-      blockType === 'editorial_feature' && Boolean(formState.media_image_file)
+    const hasMainImageFile = isTextContentBlock && Boolean(formState.media_image_file)
+    const hasWhoWeAreGalleryFiles =
+      isWhoWeAreBlock &&
+      (formState.who_we_are_gallery_files || []).some(Boolean)
+    const hasFile = hasMainImageFile || hasWhoWeAreGalleryFiles
     const formData = new FormData()
 
     if (hasFile) {
@@ -164,13 +253,27 @@ function AdminHomepageSectionsCreatePage() {
         if (value === undefined) {
           return
         }
-        if (key === 'gateway_items') {
+        if (
+          key === 'gateway_items' ||
+          key === 'who_we_are_stats' ||
+          key === 'who_we_are_gallery'
+        ) {
           formData.append(key, JSON.stringify(value))
           return
         }
         formData.append(key, String(value ?? ''))
       })
-      formData.append('image', formState.media_image_file)
+      if (hasMainImageFile) {
+        formData.append('image', formState.media_image_file)
+      }
+      if (hasWhoWeAreGalleryFiles) {
+        ;(formState.who_we_are_gallery_files || []).forEach((file, index) => {
+          if (!file) {
+            return
+          }
+          formData.append(`who_we_are_gallery_image_${index}`, file)
+        })
+      }
     }
 
     setIsSubmitting(true)
@@ -179,7 +282,11 @@ function AdminHomepageSectionsCreatePage() {
       if (response?.success === false) {
         throw new Error(response?.message || 'Unable to create block.')
       }
-      window.alert('Homepage block created successfully')
+      window.alert(
+        action === 'draft'
+          ? 'Homepage block draft saved successfully'
+          : 'Homepage block published successfully',
+      )
       navigate('/admin/homepage-sections', { replace: true })
     } catch (error) {
 
@@ -201,7 +308,7 @@ function AdminHomepageSectionsCreatePage() {
           Configure the block layout, content, and visibility for the homepage.
         </p>
       </header>
-      <form onSubmit={handleSubmit}>
+      <form>
         <Card>
           <CardContent className="space-y-5 md:space-y-6">
             <InlineError message={errorMessage} />
@@ -235,7 +342,7 @@ function AdminHomepageSectionsCreatePage() {
             </div>
 
             <div className="grid gap-5 md:grid-cols-2">
-              <FormField label="Title" htmlFor="title">
+              <FormField label={isWelcomeBlock ? 'Heading' : 'Title'} htmlFor="title">
                 <Input
                   id="title"
                   name="title"
@@ -245,7 +352,10 @@ function AdminHomepageSectionsCreatePage() {
                 />
               </FormField>
 
-              <FormField label="Subtitle" htmlFor="subtitle">
+              <FormField
+                label={isWelcomeBlock ? 'Badge label' : 'Subtitle'}
+                htmlFor="subtitle"
+              >
                 <Input
                   id="subtitle"
                   name="subtitle"
@@ -256,9 +366,9 @@ function AdminHomepageSectionsCreatePage() {
               </FormField>
             </div>
 
-            {blockType === 'editorial_feature' && (
+            {isTextContentBlock && (
               <>
-                <FormField label="Body" htmlFor="body" required>
+                <FormField label={isWelcomeBlock ? 'Message body' : 'Body'} htmlFor="body" required>
                   <Textarea
                     id="body"
                     name="body"
@@ -268,7 +378,10 @@ function AdminHomepageSectionsCreatePage() {
                 </FormField>
 
                 <div className="grid gap-5 md:grid-cols-2">
-                  <FormField label="CTA label" htmlFor="cta_label">
+                  <FormField
+                    label={isWelcomeBlock ? 'Leader name' : 'CTA label'}
+                    htmlFor="cta_label"
+                  >
                     <Input
                       id="cta_label"
                       name="cta_label"
@@ -278,7 +391,10 @@ function AdminHomepageSectionsCreatePage() {
                     />
                   </FormField>
 
-                  <FormField label="CTA link" htmlFor="cta_href">
+                  <FormField
+                    label={isWelcomeBlock ? 'Leader role' : 'CTA link'}
+                    htmlFor="cta_href"
+                  >
                     <Input
                       id="cta_href"
                       name="cta_href"
@@ -291,7 +407,192 @@ function AdminHomepageSectionsCreatePage() {
               </>
             )}
 
-            <div className="grid gap-5 md:grid-cols-3">
+            {isWhoWeAreBlock && (
+              <div className="space-y-5 rounded-xl border border-border/60 bg-muted/20 p-4">
+                <p className="text-sm font-medium text-foreground">
+                  Who We Are Content (Figma Structure)
+                </p>
+
+                <div className="grid gap-5 md:grid-cols-2">
+                  <FormField
+                    label="Primary CTA label"
+                    htmlFor="cta_label"
+                    required
+                  >
+                    <Input
+                      id="cta_label"
+                      name="cta_label"
+                      type="text"
+                      value={formState.cta_label}
+                      onChange={handleChange}
+                    />
+                  </FormField>
+
+                  <FormField
+                    label="Primary CTA link"
+                    htmlFor="cta_href"
+                    required
+                  >
+                    <Input
+                      id="cta_href"
+                      name="cta_href"
+                      type="text"
+                      value={formState.cta_href}
+                      onChange={handleChange}
+                    />
+                  </FormField>
+                </div>
+
+                <FormField
+                  label="Paragraph one"
+                  htmlFor="who_we_are_paragraph_one"
+                  required
+                >
+                  <SimpleRichTextEditor
+                    value={formState.who_we_are_paragraph_one}
+                    onChange={(value) =>
+                      setFormState((current) => ({
+                        ...current,
+                        who_we_are_paragraph_one: value,
+                      }))
+                    }
+                    textareaId="who-we-are-paragraph-one-create"
+                  />
+                </FormField>
+
+                <div className="space-y-4">
+                  <p className="text-sm font-medium text-foreground">
+                    Stats (exactly 4)
+                  </p>
+                  {(formState.who_we_are_stats || []).map((item, index) => (
+                    <div
+                      key={`stat-${index}`}
+                      className="grid gap-4 rounded-lg border border-border bg-background p-4 md:grid-cols-3"
+                    >
+                      <FormField
+                        label={`Stat ${index + 1} icon`}
+                        htmlFor={`who_we_are_stats_${index}_icon`}
+                        required
+                      >
+                        <Select
+                          id={`who_we_are_stats_${index}_icon`}
+                          value={item?.icon_key || ''}
+                          onChange={(event) =>
+                            handleWhoWeAreStatChange(
+                              index,
+                              'icon_key',
+                              event.target.value
+                            )
+                          }
+                        >
+                          <option value="">Select icon</option>
+                          {WHO_WE_ARE_STAT_ICON_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </Select>
+                      </FormField>
+
+                      <FormField
+                        label={`Stat ${index + 1} label`}
+                        htmlFor={`who_we_are_stats_${index}_label`}
+                        required
+                      >
+                        <Input
+                          id={`who_we_are_stats_${index}_label`}
+                          type="text"
+                          value={item?.label || ''}
+                          onChange={(event) =>
+                            handleWhoWeAreStatChange(
+                              index,
+                              'label',
+                              event.target.value
+                            )
+                          }
+                        />
+                      </FormField>
+
+                      <FormField
+                        label={`Stat ${index + 1} value`}
+                        htmlFor={`who_we_are_stats_${index}_value`}
+                        required
+                      >
+                        <Input
+                          id={`who_we_are_stats_${index}_value`}
+                          type="text"
+                          value={item?.value || ''}
+                          onChange={(event) =>
+                            handleWhoWeAreStatChange(
+                              index,
+                              'value',
+                              event.target.value
+                            )
+                          }
+                        />
+                      </FormField>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-4">
+                  <p className="text-sm font-medium text-foreground">
+                    Gallery images (exactly 4)
+                  </p>
+                  {(formState.who_we_are_gallery || []).map((item, index) => (
+                    <div
+                      key={`gallery-${index}`}
+                      className="grid gap-4 rounded-lg border border-border bg-background p-4 md:grid-cols-2"
+                    >
+                      <FormField
+                        label={`Image ${index + 1} upload`}
+                        htmlFor={`who_we_are_gallery_${index}_image`}
+                        required
+                      >
+                        <div className="rounded-xl border border-border bg-background/60">
+                          <PhotoUploadField
+                            label=""
+                            value={formState.who_we_are_gallery_files?.[index]?.name || ''}
+                            valueType="text"
+                            valueId={`who_we_are_gallery_${index}_image`}
+                            valuePlaceholder="Select image"
+                            acceptedFileTypes="image/*"
+                            onChange={(event) =>
+                              handleWhoWeAreGalleryFileChange(
+                                index,
+                                event.target.files?.[0] || null
+                              )
+                            }
+                            existingAssetUrl={item?.image_id || ''}
+                            existingAssetLabel="Current image"
+                          />
+                        </div>
+                      </FormField>
+
+                      <FormField
+                        label={`Image ${index + 1} alt text`}
+                        htmlFor={`who_we_are_gallery_${index}_alt`}
+                      >
+                        <Input
+                          id={`who_we_are_gallery_${index}_alt`}
+                          type="text"
+                          value={item?.alt_text || ''}
+                          onChange={(event) =>
+                            handleWhoWeAreGalleryChange(
+                              index,
+                              'alt_text',
+                              event.target.value
+                            )
+                          }
+                        />
+                      </FormField>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="grid gap-5 md:grid-cols-2">
               <FormField label="Theme variant" htmlFor="theme_variant">
                 <Select
                   id="theme_variant"
@@ -322,27 +623,12 @@ function AdminHomepageSectionsCreatePage() {
                 </Select>
               </FormField>
 
-              <FormField label="Published" htmlFor="is_published">
-                <div className="flex items-center gap-2">
-                  <input
-                    id="is_published"
-                    name="is_published"
-                    type="checkbox"
-                    checked={formState.is_published}
-                    onChange={handleChange}
-                    className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    Publish this block immediately.
-                  </span>
-                </div>
-              </FormField>
             </div>
 
-            {blockType === 'editorial_feature' && (
+            {isTextContentBlock && (
               <div className="space-y-5 rounded-xl border border-border/60 bg-muted/20 p-4">
                 <p className="text-sm font-medium text-foreground">
-                  Editorial Feature Settings
+                  {isWelcomeBlock ? 'Welcome Message Settings' : 'Content Block Settings'}
                 </p>
                 <div className="grid gap-5 md:grid-cols-2">
                   <FormField label="Layout variant" htmlFor="layout_variant">
@@ -369,13 +655,25 @@ function AdminHomepageSectionsCreatePage() {
                   </FormField>
                 </div>
 
-                <FormField label="Image upload" htmlFor="media_image_file">
-                  <div className="rounded-lg border border-border bg-background p-4">
-                    <Input
-                      id="media_image_file"
-                      name="media_image_file"
-                      type="file"
-                      accept="image/*"
+                <FormField
+                  label="Image upload"
+                  htmlFor="media_image_file"
+                  helpText={
+                    isWelcomeBlock
+                      ? 'Upload the leadership portrait/image shown on the left side of the Welcome block.'
+                      : null
+                  }
+                >
+                  <div className="rounded-xl border border-border bg-background/60">
+                    <PhotoUploadField
+                      label=""
+                      value={formState.media_image_file?.name || ''}
+                      valueType="text"
+                      valueId="media_image_file"
+                      fileId="media_image_file_input"
+                      fileName="media_image_file"
+                      valuePlaceholder="Select image"
+                      acceptedFileTypes="image/*"
                       onChange={handleFileChange}
                     />
                   </div>
@@ -728,16 +1026,16 @@ function AdminHomepageSectionsCreatePage() {
             )}
           </CardContent>
           <CardFooter>
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={() => navigate('/admin/homepage-sections')}
-            >
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit" loading={isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create block'}
-            </Button>
+            <FormActions
+              mode="publish"
+              onCancel={() => navigate('/admin/homepage-sections')}
+              onAction={(action) => {
+                void handleSubmit(action)
+              }}
+              isSubmitting={isSubmitting}
+              submitAction={submitAction}
+              disableCancel={isSubmitting}
+            />
           </CardFooter>
         </Card>
       </form>

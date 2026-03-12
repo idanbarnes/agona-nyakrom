@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   deleteNews,
   getAllNews,
+  updateNews,
 } from '../../services/api/adminNewsApi.js'
 import { getAuthToken } from '../../lib/auth.js'
 import {
@@ -23,6 +24,10 @@ import {
   TableSkeleton,
   ToastMessage,
 } from '../../components/ui/index.jsx'
+import {
+  TableEntriesSummary,
+  TablePaginationFooter,
+} from '../../components/ui/pagination.jsx'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_LIMIT = 15
@@ -104,6 +109,26 @@ function EditIcon({ className = 'h-4 w-4' }) {
   )
 }
 
+function EyeOffIcon({ className = 'h-4 w-4' }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M17.94 17.94A10.87 10.87 0 0 1 12 20c-7 0-11-8-11-8a21.77 21.77 0 0 1 5.06-6.94" />
+      <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.8 21.8 0 0 1-3.17 4.51" />
+      <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  )
+}
+
 function TrashIcon({ className = 'h-4 w-4' }) {
   return (
     <svg
@@ -125,40 +150,6 @@ function TrashIcon({ className = 'h-4 w-4' }) {
   )
 }
 
-function ChevronLeftIcon({ className = 'h-4 w-4' }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <polyline points="15 18 9 12 15 6" />
-    </svg>
-  )
-}
-
-function ChevronRightIcon({ className = 'h-4 w-4' }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <polyline points="9 18 15 12 9 6" />
-    </svg>
-  )
-}
-
 function formatUpdatedAt(value) {
   if (!value) {
     return 'Not updated'
@@ -176,31 +167,6 @@ function formatUpdatedAt(value) {
     hour: 'numeric',
     minute: '2-digit',
   })
-}
-
-function buildPageItems(currentPage, totalPages) {
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, index) => index + 1)
-  }
-
-  const items = [1]
-  const start = Math.max(2, currentPage - 1)
-  const end = Math.min(totalPages - 1, currentPage + 1)
-
-  if (start > 2) {
-    items.push('ellipsis-start')
-  }
-
-  for (let page = start; page <= end; page += 1) {
-    items.push(page)
-  }
-
-  if (end < totalPages - 1) {
-    items.push('ellipsis-end')
-  }
-
-  items.push(totalPages)
-  return items
 }
 
 function AdminNewsListPage() {
@@ -246,7 +212,7 @@ function AdminNewsListPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [limit, navigate, page, searchQuery, statusFilter])
+  }, [limit, page, searchQuery, statusFilter])
 
   useEffect(() => {
     if (!getAuthToken()) {
@@ -282,6 +248,32 @@ function AdminNewsListPage() {
     setConfirmState({ open: true, id })
   }
 
+  const handleUnpublish = async (item) => {
+    if (!item?.id || !item.published) {
+      return
+    }
+
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    const formData = new FormData()
+    formData.append('published', 'false')
+    formData.append('status', 'draft')
+
+    try {
+      const response = await updateNews(item.id, formData)
+      if (response?.success === false) {
+        throw new Error(response?.message || 'Unable to unpublish news.')
+      }
+      setSuccessMessage('News item unpublished.')
+      fetchNews()
+    } catch (error) {
+      const message = error.message || 'Unable to unpublish news.'
+      setErrorMessage(message)
+      window.alert(message)
+    }
+  }
+
   const handleConfirmDelete = async () => {
     if (!confirmState.id) {
       return
@@ -315,7 +307,8 @@ function AdminNewsListPage() {
   }, [items])
 
   const iconButtonClassName =
-    'inline-flex h-9 w-9 items-center justify-center rounded-md border border-transparent text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+    'inline-flex h-9 w-9 items-center justify-center rounded-md border border-transparent transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+  const neutralIconButtonClassName = `${iconButtonClassName} text-slate-600 hover:bg-accent hover:text-slate-900`
 
   const totalPages = Math.max(1, Math.ceil(total / limit))
 
@@ -337,12 +330,12 @@ function AdminNewsListPage() {
     setPage(DEFAULT_PAGE)
   }
 
-  const handlePreviousPage = () => {
-    setPage((current) => Math.max(DEFAULT_PAGE, current - 1))
-  }
+  const handlePageChange = (nextPage) => {
+    if (nextPage < DEFAULT_PAGE || nextPage > totalPages) {
+      return
+    }
 
-  const handleNextPage = () => {
-    setPage((current) => Math.min(totalPages, current + 1))
+    setPage(nextPage)
   }
 
   const handleViewInEditorPreview = (newsId) => {
@@ -353,15 +346,8 @@ function AdminNewsListPage() {
     navigate(`/admin/news/edit/${newsId}?preview=1`)
   }
 
-  const hasPreviousPage = page > DEFAULT_PAGE
-  const hasNextPage = page < totalPages
-  const pageItems = useMemo(
-    () => buildPageItems(page, totalPages),
-    [page, totalPages],
-  )
   const hasActiveFilters = searchQuery.trim() !== '' || statusFilter !== 'all'
-  const startItem = total === 0 ? 0 : (page - 1) * limit + 1
-  const endItem = total === 0 ? 0 : Math.min((page - 1) * limit + paginatedItems.length, total)
+  const totalEntries = total
 
   return (
     <section className="mx-auto max-w-6xl space-y-6 pb-8 md:space-y-8">
@@ -432,6 +418,8 @@ function AdminNewsListPage() {
           </div>
         </div>
       </div>
+
+      <TableEntriesSummary totalEntries={totalEntries} />
 
       <StateGate
         loading={isLoading}
@@ -519,7 +507,7 @@ function AdminNewsListPage() {
                       <button
                         type="button"
                         onClick={() => handleViewInEditorPreview(item.id)}
-                        className={iconButtonClassName}
+                        className={neutralIconButtonClassName}
                         aria-label={`View ${item.title}`}
                         title="View in split preview"
                       >
@@ -527,7 +515,7 @@ function AdminNewsListPage() {
                       </button>
                     ) : (
                       <span
-                        className={`${iconButtonClassName} cursor-not-allowed opacity-40`}
+                        className={`${neutralIconButtonClassName} cursor-not-allowed opacity-40`}
                         aria-hidden="true"
                       >
                         <EyeIcon />
@@ -535,7 +523,7 @@ function AdminNewsListPage() {
                     )}
                     <Link
                       to={`/admin/news/edit/${item.id}`}
-                      className={iconButtonClassName}
+                      className={neutralIconButtonClassName}
                       aria-label={`Edit ${item.title}`}
                       title="Edit"
                     >
@@ -543,12 +531,27 @@ function AdminNewsListPage() {
                     </Link>
                     <button
                       type="button"
-                      className={`${iconButtonClassName} text-rose-600 hover:bg-rose-50 hover:text-rose-700`}
+                      className={`${iconButtonClassName} !text-red-600 hover:!bg-red-50 hover:!text-red-700`}
                       aria-label={`Delete ${item.title}`}
                       title="Delete"
                       onClick={() => handleDeleteClick(item.id)}
                     >
                       <TrashIcon />
+                    </button>
+                    <button
+                      type="button"
+                      className={[
+                        iconButtonClassName,
+                        !item.id || !item.published
+                          ? 'cursor-not-allowed !text-slate-300 opacity-60 hover:translate-y-0 hover:!bg-transparent hover:!text-slate-300'
+                          : '!text-red-600 hover:!bg-red-50 hover:!text-red-700',
+                      ].join(' ')}
+                      aria-label={`Unpublish ${item.title}`}
+                      title="Unpublish"
+                      disabled={!item.id || !item.published}
+                      onClick={() => handleUnpublish(item)}
+                    >
+                      <EyeOffIcon />
                     </button>
                   </div>
                 </CardContent>
@@ -596,7 +599,7 @@ function AdminNewsListPage() {
                           <button
                             type="button"
                             onClick={() => handleViewInEditorPreview(item.id)}
-                            className={iconButtonClassName}
+                            className={neutralIconButtonClassName}
                             aria-label={`View ${item.title}`}
                             title="View in split preview"
                           >
@@ -604,7 +607,7 @@ function AdminNewsListPage() {
                           </button>
                         ) : (
                           <span
-                            className={`${iconButtonClassName} cursor-not-allowed opacity-40`}
+                            className={`${neutralIconButtonClassName} cursor-not-allowed opacity-40`}
                             aria-hidden="true"
                           >
                             <EyeIcon />
@@ -612,7 +615,7 @@ function AdminNewsListPage() {
                         )}
                         <Link
                           to={`/admin/news/edit/${item.id}`}
-                          className={iconButtonClassName}
+                          className={neutralIconButtonClassName}
                           aria-label={`Edit ${item.title}`}
                           title="Edit"
                         >
@@ -620,12 +623,27 @@ function AdminNewsListPage() {
                         </Link>
                         <button
                           type="button"
-                          className={`${iconButtonClassName} text-rose-600 hover:bg-rose-50 hover:text-rose-700`}
+                          className={`${iconButtonClassName} !text-red-600 hover:!bg-red-50 hover:!text-red-700`}
                           aria-label={`Delete ${item.title}`}
                           title="Delete"
                           onClick={() => handleDeleteClick(item.id)}
                         >
                           <TrashIcon />
+                        </button>
+                        <button
+                          type="button"
+                          className={[
+                            iconButtonClassName,
+                            !item.id || !item.published
+                              ? 'cursor-not-allowed !text-slate-300 opacity-60 hover:translate-y-0 hover:!bg-transparent hover:!text-slate-300'
+                              : '!text-red-600 hover:!bg-red-50 hover:!text-red-700',
+                          ].join(' ')}
+                          aria-label={`Unpublish ${item.title}`}
+                          title="Unpublish"
+                          disabled={!item.id || !item.published}
+                          onClick={() => handleUnpublish(item)}
+                        >
+                          <EyeOffIcon />
                         </button>
                       </div>
                     </TableCell>
@@ -637,68 +655,12 @@ function AdminNewsListPage() {
         </div>
       </StateGate>
 
-      {!isLoading && !errorMessage && total > 0 ? (
-        totalPages > 1 ? (
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Showing {startItem} to {endItem} of {total} articles
-            </p>
-            <nav
-              className="flex items-center justify-end gap-2"
-              aria-label="News pagination"
-            >
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={handlePreviousPage}
-                disabled={!hasPreviousPage}
-                className="px-3"
-              >
-                <ChevronLeftIcon />
-                <span className="hidden sm:inline">Previous</span>
-              </Button>
-
-              {pageItems.map((pageItem) => {
-                if (typeof pageItem === 'string') {
-                  return (
-                    <span
-                      key={pageItem}
-                      className="px-1 text-sm text-muted-foreground"
-                      aria-hidden="true"
-                    >
-                      ...
-                    </span>
-                  )
-                }
-
-                const isActive = pageItem === page
-                return (
-                  <Button
-                    key={pageItem}
-                    type="button"
-                    variant={isActive ? 'primary' : 'secondary'}
-                    onClick={() => setPage(pageItem)}
-                    aria-current={isActive ? 'page' : undefined}
-                    className="min-w-10 px-3"
-                  >
-                    {pageItem}
-                  </Button>
-                )
-              })}
-
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={handleNextPage}
-                disabled={!hasNextPage}
-                className="px-3"
-              >
-                <span className="hidden sm:inline">Next</span>
-                <ChevronRightIcon />
-              </Button>
-            </nav>
-          </div>
-        ) : null
+      {!isLoading && !errorMessage && totalEntries > 0 ? (
+        <TablePaginationFooter
+          page={page}
+          totalPages={totalPages}
+          onChange={handlePageChange}
+        />
       ) : null}
 
       <ConfirmDialog

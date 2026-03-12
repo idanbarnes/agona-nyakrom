@@ -29,6 +29,7 @@ export default function SimpleRichTextEditor({ value, onChange, onUploadImage, t
         <button type="button" className="rounded border px-2 py-1" onClick={() => wrapSelection('<u>', '</u>')}>Underline</button>
         <button type="button" className="rounded border px-2 py-1" onClick={() => wrapSelection('<h2>', '</h2>')}>H2</button>
         <button type="button" className="rounded border px-2 py-1" onClick={() => wrapSelection('<h3>', '</h3>')}>H3</button>
+        <button type="button" className="rounded border px-2 py-1" onClick={() => wrapSelection('<p>', '</p>')}>Paragraph</button>
         <button type="button" className="rounded border px-2 py-1" onClick={() => wrapSelection('<ul><li>', '</li></ul>')}>Bullets</button>
         <button type="button" className="rounded border px-2 py-1" onClick={() => wrapSelection('<ol><li>', '</li></ol>')}>Numbered</button>
         <button type="button" className="rounded border px-2 py-1" onClick={() => wrapSelection('<blockquote>', '</blockquote>')}>Quote</button>

@@ -11,11 +11,17 @@ const baseSelect = `
   body,
   cta_label,
   cta_href,
+  secondary_cta_label,
+  secondary_cta_href,
   theme_variant,
   container_width,
   media_image_id,
   media_alt_text,
   layout_variant,
+  who_we_are_paragraph_one,
+  who_we_are_paragraph_two,
+  who_we_are_stats,
+  who_we_are_gallery,
   hof_selection_mode,
   hof_items_count,
   hof_manual_item_ids,
@@ -57,11 +63,17 @@ const mapBlock = (row) => {
     body: row.body,
     cta_label: row.cta_label,
     cta_href: row.cta_href,
+    secondary_cta_label: row.secondary_cta_label,
+    secondary_cta_href: row.secondary_cta_href,
     theme_variant: row.theme_variant,
     container_width: row.container_width,
     media_image_id: row.media_image_id,
     media_alt_text: row.media_alt_text,
     layout_variant: row.layout_variant,
+    who_we_are_paragraph_one: row.who_we_are_paragraph_one,
+    who_we_are_paragraph_two: row.who_we_are_paragraph_two,
+    who_we_are_stats: row.who_we_are_stats || [],
+    who_we_are_gallery: row.who_we_are_gallery || [],
     hof_selection_mode: row.hof_selection_mode,
     hof_items_count: row.hof_items_count,
     hof_manual_item_ids: row.hof_manual_item_ids || [],
@@ -91,7 +103,11 @@ const mapBlock = (row) => {
 };
 
 const serializeForDb = (key, value) => {
-  if (key === 'gateway_items') {
+  if (
+    key === 'gateway_items' ||
+    key === 'who_we_are_stats' ||
+    key === 'who_we_are_gallery'
+  ) {
     return JSON.stringify(Array.isArray(value) ? value : []);
   }
 
@@ -149,11 +165,17 @@ const update = async (id, data) => {
       body: 'body',
       cta_label: 'cta_label',
       cta_href: 'cta_href',
+      secondary_cta_label: 'secondary_cta_label',
+      secondary_cta_href: 'secondary_cta_href',
       theme_variant: 'theme_variant',
       container_width: 'container_width',
       media_image_id: 'media_image_id',
       media_alt_text: 'media_alt_text',
       layout_variant: 'layout_variant',
+      who_we_are_paragraph_one: 'who_we_are_paragraph_one',
+      who_we_are_paragraph_two: 'who_we_are_paragraph_two',
+      who_we_are_stats: 'who_we_are_stats',
+      who_we_are_gallery: 'who_we_are_gallery',
       hof_selection_mode: 'hof_selection_mode',
       hof_items_count: 'hof_items_count',
       hof_manual_item_ids: 'hof_manual_item_ids',

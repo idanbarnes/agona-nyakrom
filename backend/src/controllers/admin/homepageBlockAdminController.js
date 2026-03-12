@@ -5,11 +5,14 @@ const { success, error } = require('../../utils/response');
 
 const allowedBlockTypes = new Set([
   'editorial_feature',
+  'who_we_are',
+  'welcome',
   'hall_of_fame_spotlight',
   'news_highlight',
   'cultural_break',
   'gateway_links',
 ]);
+const textContentBlockTypes = new Set(['editorial_feature', 'welcome']);
 
 const allowedThemeVariants = new Set(['default', 'muted', 'accent', 'image_bg']);
 const allowedContainerWidths = new Set(['standard', 'wide', 'full_bleed']);
@@ -19,6 +22,43 @@ const allowedNewsSources = new Set(['news', 'announcements', 'mixed']);
 const allowedNewsFeatureModes = new Set(['latest', 'manual']);
 const allowedBackgroundStyles = new Set(['solid', 'gradient', 'image']);
 const allowedOverlayStrengths = new Set(['low', 'medium', 'high']);
+const allowedWhoWeAreStatIcons = new Set([
+  'users',
+  'heart',
+  'award',
+  'trending_up',
+]);
+const blockTypeAliases = new Map([
+  ['editorial_feature', 'editorial_feature'],
+  ['editorial feature', 'editorial_feature'],
+  ['who_we_are', 'who_we_are'],
+  ['who we are', 'who_we_are'],
+  ['who-we-are', 'who_we_are'],
+  ['welcome', 'welcome'],
+  ['welcome_block', 'welcome'],
+  ['welcome block', 'welcome'],
+]);
+
+const normalizeBlockType = (value) => {
+  if (value === null || value === undefined) {
+    return value;
+  }
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  const aliasMatch = blockTypeAliases.get(trimmed.toLowerCase());
+  if (aliasMatch) {
+    return aliasMatch;
+  }
+
+  return trimmed.toLowerCase().replace(/[\s-]+/g, '_');
+};
 
 const parseNumber = (value, fallback = null) => {
   if (value === null || value === undefined || value === '') {
@@ -52,7 +92,7 @@ const parseIdArray = (value) => {
   return [];
 };
 
-const parseGatewayItems = (value) => {
+const parseJsonArray = (value) => {
   if (!value) return [];
   if (Array.isArray(value)) return value;
   if (typeof value === 'string') {
@@ -61,14 +101,76 @@ const parseGatewayItems = (value) => {
   return [];
 };
 
+const sanitizeWhoWeAreStats = (value) => {
+  const parsed = parseJsonArray(value);
+  return (Array.isArray(parsed) ? parsed : []).map((item) => ({
+    icon_key: String(item?.icon_key || item?.iconKey || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, '_'),
+    label: String(item?.label || '').trim(),
+    value: String(item?.value || '').trim(),
+  }));
+};
+
+const sanitizeWhoWeAreGallery = (value) => {
+  const parsed = parseJsonArray(value);
+  return (Array.isArray(parsed) ? parsed : []).map((item) => ({
+    image_id: String(item?.image_id || item?.imageId || '').trim(),
+    alt_text: String(item?.alt_text || item?.altText || '').trim(),
+  }));
+};
+
 const processImageIfPresent = async (file, uniqueId) => {
   if (!file) return null;
   return mediaService.processImage(file, 'homepage', uniqueId);
 };
 
+const listUploadedFiles = (req) => {
+  if (Array.isArray(req.files)) {
+    return req.files;
+  }
+
+  if (!req.files || typeof req.files !== 'object') {
+    return [];
+  }
+
+  return Object.entries(req.files).flatMap(([fieldName, files]) =>
+    (Array.isArray(files) ? files : [])
+      .filter(Boolean)
+      .map((file) => ({
+        ...file,
+        fieldname: file.fieldname || fieldName,
+      }))
+  );
+};
+
+const extractFileFromFields = (req, fieldName) => {
+  if (fieldName === 'image' && req.file) {
+    return req.file;
+  }
+
+  if (Array.isArray(req.files)) {
+    const found = req.files.find((file) => file?.fieldname === fieldName);
+    if (found) {
+      return found;
+    }
+  }
+
+  const byField = req.files?.[fieldName];
+  if (Array.isArray(byField) && byField[0]) {
+    return byField[0];
+  }
+
+  return null;
+};
+
 // Support multer uploads and base64 data URIs
 const extractImageFromRequest = (req) => {
-  if (req.file) return req.file;
+  const uploadedImage =
+    extractFileFromFields(req, 'image') ||
+    extractFileFromFields(req, 'media_image_file');
+  if (uploadedImage) return uploadedImage;
 
   const rawImage = req.body?.image;
   if (typeof rawImage !== 'string') return null;
@@ -86,6 +188,92 @@ const extractImageFromRequest = (req) => {
   };
 };
 
+const parseWhoWeAreGalleryIndex = (fieldName) => {
+  const normalized = String(fieldName || '');
+
+  const matchDirect = normalized.match(/^who_we_are_gallery_image_(\d+)$/);
+  if (matchDirect) {
+    return Number(matchDirect[1]);
+  }
+
+  const matchLegacy = normalized.match(/^who_we_are_gallery_(\d+)_image$/);
+  if (matchLegacy) {
+    return Number(matchLegacy[1]);
+  }
+
+  return null;
+};
+
+const extractWhoWeAreGalleryFilesFromRequest = (req) => {
+  const filesByIndex = new Map();
+
+  listUploadedFiles(req).forEach((file) => {
+    const index = parseWhoWeAreGalleryIndex(file?.fieldname);
+    if (index === null || Number.isNaN(index) || index < 0 || index > 3) {
+      return;
+    }
+
+    if (!filesByIndex.has(index)) {
+      filesByIndex.set(index, file);
+    }
+  });
+
+  for (let index = 0; index < 4; index += 1) {
+    const file =
+      filesByIndex.get(index) ||
+      extractFileFromFields(req, `who_we_are_gallery_image_${index}`) ||
+      extractFileFromFields(req, `who_we_are_gallery_${index}_image`);
+    if (file) {
+      filesByIndex.set(index, file);
+    }
+  }
+
+  return filesByIndex;
+};
+
+const ensureGalleryLength = (gallery, count = 4) => {
+  const normalized = Array.isArray(gallery)
+    ? gallery.map((item) => ({
+      image_id: String(item?.image_id || '').trim(),
+      alt_text: String(item?.alt_text || '').trim(),
+    }))
+    : [];
+
+  while (normalized.length < count) {
+    normalized.push({ image_id: '', alt_text: '' });
+  }
+
+  return normalized.slice(0, count);
+};
+
+const applyWhoWeAreGalleryUploads = async (
+  payload,
+  req,
+  uniqueId,
+  fallbackGallery = []
+) => {
+  const uploadedFiles = extractWhoWeAreGalleryFilesFromRequest(req);
+  if (!uploadedFiles.size) {
+    return;
+  }
+
+  const gallery = ensureGalleryLength(
+    payload.who_we_are_gallery !== undefined
+      ? payload.who_we_are_gallery
+      : fallbackGallery
+  );
+
+  for (const [index, file] of uploadedFiles.entries()) {
+    const images = await processImageIfPresent(file, `${uniqueId}-who-we-are-${index + 1}`);
+    gallery[index] = {
+      ...gallery[index],
+      image_id: images?.original || gallery[index]?.image_id || '',
+    };
+  }
+
+  payload.who_we_are_gallery = gallery;
+};
+
 const normalizeBlockPayload = (payload, { mode = 'create' } = {}) => {
   const hasField = (field) => Object.prototype.hasOwnProperty.call(payload, field);
   const getString = (field) =>
@@ -93,7 +281,9 @@ const normalizeBlockPayload = (payload, { mode = 'create' } = {}) => {
 
   const normalized = {
     title: getString('title'),
-    block_type: hasField('block_type') ? payload.block_type : undefined,
+    block_type: hasField('block_type')
+      ? normalizeBlockType(payload.block_type)
+      : undefined,
     display_order: hasField('display_order')
       ? parseNumber(payload.display_order, null)
       : undefined,
@@ -104,11 +294,21 @@ const normalizeBlockPayload = (payload, { mode = 'create' } = {}) => {
     body: getString('body'),
     cta_label: getString('cta_label'),
     cta_href: getString('cta_href'),
+    secondary_cta_label: getString('secondary_cta_label'),
+    secondary_cta_href: getString('secondary_cta_href'),
     theme_variant: hasField('theme_variant') ? payload.theme_variant : undefined,
     container_width: hasField('container_width') ? payload.container_width : undefined,
     media_image_id: getString('media_image_id'),
     media_alt_text: getString('media_alt_text'),
     layout_variant: hasField('layout_variant') ? payload.layout_variant : undefined,
+    who_we_are_paragraph_one: getString('who_we_are_paragraph_one'),
+    who_we_are_paragraph_two: getString('who_we_are_paragraph_two'),
+    who_we_are_stats: hasField('who_we_are_stats')
+      ? sanitizeWhoWeAreStats(payload.who_we_are_stats)
+      : undefined,
+    who_we_are_gallery: hasField('who_we_are_gallery')
+      ? sanitizeWhoWeAreGallery(payload.who_we_are_gallery)
+      : undefined,
     hof_selection_mode: hasField('hof_selection_mode')
       ? payload.hof_selection_mode
       : undefined,
@@ -149,7 +349,7 @@ const normalizeBlockPayload = (payload, { mode = 'create' } = {}) => {
       ? payload.background_overlay_strength
       : undefined,
     gateway_items: hasField('gateway_items')
-      ? parseGatewayItems(payload.gateway_items)
+      ? parseJsonArray(payload.gateway_items)
       : undefined,
     gateway_columns_desktop: hasField('gateway_columns_desktop')
       ? parseNumber(payload.gateway_columns_desktop, undefined)
@@ -175,11 +375,17 @@ const normalizeBlockPayload = (payload, { mode = 'create' } = {}) => {
     body: null,
     cta_label: null,
     cta_href: null,
+    secondary_cta_label: null,
+    secondary_cta_href: null,
     theme_variant: 'default',
     container_width: 'standard',
     media_image_id: null,
     media_alt_text: null,
     layout_variant: 'image_right',
+    who_we_are_paragraph_one: null,
+    who_we_are_paragraph_two: null,
+    who_we_are_stats: [],
+    who_we_are_gallery: [],
     hof_selection_mode: 'random',
     hof_items_count: 3,
     hof_manual_item_ids: [],
@@ -207,8 +413,12 @@ const normalizeBlockPayload = (payload, { mode = 'create' } = {}) => {
   };
 };
 
-const validateBlock = (data, { allowMissingType = false } = {}) => {
+const validateBlock = (
+  data,
+  { allowMissingType = false, requireDisplayOrder = true } = {}
+) => {
   const errors = [];
+  const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
 
   if (!allowMissingType) {
     if (!data.block_type || !allowedBlockTypes.has(data.block_type)) {
@@ -218,7 +428,10 @@ const validateBlock = (data, { allowMissingType = false } = {}) => {
     errors.push('block_type must be one of the supported block types.');
   }
 
-  if (data.display_order === null || data.display_order === undefined) {
+  if (
+    requireDisplayOrder &&
+    (data.display_order === null || data.display_order === undefined)
+  ) {
     errors.push('display_order is required.');
   }
 
@@ -254,6 +467,45 @@ const validateBlock = (data, { allowMissingType = false } = {}) => {
     errors.push('background_overlay_strength is invalid.');
   }
 
+  const hasPrimaryCtaLabel = hasText(data.cta_label);
+  const hasPrimaryCtaHref = hasText(data.cta_href);
+  if (hasPrimaryCtaLabel !== hasPrimaryCtaHref) {
+    errors.push('cta_label and cta_href must both be provided together.');
+  }
+
+  if (data.block_type === 'who_we_are') {
+    if (Array.isArray(data.who_we_are_stats) && data.who_we_are_stats.length > 0) {
+      if (data.who_we_are_stats.length !== 4) {
+        errors.push('who_we_are_stats must contain exactly 4 items.');
+      }
+
+      data.who_we_are_stats.forEach((item, index) => {
+        if (!item?.label || !item?.value || !item?.icon_key) {
+          errors.push(`who_we_are_stats[${index}] requires icon_key, label, and value.`);
+          return;
+        }
+
+        if (!allowedWhoWeAreStatIcons.has(item.icon_key)) {
+          errors.push(
+            `who_we_are_stats[${index}] icon_key must be one of: ${Array.from(allowedWhoWeAreStatIcons).join(', ')}.`
+          );
+        }
+      });
+    }
+
+    if (Array.isArray(data.who_we_are_gallery) && data.who_we_are_gallery.length > 0) {
+      if (data.who_we_are_gallery.length !== 4) {
+        errors.push('who_we_are_gallery must contain exactly 4 items.');
+      }
+
+      data.who_we_are_gallery.forEach((item, index) => {
+        if (!item?.image_id) {
+          errors.push(`who_we_are_gallery[${index}] requires image_id.`);
+        }
+      });
+    }
+  }
+
   if (data.block_type === 'cultural_break' && !data.quote_text) {
     errors.push('quote_text is required for cultural_break.');
   }
@@ -276,14 +528,40 @@ const validateBlock = (data, { allowMissingType = false } = {}) => {
 
 const validatePublishedRequirements = (data) => {
   const errors = [];
+  const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
 
   if (!data.is_published) {
     return errors;
   }
 
-  if (data.block_type === 'editorial_feature') {
+  if (data.display_order === null || data.display_order === undefined) {
+    errors.push('display_order is required.');
+  }
+
+  if (textContentBlockTypes.has(data.block_type)) {
     if (!data.title && !data.subtitle && !data.body) {
-      errors.push('Editorial feature blocks need a title, subtitle, or body to publish.');
+      errors.push('This block type needs a title, subtitle, or body to publish.');
+    }
+  }
+
+  if (data.block_type === 'who_we_are') {
+    if (!hasText(data.title)) {
+      errors.push('Who We Are requires a title to publish.');
+    }
+    if (!hasText(data.subtitle)) {
+      errors.push('Who We Are requires a subtitle to publish.');
+    }
+    if (!hasText(data.who_we_are_paragraph_one)) {
+      errors.push('Who We Are requires paragraph one to publish.');
+    }
+    if (!hasText(data.cta_label) || !hasText(data.cta_href)) {
+      errors.push('Who We Are requires the primary CTA label and link to publish.');
+    }
+    if (!Array.isArray(data.who_we_are_stats) || data.who_we_are_stats.length !== 4) {
+      errors.push('Who We Are requires exactly 4 stats to publish.');
+    }
+    if (!Array.isArray(data.who_we_are_gallery) || data.who_we_are_gallery.length !== 4) {
+      errors.push('Who We Are requires exactly 4 gallery images to publish.');
     }
   }
 
@@ -338,11 +616,14 @@ const preparePublishState = (data, existing) => {
 const createHomepageBlock = async (req, res) => {
   try {
     const payload = normalizeBlockPayload(req.body || {}, { mode: 'create' });
+    const uniqueId = crypto.randomUUID();
     const imageFile = extractImageFromRequest(req);
     if (imageFile) {
-      const uniqueId = crypto.randomUUID();
       const images = await processImageIfPresent(imageFile, uniqueId);
       payload.media_image_id = images?.original || null;
+    }
+    if (payload.block_type === 'who_we_are') {
+      await applyWhoWeAreGalleryUploads(payload, req, uniqueId);
     }
 
     const validationErrors = validateBlock(payload);
@@ -362,7 +643,11 @@ const createHomepageBlock = async (req, res) => {
       return error(res, err.message, 400);
     }
     if (err.message.toLowerCase().includes('json')) {
-      return error(res, 'Invalid gateway_items JSON payload.', 400);
+      return error(
+        res,
+        'Invalid JSON payload for gateway_items, who_we_are_stats, or who_we_are_gallery.',
+        400
+      );
     }
     return error(res, 'Failed to create homepage block', 500);
   }
@@ -379,15 +664,27 @@ const updateHomepageBlock = async (req, res) => {
     }
 
     const payload = normalizeBlockPayload(req.body || {}, { mode: 'update' });
+    const uniqueId = existing?.id || crypto.randomUUID();
     const imageFile = extractImageFromRequest(req);
     if (imageFile) {
-      const uniqueId = existing?.id || crypto.randomUUID();
       const images = await processImageIfPresent(imageFile, uniqueId);
       payload.media_image_id = images?.original || null;
     }
+    const targetBlockType = payload.block_type || existing.block_type;
+    if (targetBlockType === 'who_we_are') {
+      await applyWhoWeAreGalleryUploads(
+        payload,
+        req,
+        uniqueId,
+        existing?.who_we_are_gallery || []
+      );
+    }
     const merged = { ...existing, ...payload };
 
-    const validationErrors = validateBlock(merged, { allowMissingType: true });
+    const validationErrors = validateBlock(merged, {
+      allowMissingType: true,
+      requireDisplayOrder: false,
+    });
     const publishErrors = validatePublishedRequirements(merged);
     const errors = [...validationErrors, ...publishErrors];
 
@@ -404,7 +701,11 @@ const updateHomepageBlock = async (req, res) => {
       return error(res, err.message, 400);
     }
     if (err.message.toLowerCase().includes('json')) {
-      return error(res, 'Invalid gateway_items JSON payload.', 400);
+      return error(
+        res,
+        'Invalid JSON payload for gateway_items, who_we_are_stats, or who_we_are_gallery.',
+        400
+      );
     }
     return error(res, 'Failed to update homepage block', 500);
   }

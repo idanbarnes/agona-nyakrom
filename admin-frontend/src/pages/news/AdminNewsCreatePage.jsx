@@ -4,6 +4,7 @@ import { createNews } from '../../services/api/adminNewsApi.js'
 import { getAuthToken } from '../../lib/auth.js'
 import { useDraftAutosave } from '../../hooks/useDraftAutosave.js'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
+import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 import {
   Button,
   Card,
@@ -13,32 +14,12 @@ import {
   FormField,
   InlineError,
   Input,
-  Label,
   Textarea,
 } from '../../components/ui/index.jsx'
 
 const MAX_META_DESCRIPTION_LENGTH = 160
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
 const SUPPORTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif']
-
-function UploadIcon({ className = 'h-5 w-5' }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
-    </svg>
-  )
-}
 
 function CalendarIcon({ className = 'h-4 w-4' }) {
   return (
@@ -148,7 +129,6 @@ function formatDraftTime(timestamp) {
 
 function AdminNewsCreatePage() {
   const navigate = useNavigate()
-  const imageInputRef = useRef(null)
   const draftAppliedRef = useRef(false)
   const [formState, setFormState] = useState({
     title: '',
@@ -461,32 +441,18 @@ function AdminNewsCreatePage() {
                 />
               </FormField>
 
-              <div className="space-y-2">
-                <Label htmlFor="image">Featured Image</Label>
-                <button
-                  id="image"
-                  type="button"
-                  onClick={() => imageInputRef.current?.click()}
-                  className="group flex w-full items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-background px-4 py-4 text-left transition-all duration-200 hover:border-primary/60 hover:bg-blue-50/30 focus-visible:border-primary"
-                >
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">
-                      {imageFileName || 'Click to upload image'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 5MB</p>
-                  </div>
-                  <span className="rounded-lg border border-border/80 bg-white p-2 text-muted-foreground transition-colors group-hover:text-primary">
-                    <UploadIcon />
-                  </span>
-                </button>
-                <Input
-                  ref={imageInputRef}
-                  id="image-file"
-                  name="image"
-                  type="file"
-                  accept=".png,.jpg,.jpeg,.gif,image/png,image/jpeg,image/gif"
-                  className="hidden"
+              <div className="rounded-xl border border-border bg-background/60">
+                <PhotoUploadField
+                  label="Featured Image"
+                  value={imageFileName}
+                  valueType="text"
+                  valueId="image"
+                  valuePlaceholder="Click to upload image"
+                  fileId="image-file"
+                  fileName="image"
+                  acceptedFileTypes=".png,.jpg,.jpeg,.gif,image/png,image/jpeg,image/gif"
                   onChange={handleFileChange}
+                  helperText="PNG, JPG, GIF up to 5MB."
                 />
               </div>
 

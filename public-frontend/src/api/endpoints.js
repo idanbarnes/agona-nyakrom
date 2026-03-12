@@ -75,7 +75,7 @@ export const getLandmarkDetail = (slug) =>
   request(appendPreviewToken(`/api/public/landmarks/${slug}`))
 
 // Carousel endpoints.
-export const getCarousel = () => request('/api/public/carousel')
+export const getCarousel = () => request(appendPreviewToken('/api/public/carousel'))
 
 // History endpoints.
 export const getHistory = () => request('/api/public/history')

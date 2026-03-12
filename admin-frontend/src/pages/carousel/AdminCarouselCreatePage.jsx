@@ -4,6 +4,8 @@ import Cropper from 'react-easy-crop'
 import { createSlide } from '../../services/api/adminCarouselApi.js'
 import { getAuthToken } from '../../lib/auth.js'
 import { getCroppedImageDataUrl } from '../../lib/cropImage.js'
+import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
+import FormActions from '../../components/ui/form-actions.jsx'
 import {
   Button,
   Card,
@@ -12,7 +14,6 @@ import {
   FormField,
   InlineError,
   Input,
-  ImageWithFallback,
   Modal,
   Textarea,
 } from '../../components/ui/index.jsx'
@@ -26,10 +27,10 @@ function AdminCarouselCreatePage() {
     cta_text: '',
     cta_url: '',
     display_order: '',
-    published: false,
     image: null,
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitAction, setSubmitAction] = useState('publish')
   const [errorMessage, setErrorMessage] = useState('')
   const [cropModalOpen, setCropModalOpen] = useState(false)
   const [crop, setCrop] = useState({ x: 0, y: 0 })
@@ -118,9 +119,9 @@ function AdminCarouselCreatePage() {
     setCropError('')
   }
 
-  const handleSubmit = async (event) => {
-    event.preventDefault()
+  const handleSubmit = async (action) => {
     setErrorMessage('')
+    setSubmitAction(action)
 
     if (!getAuthToken()) {
       navigate('/login', { replace: true })
@@ -152,7 +153,7 @@ function AdminCarouselCreatePage() {
     formData.append('cta_text', formState.cta_text.trim())
     formData.append('cta_url', formState.cta_url.trim())
     formData.append('display_order', String(Number(formState.display_order)))
-    formData.append('published', String(formState.published))
+    formData.append('published', String(action === 'publish'))
     formData.append('image', formState.image)
     formData.append('crop_x', String(cropData.x))
     formData.append('crop_y', String(cropData.y))
@@ -165,7 +166,11 @@ function AdminCarouselCreatePage() {
       if (response?.success === false) {
         throw new Error(response?.message || 'Unable to create slide.')
       }
-      window.alert('Carousel slide created successfully')
+      window.alert(
+        action === 'draft'
+          ? 'Carousel draft saved successfully'
+          : 'Carousel slide published successfully',
+      )
       navigate('/admin/carousel', { replace: true })
     } catch (error) {
 
@@ -187,7 +192,7 @@ function AdminCarouselCreatePage() {
           Add slide copy, call-to-action details, and ordering for the carousel.
         </p>
       </header>
-      <form onSubmit={handleSubmit}>
+      <form>
         <Card>
           <CardContent className="space-y-5 md:space-y-6">
             <InlineError message={errorMessage} />
@@ -250,59 +255,39 @@ function AdminCarouselCreatePage() {
                 required
               />
             </FormField>
-
-            <FormField label="Published" htmlFor="published">
-              <div className="flex items-center gap-2">
-                <input
-                  id="published"
-                  name="published"
-                  type="checkbox"
-                  checked={formState.published}
-                  onChange={handleChange}
-                  className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-                <span className="text-sm text-muted-foreground">
-                  Publish this slide immediately.
-                </span>
-              </div>
-            </FormField>
-
             <FormField label="Image" htmlFor="image" required>
-              <div className="rounded-lg border border-border bg-background p-4">
-                <Input
-                  id="image"
-                  name="image"
-                  type="file"
+              <div className="rounded-xl border border-border bg-background/60">
+                <PhotoUploadField
+                  label=""
+                  value={formState.image?.name || ''}
+                  valueType="text"
+                  valueId="image"
+                  valuePlaceholder="Select image"
+                  fileId="image-file"
+                  fileName="image"
+                  acceptedFileTypes="image/*"
                   onChange={handleFileChange}
                   required
+                  instructions="Recommended image size: 1920 x 800 (wide banner). You will crop the image before saving."
+                  previewSrc={cropPreview}
+                  previewAlt="Cropped preview"
+                  previewContainerClassName="mt-1 max-w-xs"
+                  previewClassName="h-24 w-full rounded-md object-cover"
                 />
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Recommended image size: 1920 × 800 (wide banner). You will
-                  crop the image before saving.
-                </p>
-                {cropPreview ? (
-                  <div className="mt-4 max-w-xs">
-                    <ImageWithFallback
-                      src={cropPreview}
-                      alt="Cropped preview"
-                      className="h-24 w-full rounded-md object-cover"
-                    />
-                  </div>
-                ) : null}
               </div>
             </FormField>
           </CardContent>
           <CardFooter>
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={() => navigate('/admin/carousel')}
-            >
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit" loading={isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create slide'}
-            </Button>
+            <FormActions
+              mode="publish"
+              onCancel={() => navigate('/admin/carousel')}
+              onAction={(nextAction) => {
+                void handleSubmit(nextAction)
+              }}
+              isSubmitting={isSubmitting}
+              submitAction={submitAction}
+              disableCancel={isSubmitting}
+            />
           </CardFooter>
         </Card>
       </form>
@@ -372,3 +357,4 @@ function AdminCarouselCreatePage() {
 }
 
 export default AdminCarouselCreatePage
+

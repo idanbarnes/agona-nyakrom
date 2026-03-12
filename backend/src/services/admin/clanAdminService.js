@@ -144,13 +144,29 @@ const remove = async (id) => {
   return rowCount > 0;
 };
 
-const getAll = async () => {
+const getAll = async ({ limit, offset } = {}) => {
+  const values = [];
+  let paginationClause = '';
+
+  if (limit !== undefined && offset !== undefined) {
+    values.push(limit, offset);
+    paginationClause = ` LIMIT $${values.length - 1} OFFSET $${values.length}`;
+  }
+
   const { rows } = await pool.query(
     `SELECT ${baseSelect}
      FROM family_clans
-     ORDER BY created_at DESC`
+     ORDER BY created_at DESC${paginationClause}`,
+    values
   );
   return rows.map(mapClan);
+};
+
+const countAll = async () => {
+  const { rows } = await pool.query(
+    'SELECT COUNT(*)::int AS total FROM family_clans'
+  );
+  return Number(rows[0]?.total || 0);
 };
 
 const getById = async (id) => {
@@ -169,5 +185,6 @@ module.exports = {
   update,
   delete: remove,
   getAll,
+  countAll,
   getById,
 };

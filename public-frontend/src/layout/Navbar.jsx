@@ -1,6 +1,12 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { AnimatePresence, motion as Motion, useReducedMotion } from 'framer-motion'
+import {
+  backdropFadeInOut,
+  dropdownInOut,
+  mobileMenuPanelInOut,
+} from '../motion/variants.js'
 
 const navItems = [
   { label: 'Home', to: '/' },
@@ -32,7 +38,10 @@ const navItems = [
 //   New mobile/tablet logic keeps the same information architecture using accordion sections.
 
 const linkBaseClass =
-  'whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium leading-5 text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2'
+  'relative whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium leading-5 text-gray-200 transition-colors duration-200 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111827] after:pointer-events-none after:absolute after:right-3 after:bottom-[5px] after:left-3 after:h-[2px] after:origin-left after:scale-x-0 after:rounded-full after:bg-amber-400 after:transition-transform after:duration-200 after:ease-out hover:after:scale-x-100 focus-visible:after:scale-x-100'
+
+const activeDesktopLinkClass = 'bg-white/15 text-white ring-1 ring-white/20 after:scale-x-100'
+const activeMobileLinkClass = 'bg-white/15 text-white ring-1 ring-white/20'
 
 function ChevronIcon({ className = '' }) {
   return (
@@ -71,7 +80,7 @@ function DesktopNavLink({ item }) {
     <NavLink
       to={item.to}
       className={({ isActive }) =>
-        `${linkBaseClass} ${isActive ? 'bg-gray-100 text-gray-900' : ''}`
+        `${linkBaseClass} ${isActive ? activeDesktopLinkClass : ''}`
       }
     >
       {item.label}
@@ -79,7 +88,7 @@ function DesktopNavLink({ item }) {
   )
 }
 
-function DesktopDropdown({ item, isOpen, onToggle, onClose, isActive }) {
+function DesktopDropdown({ item, isOpen, onToggle, onClose, isActive, variants }) {
   const panelId = `desktop-menu-${item.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
 
   return (
@@ -87,42 +96,53 @@ function DesktopDropdown({ item, isOpen, onToggle, onClose, isActive }) {
       <button
         type="button"
         onClick={onToggle}
-        className={`${linkBaseClass} inline-flex items-center gap-1.5 ${isActive ? 'bg-gray-100 text-gray-900' : ''}`}
+        className={`${linkBaseClass} inline-flex items-center gap-1.5 ${
+          isActive ? activeDesktopLinkClass : ''
+        }`}
         aria-expanded={isOpen}
         aria-controls={panelId}
       >
         <span>{item.label}</span>
         <ChevronIcon className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
-      {isOpen ? (
-        <ul
-          id={panelId}
-          role="menu"
-          className="absolute left-0 top-full z-50 mt-2 w-72 rounded-xl border border-gray-200 bg-white p-2 shadow-md"
-        >
-          {item.children.map((child) => (
-            <li key={child.to} role="none">
-              <NavLink
-                to={child.to}
-                role="menuitem"
-                onClick={onClose}
-                className={({ isActive: childActive }) =>
-                  `flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 ${
-                    childActive ? 'bg-gray-100 text-gray-900' : ''
-                  }`
-                }
-              >
-                {child.label}
-              </NavLink>
+      <AnimatePresence>
+        {isOpen ? (
+          <Motion.ul
+            id={panelId}
+            role="menu"
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            variants={variants}
+            className="absolute left-0 top-full z-50 mt-2 w-72 rounded-xl border border-white/10 bg-[#111827] p-2 shadow-lg shadow-black/20"
+          >
+            <li className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-wide text-white/50 uppercase">
+              About Nyakrom
             </li>
-          ))}
-        </ul>
-      ) : null}
+            {item.children.map((child) => (
+              <li key={child.to} role="none">
+                <NavLink
+                  to={child.to}
+                  role="menuitem"
+                  onClick={onClose}
+                  className={({ isActive: childActive }) =>
+                    `flex items-center rounded-lg px-3.5 py-2.5 text-sm font-medium text-white/85 transition-all duration-200 hover:translate-x-[2px] hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111827] ${
+                      childActive ? 'bg-white/10 text-white' : ''
+                    }`
+                  }
+                >
+                  {child.label}
+                </NavLink>
+              </li>
+            ))}
+          </Motion.ul>
+        ) : null}
+      </AnimatePresence>
     </li>
   )
 }
 
-function MobileAccordionSection({ item, expanded, onToggle, onNavigate }) {
+function MobileAccordionSection({ item, expanded, onToggle, onNavigate, isActive }) {
   const panelId = `mobile-panel-${item.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
 
   return (
@@ -130,7 +150,9 @@ function MobileAccordionSection({ item, expanded, onToggle, onNavigate }) {
       <button
         type="button"
         onClick={onToggle}
-        className="flex min-h-11 w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+        className={`flex min-h-11 w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-100 transition-colors duration-200 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111827] ${
+          isActive ? activeMobileLinkClass : ''
+        }`}
         aria-expanded={expanded}
         aria-controls={panelId}
       >
@@ -145,8 +167,8 @@ function MobileAccordionSection({ item, expanded, onToggle, onNavigate }) {
                 to={child.to}
                 onClick={onNavigate}
                 className={({ isActive }) =>
-                  `flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 ${
-                    isActive ? 'bg-gray-100 text-gray-900' : ''
+                  `flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-gray-200 transition-colors duration-200 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111827] ${
+                    isActive ? activeMobileLinkClass : ''
                   }`
                 }
               >
@@ -162,6 +184,7 @@ function MobileAccordionSection({ item, expanded, onToggle, onNavigate }) {
 
 function Navbar({ settings, loading }) {
   const location = useLocation()
+  const reduceMotion = useReducedMotion()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [openDesktopDropdown, setOpenDesktopDropdown] = useState(null)
   const [mobileExpanded, setMobileExpanded] = useState({})
@@ -173,6 +196,18 @@ function Navbar({ settings, loading }) {
 
   const siteName = settings?.site_name || settings?.siteName || 'Nyakrom Community'
   const resolvedItems = useMemo(() => navItems, [])
+  const dropdownVariants = useMemo(
+    () => dropdownInOut(Boolean(reduceMotion)),
+    [reduceMotion],
+  )
+  const mobileMenuPanelVariants = useMemo(
+    () => mobileMenuPanelInOut(Boolean(reduceMotion)),
+    [reduceMotion],
+  )
+  const mobileBackdropVariants = useMemo(
+    () => backdropFadeInOut(Boolean(reduceMotion)),
+    [reduceMotion],
+  )
 
   useEffect(() => {
     const onScroll = () => setHasShadow(window.scrollY > 4)
@@ -182,8 +217,12 @@ function Navbar({ settings, loading }) {
   }, [])
 
   useEffect(() => {
-    setIsMobileOpen(false)
-    setOpenDesktopDropdown(null)
+    const rafId = window.requestAnimationFrame(() => {
+      setIsMobileOpen(false)
+      setOpenDesktopDropdown(null)
+    })
+
+    return () => window.cancelAnimationFrame(rafId)
   }, [location.pathname])
 
   useEffect(() => {
@@ -258,16 +297,25 @@ function Navbar({ settings, loading }) {
 
   return (
     <header
-      className={`sticky top-0 z-50 border-b border-gray-200 bg-white/90 backdrop-blur ${
-        hasShadow ? 'shadow-sm' : ''
+      className={`sticky top-0 z-50 overflow-visible rounded-tl-[8px] border-b border-[#1F2937] bg-[#111827]/95 backdrop-blur md:rounded-tl-[10px] lg:rounded-tl-none ${
+        hasShadow ? 'shadow-[0_8px_20px_rgba(0,0,0,0.35)]' : ''
       }`}
     >
-      <nav aria-label="Main navigation" className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4 lg:h-16 lg:px-6">
+      <nav
+        aria-label="Main navigation"
+        className="relative mx-auto flex h-20 max-w-7xl items-center gap-4 px-4 lg:h-20 lg:px-6"
+      >
         <NavLink
           to="/"
-          className="inline-flex items-center gap-2 text-sm font-semibold tracking-tight text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+          className="inline-flex min-w-0 max-w-[calc(100%-4.5rem)] items-center gap-2 pr-12 text-sm font-semibold tracking-tight text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111827] lg:max-w-none lg:pr-0"
         >
-          {siteName}
+          <span
+            aria-hidden="true"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-amber-700 text-lg font-bold text-white shadow-[0_6px_14px_rgba(217,119,6,0.35)]"
+          >
+            N
+          </span>
+          <span className="truncate">{siteName}</span>
         </NavLink>
 
         <ul
@@ -287,6 +335,7 @@ function Navbar({ settings, loading }) {
                 }
                 onClose={() => setOpenDesktopDropdown(null)}
                 isActive={isDropdownParentActive(item)}
+                variants={dropdownVariants}
               />
             ) : (
               <li key={item.to}>
@@ -299,46 +348,50 @@ function Navbar({ settings, loading }) {
         <button
           ref={mobileOpenBtnRef}
           type="button"
-          onClick={() => setIsMobileOpen(true)}
-          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 lg:hidden"
-          aria-label="Open menu"
+          onClick={() => setIsMobileOpen((prev) => !prev)}
+          // Keep toggle anchored to the right edge so viewport changes cannot push it off-canvas.
+          className="absolute top-1/2 right-4 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg border border-[#374151] text-gray-100 transition-[background-color,transform] duration-200 ease-out hover:bg-white/10 active:scale-[0.98] motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111827] lg:hidden"
+          aria-label={isMobileOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={isMobileOpen}
           aria-controls="mobile-navigation-dialog"
         >
-          <MenuIcon />
+          {isMobileOpen ? <CloseIcon /> : <MenuIcon />}
         </button>
       </nav>
 
-      {isMobileOpen
-        ? createPortal(
-            <div className="fixed inset-0 z-[100] lg:hidden" aria-hidden={!isMobileOpen}>
-              <button
+      {createPortal(
+        <AnimatePresence>
+          {isMobileOpen ? (
+            <Motion.div
+              className="fixed inset-x-0 top-20 bottom-0 z-[100] lg:hidden"
+              aria-hidden={!isMobileOpen}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+            >
+              <Motion.button
                 type="button"
                 className="absolute inset-0 bg-black/40"
                 onClick={() => setIsMobileOpen(false)}
                 aria-label="Close menu overlay"
+                variants={mobileBackdropVariants}
+                initial="hidden"
+                animate="show"
+                exit="exit"
               />
 
-              <aside
+              <Motion.aside
                 id="mobile-navigation-dialog"
                 role="dialog"
                 aria-modal="true"
                 aria-label="Mobile navigation menu"
                 ref={mobileDialogRef}
-                className="absolute inset-y-0 right-0 z-[110] flex h-full w-full max-w-sm flex-col border-l border-gray-200 bg-white shadow-xl"
+                variants={mobileMenuPanelVariants}
+                initial="hidden"
+                animate="show"
+                exit="exit"
+                className="absolute inset-y-0 right-0 z-[110] flex h-full w-full max-w-sm flex-col border-l border-[#1F2937] bg-[#111827]/95 backdrop-blur-sm shadow-[0_16px_40px_rgba(0,0,0,0.45)]"
               >
-                <div className="flex h-14 items-center justify-between border-b border-gray-200 px-4">
-                  <span className="text-sm font-semibold text-gray-900">Menu</span>
-                  <button
-                    type="button"
-                    onClick={() => setIsMobileOpen(false)}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
-                    aria-label="Close menu"
-                  >
-                    <CloseIcon />
-                  </button>
-                </div>
-
                 <div className="overflow-y-auto px-4 py-4">
                   <ul className="flex flex-col space-y-1">
                     {resolvedItems.map((item, index) => {
@@ -355,6 +408,7 @@ function Navbar({ settings, loading }) {
                               }))
                             }
                             onNavigate={() => setIsMobileOpen(false)}
+                            isActive={isDropdownParentActive(item)}
                           />
                         )
                       }
@@ -366,8 +420,8 @@ function Navbar({ settings, loading }) {
                             ref={index === 0 ? firstMobileLinkRef : null}
                             onClick={() => setIsMobileOpen(false)}
                             className={({ isActive }) =>
-                              `flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 ${
-                                isActive ? 'bg-gray-100 text-gray-900' : ''
+                              `flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-gray-100 transition-colors duration-200 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111827] ${
+                                isActive ? activeMobileLinkClass : ''
                               }`
                             }
                           >
@@ -379,14 +433,15 @@ function Navbar({ settings, loading }) {
                   </ul>
 
                   {loading ? (
-                    <p className="mt-3 px-3 text-xs text-gray-500">Loading site settings...</p>
+                    <p className="mt-3 px-3 text-xs text-gray-400">Loading site settings...</p>
                   ) : null}
                 </div>
-              </aside>
-            </div>,
-            document.body,
-          )
-        : null}
+              </Motion.aside>
+            </Motion.div>
+          ) : null}
+        </AnimatePresence>,
+        document.body,
+      )}
     </header>
   )
 }

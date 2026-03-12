@@ -1,4 +1,5 @@
 export { Button } from './button.jsx'
+export { DetailPageCTA } from './detail-page-cta.jsx'
 export { Input } from './input.jsx'
 export { Textarea } from './textarea.jsx'
 export { Select } from './select.jsx'

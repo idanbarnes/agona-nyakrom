@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { buildAdminPreviewPath } from '../../lib/adminPreview.js'
+import FormActions from '../../components/ui/form-actions.jsx'
 import {
   Button,
   Card,
@@ -9,7 +10,6 @@ import {
   EmptyState,
   Input,
   Modal,
-  Select,
   Table,
   TableBody,
   TableCell,
@@ -18,6 +18,10 @@ import {
   Textarea,
   ToastMessage,
 } from '../../components/ui/index.jsx'
+import {
+  TableEntriesSummary,
+  TablePaginationFooter,
+} from '../../components/ui/pagination.jsx'
 import {
   bulkAdminFaqAction,
   createAdminFaq,
@@ -33,7 +37,7 @@ const DEFAULT_PAGE = 1
 const DEFAULT_LIMIT = 10
 
 const statusFilterOptions = [
-  { value: 'all', label: 'All' },
+  { value: 'all', label: 'All Statuses' },
   { value: 'published', label: 'Published' },
   { value: 'draft', label: 'Draft' },
 ]
@@ -41,7 +45,6 @@ const statusFilterOptions = [
 const initialForm = {
   question: '',
   answer: '',
-  status: 'draft',
 }
 
 function normalizeFaqs(items = []) {
@@ -94,6 +97,153 @@ function formatDate(value) {
   })
 }
 
+function PlusIcon({ className = 'h-4 w-4' }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  )
+}
+
+function SearchIcon({ className = 'h-4 w-4' }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  )
+}
+
+function EyeIcon({ className = 'h-4 w-4' }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
+}
+
+function EditIcon({ className = 'h-4 w-4' }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+    </svg>
+  )
+}
+
+function TrashIcon({ className = 'h-4 w-4' }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  )
+}
+
+function EyeOffIcon({ className = 'h-4 w-4' }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M17.94 17.94A10.87 10.87 0 0 1 12 20c-7 0-11-8-11-8a21.77 21.77 0 0 1 5.06-6.94" />
+      <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.8 21.8 0 0 1-3.17 4.51" />
+      <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  )
+}
+
+function ChevronUpIcon({ className = 'h-4 w-4' }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <polyline points="18 15 12 9 6 15" />
+    </svg>
+  )
+}
+
+function ChevronDownIcon({ className = 'h-4 w-4' }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  )
+}
+
 function badgeClassForStatus(status) {
   return status === 'published'
     ? 'bg-green-100 text-green-700'
@@ -113,6 +263,7 @@ function AdminFaqManagerPage() {
 
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [submitAction, setSubmitAction] = useState('publish')
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -133,7 +284,7 @@ function AdminFaqManagerPage() {
     return () => window.clearTimeout(timer)
   }, [searchInput])
 
-  const loadFaqs = async () => {
+  const loadFaqs = useCallback(async () => {
     setIsLoading(true)
     setErrorMessage('')
 
@@ -160,18 +311,17 @@ function AdminFaqManagerPage() {
         setPage((current) => Math.max(DEFAULT_PAGE, current - 1))
       }
     } catch (error) {
-
       setErrorMessage(error?.message || 'Unable to load FAQs.')
       setItems([])
       setTotal(0)
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [limit, page, searchTerm, statusFilter])
 
   useEffect(() => {
     loadFaqs()
-  }, [page, limit, searchTerm, statusFilter])
+  }, [loadFaqs])
 
   const filteredItems = items
 
@@ -196,38 +346,40 @@ function AdminFaqManagerPage() {
   }, [editingId, formState.question, items])
 
   const totalPages = Math.max(1, Math.ceil(total / limit))
-  const startItem = total === 0 ? 0 : (page - 1) * limit + 1
-  const endItem = total === 0 ? 0 : Math.min(startItem + filteredItems.length - 1, total)
+  const totalEntries = total
 
   const resetModal = () => {
     setEditingId('')
+    setSubmitAction('publish')
     setFormState(initialForm)
     setIsModalOpen(false)
   }
 
   const openCreateModal = () => {
     setEditingId('')
+    setSubmitAction('publish')
     setFormState(initialForm)
     setIsModalOpen(true)
   }
 
   const openEditModal = (item) => {
     setEditingId(item.id)
+    setSubmitAction('publish')
     setFormState({
       question: item.question || '',
       answer: item.answer || '',
-      status: item.status || (item.is_active ? 'published' : 'draft'),
     })
     setIsModalOpen(true)
   }
 
-  const saveFaq = async (forcedStatus) => {
+  const saveFaq = async (action = 'publish') => {
     setErrorMessage('')
     setSuccessMessage('')
+    setSubmitAction(action)
 
     const question = formState.question.trim()
     const answer = formState.answer.trim()
-    const status = forcedStatus || formState.status || 'draft'
+    const status = action === 'publish' ? 'published' : 'draft'
 
     if (!question || !answer) {
       setErrorMessage('Question and answer are required.')
@@ -249,10 +401,18 @@ function AdminFaqManagerPage() {
     try {
       if (editingId) {
         await updateAdminFaq(editingId, payload)
-        setSuccessMessage('FAQ updated successfully.')
+        setSuccessMessage(
+          action === 'draft'
+            ? 'FAQ draft saved successfully.'
+            : 'FAQ published successfully.',
+        )
       } else {
         await createAdminFaq(payload)
-        setSuccessMessage('FAQ created successfully.')
+        setSuccessMessage(
+          action === 'draft'
+            ? 'FAQ draft saved successfully.'
+            : 'FAQ published successfully.',
+        )
       }
 
       resetModal()
@@ -288,17 +448,20 @@ function AdminFaqManagerPage() {
     }
   }
 
-  const handleToggleFaq = async (faqId) => {
+  const handleUnpublishFaq = async (item) => {
+    if (!item?.id || item?.status !== 'published') {
+      return
+    }
+
     setErrorMessage('')
     setSuccessMessage('')
 
     try {
-      await toggleAdminFaq(faqId)
-      setSuccessMessage('FAQ status updated.')
+      await toggleAdminFaq(item.id)
+      setSuccessMessage('FAQ unpublished.')
       await loadFaqs()
     } catch (error) {
-
-      setErrorMessage(error?.message || 'Unable to update FAQ status.')
+      setErrorMessage(error?.message || 'Unable to unpublish FAQ.')
     }
   }
 
@@ -329,6 +492,10 @@ function AdminFaqManagerPage() {
     const targetIndex = items.findIndex((entry) => entry.id === targetId)
 
     if (sourceIndex < 0 || targetIndex < 0) {
+      return
+    }
+
+    if (items[sourceIndex]?.status !== 'published') {
       return
     }
 
@@ -400,51 +567,87 @@ function AdminFaqManagerPage() {
 
   const allVisibleSelected =
     filteredItems.length > 0 && filteredItems.every((item) => selectedSet.has(item.id))
+  const iconButtonClassName =
+    'inline-flex h-9 w-9 items-center justify-center rounded-md border border-transparent transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+  const neutralIconButtonClassName = `${iconButtonClassName} text-slate-600 hover:bg-accent hover:text-slate-900`
 
   return (
-    <section className="mx-auto max-w-6xl space-y-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold">FAQ Manager</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage FAQs shown on the Contact Us page.
-          </p>
+    <section className="mx-auto max-w-6xl space-y-6 pb-8 md:space-y-8">
+      <header className="rounded-2xl border border-border/80 bg-gradient-to-r from-white via-slate-50 to-blue-50/40 p-5 shadow-sm transition-shadow duration-200 hover:shadow-md sm:p-7">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
+              Contact FAQs Management
+            </h1>
+            <p className="text-sm text-muted-foreground md:text-base">
+              Manage FAQs shown on the Contact Us page.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="primary"
+            className="border-slate-900 bg-slate-900 text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-800"
+            onClick={openCreateModal}
+          >
+            <PlusIcon />
+            Create FAQ
+          </Button>
         </div>
-        <Button type="button" onClick={openCreateModal}>
-          Add FAQ
-        </Button>
-      </div>
+      </header>
 
       {errorMessage ? <ToastMessage type="error" message={errorMessage} /> : null}
       {successMessage ? <ToastMessage type="success" message={successMessage} /> : null}
 
-      <Card>
-        <CardContent className="space-y-4">
-          <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
+      <div className="rounded-xl border border-border/80 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="relative w-full md:max-w-sm">
+            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted-foreground">
+              <SearchIcon className="h-4 w-4" />
+            </span>
             <Input
+              type="search"
               placeholder="Search question or answer"
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
+              className="h-11 w-full pl-10 transition-colors duration-200"
+              aria-label="Search FAQs by question or answer"
             />
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {statusFilterOptions.map((option) => (
-                <Button
+          </div>
+          <div
+            className="flex flex-wrap items-center gap-2 md:flex-nowrap md:justify-end"
+            role="group"
+            aria-label="Filter by publication status"
+          >
+            {statusFilterOptions.map((option) => {
+              const isActive = statusFilter === option.value
+              return (
+                <button
                   key={option.value}
                   type="button"
-                  variant={statusFilter === option.value ? 'primary' : 'secondary'}
-                  size="sm"
                   onClick={() => {
                     setStatusFilter(option.value)
                     setPage(DEFAULT_PAGE)
                   }}
+                  aria-pressed={isActive}
+                  className={[
+                    'inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium transition-all duration-200',
+                    isActive
+                      ? 'border-slate-900 bg-slate-900 text-white'
+                      : 'border-border bg-white text-foreground hover:bg-accent',
+                  ].join(' ')}
                 >
                   {option.label}
-                </Button>
-              ))}
-            </div>
+                </button>
+              )
+            })}
           </div>
+        </div>
+      </div>
 
+      <Card>
+        <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
+            <TableEntriesSummary totalEntries={totalEntries} />
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 type="button"
@@ -474,9 +677,6 @@ function AdminFaqManagerPage() {
                 Bulk Delete
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Showing {startItem} to {endItem} of {total}
-            </p>
           </div>
 
           {isLoading ? (
@@ -511,6 +711,9 @@ function AdminFaqManagerPage() {
               </TableHead>
               <TableBody>
                 {filteredItems.map((item, visibleIndex) => {
+                  const isPublished = item.status === 'published'
+                  const canMoveUp = isPublished && visibleIndex > 0
+                  const canMoveDown = isPublished && visibleIndex < filteredItems.length - 1
                   const previewPath = buildAdminPreviewPath('faqs', item.id)
                   return (
                     <TableRow key={item.id}>
@@ -535,59 +738,88 @@ function AdminFaqManagerPage() {
                       </TableCell>
                       <TableCell>{formatDate(item.updated_at)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap">
-                        <div className="flex flex-wrap justify-end gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleMove(item.id, 'up')}
-                            disabled={visibleIndex === 0}
-                          >
-                            Up
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleMove(item.id, 'down')}
-                            disabled={visibleIndex === filteredItems.length - 1}
-                          >
-                            Down
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleToggleFaq(item.id)}
-                          >
-                            {item.status === 'published' ? 'Unpublish' : 'Publish'}
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => openEditModal(item)}
-                          >
-                            Edit
-                          </Button>
+                        <div className="flex items-center justify-end gap-1">
                           {previewPath ? (
-                            <Button
+                            <button
                               type="button"
-                              size="sm"
-                              variant="secondary"
+                              className={neutralIconButtonClassName}
+                              aria-label={`Preview ${item.question || 'FAQ'}`}
+                              title="Preview"
                               onClick={() => navigate(previewPath)}
                             >
-                              Preview
-                            </Button>
-                          ) : null}
-                          <Button
+                              <EyeIcon />
+                            </button>
+                          ) : (
+                            <span
+                              className={`${neutralIconButtonClassName} cursor-not-allowed opacity-40`}
+                              aria-hidden="true"
+                            >
+                              <EyeIcon />
+                            </span>
+                          )}
+                          <button
                             type="button"
-                            size="sm"
-                            variant="danger"
+                            className={neutralIconButtonClassName}
+                            aria-label={`Edit ${item.question || 'FAQ'}`}
+                            title="Edit"
+                            onClick={() => openEditModal(item)}
+                          >
+                            <EditIcon />
+                          </button>
+                          <button
+                            type="button"
+                            className={`${iconButtonClassName} !text-red-600 hover:!bg-red-50 hover:!text-red-700`}
+                            aria-label={`Delete ${item.question || 'FAQ'}`}
+                            title="Delete"
                             onClick={() => setDeleteTarget(item)}
                           >
-                            Delete
-                          </Button>
+                            <TrashIcon />
+                          </button>
+                          <button
+                            type="button"
+                            className={[
+                              iconButtonClassName,
+                              !isPublished
+                                ? 'cursor-not-allowed !text-slate-300 opacity-60 hover:translate-y-0 hover:!bg-transparent hover:!text-slate-300'
+                                : '!text-red-600 hover:!bg-red-50 hover:!text-red-700',
+                            ].join(' ')}
+                            aria-label={`Unpublish ${item.question || 'FAQ'}`}
+                            title="Unpublish"
+                            disabled={!isPublished}
+                            onClick={() => handleUnpublishFaq(item)}
+                          >
+                            <EyeOffIcon />
+                          </button>
+                          <button
+                            type="button"
+                            className={[
+                              neutralIconButtonClassName,
+                              !canMoveUp
+                                ? 'cursor-not-allowed opacity-40 hover:translate-y-0 hover:bg-transparent hover:text-slate-600'
+                                : '',
+                            ].join(' ')}
+                            aria-label={`Move up ${item.question || 'FAQ'}`}
+                            title="Move Up"
+                            disabled={!canMoveUp}
+                            onClick={() => handleMove(item.id, 'up')}
+                          >
+                            <ChevronUpIcon />
+                          </button>
+                          <button
+                            type="button"
+                            className={[
+                              neutralIconButtonClassName,
+                              !canMoveDown
+                                ? 'cursor-not-allowed opacity-40 hover:translate-y-0 hover:bg-transparent hover:text-slate-600'
+                                : '',
+                            ].join(' ')}
+                            aria-label={`Move down ${item.question || 'FAQ'}`}
+                            title="Move Down"
+                            disabled={!canMoveDown}
+                            onClick={() => handleMove(item.id, 'down')}
+                          >
+                            <ChevronDownIcon />
+                          </button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -597,30 +829,12 @@ function AdminFaqManagerPage() {
             </Table>
           )}
 
-          {!isLoading && totalPages > 1 ? (
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage((current) => Math.max(DEFAULT_PAGE, current - 1))}
-              >
-                Previous
-              </Button>
-              <span className="px-2 text-sm text-muted-foreground">
-                Page {page} of {totalPages}
-              </span>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={page >= totalPages}
-                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-              >
-                Next
-              </Button>
-            </div>
+          {!isLoading && totalEntries > 0 ? (
+            <TablePaginationFooter
+              page={page}
+              totalPages={totalPages}
+              onChange={setPage}
+            />
           ) : null}
         </CardContent>
       </Card>
@@ -635,7 +849,7 @@ function AdminFaqManagerPage() {
           className="grid gap-4 lg:grid-cols-[1fr_280px]"
           onSubmit={(event) => {
             event.preventDefault()
-            saveFaq()
+            void saveFaq('publish')
           }}
         >
           <div className="space-y-3">
@@ -680,24 +894,6 @@ function AdminFaqManagerPage() {
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-sm font-medium" htmlFor="faq-status">
-                Status
-              </label>
-              <Select
-                id="faq-status"
-                value={formState.status}
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    status: event.target.value,
-                  }))
-                }
-              >
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-              </Select>
-            </div>
           </div>
 
           <div className="rounded-lg border border-border bg-slate-50 p-3">
@@ -714,25 +910,17 @@ function AdminFaqManagerPage() {
             </div>
           </div>
 
-          <div className="col-span-full flex flex-wrap justify-end gap-2">
-            <Button type="button" variant="secondary" onClick={resetModal}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              loading={isSaving}
-              onClick={() => saveFaq('draft')}
-            >
-              Save Draft
-            </Button>
-            <Button
-              type="button"
-              loading={isSaving}
-              onClick={() => saveFaq('published')}
-            >
-              Save & Publish
-            </Button>
+          <div className="col-span-full">
+            <FormActions
+              mode="publish"
+              onCancel={resetModal}
+              onAction={(action) => {
+                void saveFaq(action)
+              }}
+              isSubmitting={isSaving}
+              submitAction={submitAction}
+              disableCancel={isSaving}
+            />
           </div>
         </form>
       </Modal>

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import FormActions from '../../components/ui/form-actions.jsx'
 import {
   Button,
   Card,
@@ -66,6 +68,7 @@ function moveItem(items, index, direction) {
 }
 
 function AdminContactInfoPage() {
+  const navigate = useNavigate()
   const [formState, setFormState] = useState(initialState)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -240,7 +243,7 @@ function AdminContactInfoPage() {
 
     try {
       await updateAdminContact(formState)
-      setSuccessMessage('Contact information saved successfully.')
+      setSuccessMessage('Contact information published successfully.')
     } catch (error) {
 
       setErrorMessage(error?.message || 'Unable to save contact information.')
@@ -251,16 +254,13 @@ function AdminContactInfoPage() {
 
   return (
     <section className="space-y-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+      <div>
         <div>
           <h2 className="text-2xl font-semibold">Contact Information</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Manage the contact page details and preview how they appear.
           </p>
         </div>
-        <Button type="button" loading={isSaving} onClick={handleSave}>
-          Save Changes
-        </Button>
       </div>
 
       {errorMessage ? <ToastMessage type="error" message={errorMessage} /> : null}
@@ -577,6 +577,23 @@ function AdminContactInfoPage() {
           </div>
         </div>
       )}
+
+      {!isLoading ? (
+        <div className="sticky bottom-4 z-20 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
+          <FormActions
+            mode="single"
+            onCancel={() => navigate('/admin')}
+            onSubmit={() => {
+              void handleSave()
+            }}
+            isSubmitting={isSaving}
+            submitLabel="Publish"
+            submitLoadingLabel="Publishing..."
+            submitClassName="border-emerald-600 bg-emerald-600 text-white transition-transform duration-200 hover:-translate-y-0.5 hover:bg-emerald-700 focus-visible:ring-emerald-600"
+            disableCancel={isSaving}
+          />
+        </div>
+      ) : null}
     </section>
   )
 }

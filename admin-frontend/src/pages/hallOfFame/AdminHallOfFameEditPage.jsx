@@ -25,6 +25,7 @@ function AdminHallOfFameEditPage() {
   })
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitAction, setSubmitAction] = useState('publish')
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
@@ -83,7 +84,6 @@ function AdminHallOfFameEditPage() {
       formState.name !== initialState.name ||
       formState.title !== initialState.title ||
       formState.body !== initialState.body ||
-      formState.published !== initialState.published ||
       Boolean(formState.image)
     )
   }, [formState, initialState])
@@ -97,10 +97,13 @@ function AdminHallOfFameEditPage() {
     return uploaded?.data?.image_url || ''
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (action) => {
     setErrorMessage('')
+    setSubmitAction(action)
 
-    if (!hasChanges) {
+    const allowPublishWithoutFieldChanges = action === 'publish'
+
+    if (!hasChanges && !allowPublishWithoutFieldChanges) {
       setErrorMessage('No changes to update.')
       return
     }
@@ -109,7 +112,7 @@ function AdminHallOfFameEditPage() {
     formData.append('name', formState.name.trim())
     formData.append('title', formState.title.trim())
     formData.append('body', formState.body)
-    formData.append('published', String(Boolean(formState.published)))
+    formData.append('published', String(action === 'publish'))
     if (formState.image) {
       formData.append('image', formState.image)
     }
@@ -122,7 +125,12 @@ function AdminHallOfFameEditPage() {
       }
       navigate('/admin/hall-of-fame', {
         replace: true,
-        state: { successMessage: 'Hall of Fame entry updated successfully.' },
+        state: {
+          successMessage:
+            action === 'draft'
+              ? 'Hall of Fame draft saved.'
+              : 'Hall of Fame entry updated and published.',
+        },
       })
     } catch (error) {
 
@@ -154,12 +162,12 @@ function AdminHallOfFameEditPage() {
       description="Refine this entry and publish when ready."
       value={formState}
       submitting={isSubmitting}
+      submitAction={submitAction}
       errorMessage={errorMessage}
-      submitLabel={hasChanges ? 'Update entry' : 'No changes'}
-      submitDisabled={!hasChanges}
+      disableDraft={!hasChanges}
       onChange={handleChange}
       onCancel={() => navigate('/admin/hall-of-fame')}
-      onSubmit={handleSubmit}
+      onSubmitAction={handleSubmit}
       onUploadImage={handleUploadBodyImage}
     />
   )

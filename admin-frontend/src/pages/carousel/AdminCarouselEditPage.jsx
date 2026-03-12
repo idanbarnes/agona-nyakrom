@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import Cropper from 'react-easy-crop'
 import {
   getSingleSlide,
@@ -7,6 +7,9 @@ import {
 } from '../../services/api/adminCarouselApi.js'
 import { getAuthToken } from '../../lib/auth.js'
 import { getCroppedImageDataUrl } from '../../lib/cropImage.js'
+import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
+import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
+import FormActions from '../../components/ui/form-actions.jsx'
 import {
   Button,
   Card,
@@ -15,13 +18,13 @@ import {
   FormField,
   InlineError,
   Input,
-  ImageWithFallback,
   Modal,
   Textarea,
 } from '../../components/ui/index.jsx'
 
 function AdminCarouselEditPage() {
   const { id } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const [initialState, setInitialState] = useState(null)
   const [formState, setFormState] = useState({
@@ -31,14 +34,13 @@ function AdminCarouselEditPage() {
     cta_text: '',
     cta_url: '',
     display_order: '',
-    published: false,
     image: null,
     existingImageUrl: '',
     existingCrop: null,
   })
-  const [autoDrafted, setAutoDrafted] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitAction, setSubmitAction] = useState('publish')
   const [errorMessage, setErrorMessage] = useState('')
   const [cropModalOpen, setCropModalOpen] = useState(false)
   const [crop, setCrop] = useState({ x: 0, y: 0 })
@@ -85,9 +87,7 @@ function AdminCarouselEditPage() {
         }
 
         setInitialState(nextState)
-        // Auto-draft the UI when entering edit mode.
-        setFormState({ ...nextState, published: false })
-        setAutoDrafted(true)
+        setFormState(nextState)
       } catch (error) {
 
         setErrorMessage(error.message || 'Unable to load slide.')
@@ -105,17 +105,15 @@ function AdminCarouselEditPage() {
     }
 
     return (
-      autoDrafted ||
       formState.title !== initialState.title ||
       formState.subtitle !== initialState.subtitle ||
       formState.caption !== initialState.caption ||
       formState.cta_text !== initialState.cta_text ||
       formState.cta_url !== initialState.cta_url ||
       String(formState.display_order) !== String(initialState.display_order) ||
-      formState.published !== initialState.published ||
       Boolean(formState.image)
     )
-  }, [autoDrafted, formState, initialState])
+  }, [formState, initialState])
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target
@@ -202,11 +200,13 @@ function AdminCarouselEditPage() {
     setCropError('')
   }
 
-  const handleSubmit = async (event) => {
-    event.preventDefault()
+  const handleSubmit = async (action) => {
     setErrorMessage('')
+    setSubmitAction(action)
 
-    if (!hasChanges) {
+    const allowPublishWithoutFieldChanges = action === 'publish'
+
+    if (!hasChanges && !allowPublishWithoutFieldChanges) {
       setErrorMessage('No changes to update.')
       return
     }
@@ -236,8 +236,7 @@ function AdminCarouselEditPage() {
     formData.append('cta_text', formState.cta_text.trim())
     formData.append('cta_url', formState.cta_url.trim())
     formData.append('display_order', String(Number(formState.display_order)))
-    // Force publish on successful save when leaving auto-draft mode.
-    formData.append('published', 'true')
+    formData.append('published', String(action === 'publish'))
     if (formState.image) {
       formData.append('image', formState.image)
       formData.append('crop_x', String(cropData.x))
@@ -252,9 +251,11 @@ function AdminCarouselEditPage() {
       if (response?.success === false) {
         throw new Error(response?.message || 'Unable to update slide.')
       }
-      setFormState((current) => ({ ...current, published: true }))
-      setAutoDrafted(false)
-      window.alert('Carousel slide edited successfully')
+      window.alert(
+        action === 'draft'
+          ? 'Carousel draft saved successfully'
+          : 'Carousel slide published successfully',
+      )
       navigate('/admin/carousel', { replace: true })
     } catch (error) {
 
@@ -282,7 +283,7 @@ function AdminCarouselEditPage() {
     )
   }
 
-  return (
+  const formContent = (
     <div className="space-y-6">
       <header className="space-y-1">
         <h1 className="text-xl font-semibold break-words md:text-2xl">
@@ -292,7 +293,7 @@ function AdminCarouselEditPage() {
           Refresh carousel messaging and imagery.
         </p>
       </header>
-      <form onSubmit={handleSubmit}>
+      <form>
         <Card>
           <CardContent className="space-y-5 md:space-y-6">
             <InlineError message={errorMessage} />
@@ -355,82 +356,43 @@ function AdminCarouselEditPage() {
                 required
               />
             </FormField>
-
-            <FormField label="Published" htmlFor="published">
-              <div className="flex items-center gap-2">
-                <input
-                  id="published"
-                  name="published"
-                  type="checkbox"
-                  checked={formState.published}
-                  onChange={handleChange}
-                  disabled={autoDrafted}
-                  className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-                <span className="text-sm text-muted-foreground">
-                  Publishing is enabled after saving changes.
-                </span>
-              </div>
-            </FormField>
-
             <FormField
               label="Replace image (optional)"
               htmlFor="image"
-              helpText={
-                formState.existingImageUrl ? (
-                  <span>
-                    Current image:{' '}
-                    <a
-                      href={formState.existingImageUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary underline-offset-4 hover:underline"
-                    >
-                      View
-                    </a>
-                  </span>
-                ) : null
-              }
             >
-              <div className="rounded-lg border border-border bg-background p-4">
-                <Input
-                  id="image"
-                  name="image"
-                  type="file"
+              <div className="rounded-xl border border-border bg-background/60">
+                <PhotoUploadField
+                  label=""
+                  value={formState.image?.name || ''}
+                  valueType="text"
+                  valueId="image"
+                  valuePlaceholder="Select image"
+                  fileId="image-file"
+                  fileName="image"
+                  acceptedFileTypes="image/*"
                   onChange={handleFileChange}
+                  instructions="Recommended image size: 1920 x 800 (wide banner). You will crop the image before saving."
+                  existingAssetUrl={formState.existingImageUrl}
+                  previewSrc={cropPreview}
+                  previewAlt="Cropped preview"
+                  previewContainerClassName="mt-1 max-w-xs"
+                  previewClassName="h-24 w-full rounded-md object-cover"
                 />
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Recommended image size: 1920 × 800 (wide banner). You will
-                  crop the image before saving.
-                </p>
-                {cropPreview ? (
-                  <div className="mt-4 max-w-xs">
-                    <ImageWithFallback
-                      src={cropPreview}
-                      alt="Cropped preview"
-                      className="h-24 w-full rounded-md object-cover"
-                    />
-                  </div>
-                ) : null}
               </div>
             </FormField>
           </CardContent>
           <CardFooter>
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={() => navigate('/admin/carousel')}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              type="submit"
-              loading={isSubmitting}
-              disabled={!hasChanges}
-            >
-              {isSubmitting ? 'Saving...' : 'Save changes'}
-            </Button>
+            <FormActions
+              mode="publish"
+              onCancel={() => navigate('/admin/carousel')}
+              onAction={(nextAction) => {
+                void handleSubmit(nextAction)
+              }}
+              isSubmitting={isSubmitting}
+              submitAction={submitAction}
+              disableCancel={isSubmitting}
+              disableDraft={!hasChanges}
+            />
           </CardFooter>
         </Card>
       </form>
@@ -497,6 +459,18 @@ function AdminCarouselEditPage() {
       </Modal>
     </div>
   )
+
+  return (
+    <AdminInlinePreviewLayout
+      resource="carousel"
+      itemId={id}
+      query={location.search}
+      storageKey="carousel-preview-pane-width"
+    >
+      {formContent}
+    </AdminInlinePreviewLayout>
+  )
 }
 
 export default AdminCarouselEditPage
+

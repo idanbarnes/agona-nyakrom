@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import FormActions from '../../components/ui/form-actions.jsx'
 import {
   Badge,
   Button,
@@ -244,6 +245,7 @@ function AdminGlobalSettingsPage() {
   const [formState, setFormState] = useState(EMPTY_FORM_STATE)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [submitAction, setSubmitAction] = useState('publish')
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -351,14 +353,16 @@ function AdminGlobalSettingsPage() {
     }))
   }
 
-  const submitSettings = async ({ publish = false } = {}) => {
+  const submitSettings = async (action = 'publish') => {
     if (!getAuthToken()) {
       navigate('/login', { replace: true })
       return
     }
 
+    const nextPublished = action === 'publish'
     setErrorMessage('')
     setSuccessMessage('')
+    setSubmitAction(action)
     setIsSaving(true)
 
     const payload = {
@@ -370,7 +374,7 @@ function AdminGlobalSettingsPage() {
       social_links: sanitizeSocialLinks(formState.social_links),
       navigation_links: sanitizeNavigationLinks(formState.navigation_links),
       footer_text: formState.footer_text.trim(),
-      published: publish ? true : Boolean(formState.published),
+      published: nextPublished,
     }
 
     try {
@@ -378,17 +382,16 @@ function AdminGlobalSettingsPage() {
       const data =
         response && typeof response === 'object' ? response.data ?? response : {}
       setFormState((current) => mapApiToFormState(data, current))
-      setSuccessMessage(publish ? 'Settings published successfully.' : 'Settings saved.')
+      setSuccessMessage(
+        nextPublished
+          ? 'Settings published successfully.'
+          : 'Settings saved as draft successfully.',
+      )
     } catch (error) {
       setErrorMessage(error.message || 'Unable to save settings.')
     } finally {
       setIsSaving(false)
     }
-  }
-
-  const handleSubmit = async (event) => {
-    event.preventDefault()
-    await submitSettings()
   }
 
   if (isLoading) {
@@ -433,7 +436,7 @@ function AdminGlobalSettingsPage() {
         <ToastMessage type="success" message={successMessage} />
       ) : null}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Basic Information</CardTitle>
@@ -609,7 +612,7 @@ function AdminGlobalSettingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Footer and Publishing</CardTitle>
+            <CardTitle>Footer</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-1.5">
@@ -623,17 +626,6 @@ function AdminGlobalSettingsPage() {
                 placeholder="Copyright and footer text"
               />
             </div>
-            <label className="flex items-center gap-2 text-sm text-foreground">
-              <input
-                id="published"
-                name="published"
-                type="checkbox"
-                checked={Boolean(formState.published)}
-                onChange={(event) => updateField('published', event.target.checked)}
-                className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
-              Mark this configuration as published
-            </label>
           </CardContent>
         </Card>
 
@@ -662,18 +654,16 @@ function AdminGlobalSettingsPage() {
         </Card>
 
         <div className="sticky bottom-4 z-20 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <Button type="submit" variant="secondary" loading={isSaving}>
-              {isSaving ? 'Saving...' : 'Save settings'}
-            </Button>
-            <Button
-              type="button"
-              onClick={() => submitSettings({ publish: true })}
-              loading={isSaving}
-            >
-              {isSaving ? 'Publishing...' : 'Publish'}
-            </Button>
-          </div>
+          <FormActions
+            mode="publish"
+            onCancel={() => navigate('/admin')}
+            onAction={(action) => {
+              void submitSettings(action)
+            }}
+            isSubmitting={isSaving}
+            submitAction={submitAction}
+            disableCancel={isSaving}
+          />
         </div>
       </form>
     </section>

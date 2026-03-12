@@ -6,6 +6,7 @@ const leadersAdminController = require('../../controllers/admin/leadersAdminCont
 
 router.get('/', requireAdminAuth, leadersAdminController.listLeaders);
 router.post('/', requireAdminAuth, uploadMiddleware.single('photo'), leadersAdminController.createLeader);
+router.post('/upload-image', requireAdminAuth, uploadMiddleware.single('image'), leadersAdminController.uploadLeaderImage);
 router.put('/:id', requireAdminAuth, uploadMiddleware.single('photo'), leadersAdminController.updateLeader);
 router.patch('/:id/publish', requireAdminAuth, leadersAdminController.toggleLeaderPublish);
 router.patch('/:id/display-order', requireAdminAuth, leadersAdminController.setLeaderDisplayOrder);

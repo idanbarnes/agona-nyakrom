@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   deleteObituary,
   getAllObituaries,
+  updateObituary,
 } from '../../services/api/adminObituariesApi.js'
 import { getAuthToken } from '../../lib/auth.js'
 import { buildApiUrl } from '../../lib/apiClient.js'
@@ -23,13 +24,17 @@ import {
   TableSkeleton,
   ToastMessage,
 } from '../../components/ui/index.jsx'
+import {
+  TableEntriesSummary,
+  TablePaginationFooter,
+} from '../../components/ui/pagination.jsx'
 
 const DEFAULT_PAGE = 1
 const ITEMS_PER_PAGE = 10
 const DEFAULT_STATUS = 'all'
 
 const statusFilters = [
-  { key: 'all', label: 'All' },
+  { key: 'all', label: 'All Statuses' },
   { key: 'published', label: 'Published' },
   { key: 'draft', label: 'Draft' },
 ]
@@ -127,6 +132,26 @@ function TrashIcon({ className = 'h-4 w-4' }) {
   )
 }
 
+function EyeOffIcon({ className = 'h-4 w-4' }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M17.94 17.94A10.87 10.87 0 0 1 12 20c-7 0-11-8-11-8a21.77 21.77 0 0 1 5.06-6.94" />
+      <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.8 21.8 0 0 1-3.17 4.51" />
+      <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  )
+}
+
 function formatDate(value) {
   if (!value) {
     return '-'
@@ -187,35 +212,6 @@ function getPhotoPath(item) {
   )
 }
 
-function buildPageItems(currentPage, totalPages) {
-  if (totalPages <= 0) {
-    return []
-  }
-
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, index) => index + 1)
-  }
-
-  const pageItems = [1]
-  const start = Math.max(2, currentPage - 1)
-  const end = Math.min(totalPages - 1, currentPage + 1)
-
-  if (start > 2) {
-    pageItems.push('ellipsis-start')
-  }
-
-  for (let page = start; page <= end; page += 1) {
-    pageItems.push(page)
-  }
-
-  if (end < totalPages - 1) {
-    pageItems.push('ellipsis-end')
-  }
-
-  pageItems.push(totalPages)
-  return pageItems
-}
-
 function AdminObituariesListPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -248,7 +244,7 @@ function AdminObituariesListPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [navigate])
+  }, [])
 
   useEffect(() => {
     if (!getAuthToken()) {
@@ -301,6 +297,7 @@ function AdminObituariesListPage() {
   const totalLoaded = normalizedItems.length
   const totalFiltered = filteredItems.length
   const totalPages = Math.ceil(totalFiltered / ITEMS_PER_PAGE)
+  const totalEntries = totalFiltered
 
   useEffect(() => {
     if (!totalPages && currentPage !== DEFAULT_PAGE) {
@@ -321,11 +318,6 @@ function AdminObituariesListPage() {
     const start = (currentPage - 1) * ITEMS_PER_PAGE
     return filteredItems.slice(start, start + ITEMS_PER_PAGE)
   }, [currentPage, filteredItems, totalFiltered])
-
-  const paginationItems = useMemo(
-    () => buildPageItems(currentPage, totalPages),
-    [currentPage, totalPages],
-  )
 
   const handleDelete = async (id) => {
     setErrorMessage('')
@@ -360,6 +352,32 @@ function AdminObituariesListPage() {
     }
   }
 
+  const handleUnpublish = async (item) => {
+    if (!item?.id || !item.published) {
+      return
+    }
+
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    const formData = new FormData()
+    formData.append('published', 'false')
+
+    try {
+      const response = await updateObituary(item.id, formData)
+      if (response?.success === false) {
+        throw new Error(response?.message || 'Unable to unpublish obituary.')
+      }
+
+      setSuccessMessage('Obituary unpublished.')
+      fetchObituaries()
+    } catch (error) {
+      const message = error.message || 'Unable to unpublish obituary.'
+      setErrorMessage(message)
+      window.alert(message)
+    }
+  }
+
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value)
     setCurrentPage(DEFAULT_PAGE)
@@ -377,7 +395,8 @@ function AdminObituariesListPage() {
   }
 
   const iconButtonClassName =
-    'inline-flex h-8 w-8 items-center justify-center rounded-md border border-transparent text-slate-600 transition-colors hover:bg-accent hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+    'inline-flex h-9 w-9 items-center justify-center rounded-md border border-transparent transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+  const neutralIconButtonClassName = `${iconButtonClassName} text-slate-600 hover:bg-accent hover:text-slate-900`
 
   const handleOpenInlinePreview = (obituaryId) => {
     if (!obituaryId) {
@@ -388,25 +407,27 @@ function AdminObituariesListPage() {
   }
 
   return (
-    <section className="space-y-6">
-      <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-foreground break-words md:text-3xl">
-            Obituary Management
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Manage and publish obituaries
-          </p>
+    <section className="mx-auto max-w-6xl space-y-6 pb-8 md:space-y-8">
+      <header className="rounded-2xl border border-border/80 bg-gradient-to-r from-white via-slate-50 to-blue-50/40 p-5 shadow-sm transition-shadow duration-200 hover:shadow-md sm:p-7">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
+              Obituaries Management
+            </h1>
+            <p className="text-sm text-muted-foreground md:text-base">
+              Manage obituaries, drafts, and publication updates from one place.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="primary"
+            className="border-slate-900 bg-slate-900 text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-800"
+            onClick={() => navigate('/admin/obituaries/create')}
+          >
+            <PlusIcon />
+            Create Obituary
+          </Button>
         </div>
-        <Button
-          type="button"
-          variant="primary"
-          className="bg-slate-900 text-white hover:bg-slate-800 md:w-auto"
-          onClick={() => navigate('/admin/obituaries/create')}
-        >
-          <PlusIcon />
-          Create New Obituary
-        </Button>
       </header>
 
       {errorMessage ? <ToastMessage type="error" message={errorMessage} /> : null}
@@ -414,50 +435,50 @@ function AdminObituariesListPage() {
         <ToastMessage type="success" message={successMessage} />
       ) : null}
 
-      <Card>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="relative flex-1">
-              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted-foreground">
-                <SearchIcon className="h-4 w-4" />
-              </span>
-              <Input
-                type="text"
-                value={searchQuery}
-                onChange={handleSearchChange}
-                placeholder="Search by name..."
-                className="h-10 pl-10"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {statusFilters.map((filter) => {
-                const active = statusFilter === filter.key
-                return (
-                  <button
-                    key={filter.key}
-                    type="button"
-                    onClick={() => handleStatusChange(filter.key)}
-                    className={[
-                      'inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium transition',
-                      active
-                        ? 'border-slate-900 bg-slate-900 text-white'
-                        : 'border-border bg-white text-foreground hover:bg-accent',
-                    ].join(' ')}
-                    aria-pressed={active}
-                  >
-                    {filter.label}
-                  </button>
-                )
-              })}
-            </div>
+      <div className="rounded-xl border border-border/80 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="relative w-full md:max-w-sm">
+            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted-foreground">
+              <SearchIcon className="h-4 w-4" />
+            </span>
+            <Input
+              type="search"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              placeholder="Search by name..."
+              className="h-11 w-full pl-10 transition-colors duration-200"
+              aria-label="Search obituaries by name"
+            />
           </div>
 
-          <p className="text-sm text-muted-foreground">
-            Showing {totalFiltered} of {totalLoaded} obituaries
-          </p>
-        </CardContent>
-      </Card>
+          <div
+            className="flex flex-wrap items-center gap-2 md:flex-nowrap md:justify-end"
+            role="group"
+            aria-label="Filter by publication status"
+          >
+            {statusFilters.map((filter) => {
+              const active = statusFilter === filter.key
+              return (
+                <button
+                  key={filter.key}
+                  type="button"
+                  onClick={() => handleStatusChange(filter.key)}
+                  className={[
+                    'inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium transition-all duration-200',
+                    active
+                      ? 'border-slate-900 bg-slate-900 text-white'
+                      : 'border-border bg-white text-foreground hover:bg-accent',
+                  ].join(' ')}
+                  aria-pressed={active}
+                >
+                  {filter.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        <TableEntriesSummary totalEntries={totalEntries} className="mt-4" />
+      </div>
 
       {isLoading ? (
         <Card>
@@ -582,7 +603,7 @@ function AdminObituariesListPage() {
                       <button
                         type="button"
                         onClick={() => handleOpenInlinePreview(item.id)}
-                        className={iconButtonClassName}
+                        className={neutralIconButtonClassName}
                         aria-label={`View ${item.fullName}`}
                         title="View in split preview"
                       >
@@ -590,7 +611,7 @@ function AdminObituariesListPage() {
                       </button>
                     ) : (
                       <span
-                        className={`${iconButtonClassName} cursor-not-allowed opacity-40`}
+                        className={`${neutralIconButtonClassName} cursor-not-allowed opacity-40`}
                         aria-hidden="true"
                       >
                         <EyeIcon />
@@ -598,7 +619,7 @@ function AdminObituariesListPage() {
                     )}
                     <Link
                       to={`/admin/obituaries/edit/${item.id}`}
-                      className={iconButtonClassName}
+                      className={neutralIconButtonClassName}
                       aria-label={`Edit ${item.fullName}`}
                       title="Edit"
                     >
@@ -606,12 +627,27 @@ function AdminObituariesListPage() {
                     </Link>
                     <button
                       type="button"
-                      className={`${iconButtonClassName} text-rose-600 hover:bg-rose-50 hover:text-rose-700`}
+                      className={`${iconButtonClassName} !text-red-600 hover:!bg-red-50 hover:!text-red-700`}
                       aria-label={`Delete ${item.fullName}`}
                       title="Delete"
                       onClick={() => setConfirmState({ open: true, id: item.id })}
                     >
                       <TrashIcon />
+                    </button>
+                    <button
+                      type="button"
+                      className={[
+                        iconButtonClassName,
+                        !item.id || !item.published
+                          ? 'cursor-not-allowed !text-slate-300 opacity-60 hover:translate-y-0 hover:!bg-transparent hover:!text-slate-300'
+                          : '!text-red-600 hover:!bg-red-50 hover:!text-red-700',
+                      ].join(' ')}
+                      aria-label={`Unpublish ${item.fullName}`}
+                      title="Unpublish"
+                      disabled={!item.id || !item.published}
+                      onClick={() => handleUnpublish(item)}
+                    >
+                      <EyeOffIcon />
                     </button>
                   </div>
                 </TableCell>
@@ -621,62 +657,12 @@ function AdminObituariesListPage() {
         </Table>
       ) : null}
 
-      {totalPages > 0 && totalFiltered > 0 ? (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            Page {currentPage} of {totalPages}
-          </p>
-          <nav className="flex items-center gap-2" aria-label="Pagination">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => setCurrentPage((page) => Math.max(DEFAULT_PAGE, page - 1))}
-              disabled={currentPage <= DEFAULT_PAGE}
-            >
-              Previous
-            </Button>
-            {paginationItems.map((pageItem) => {
-              if (typeof pageItem === 'string') {
-                return (
-                  <span
-                    key={pageItem}
-                    className="px-1 text-sm text-muted-foreground"
-                    aria-hidden="true"
-                  >
-                    ...
-                  </span>
-                )
-              }
-
-              const selected = pageItem === currentPage
-              return (
-                <Button
-                  key={pageItem}
-                  type="button"
-                  variant={selected ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className={selected ? 'border-slate-900 bg-slate-900 text-white hover:bg-slate-800 hover:text-white' : ''}
-                  onClick={() => setCurrentPage(pageItem)}
-                  aria-current={selected ? 'page' : undefined}
-                >
-                  {pageItem}
-                </Button>
-              )
-            })}
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() =>
-                setCurrentPage((page) => Math.min(totalPages, page + 1))
-              }
-              disabled={currentPage >= totalPages}
-            >
-              Next
-            </Button>
-          </nav>
-        </div>
+      {totalPages > 0 && totalEntries > 0 ? (
+        <TablePaginationFooter
+          page={currentPage}
+          totalPages={totalPages}
+          onChange={setCurrentPage}
+        />
       ) : null}
 
       <ConfirmDialog

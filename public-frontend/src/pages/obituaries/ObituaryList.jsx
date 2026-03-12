@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { getObituaries } from '../../api/endpoints.js'
+import RevealItem from '../../components/motion/RevealItem.jsx'
+import StaggerGridReveal from '../../components/motion/StaggerGridReveal.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
 import {
   Button,
+  DetailPageCTA,
   ErrorState,
   ImageWithFallback,
   Input,
@@ -444,84 +446,81 @@ function ObituaryCard({ item }) {
   }
 
   return (
-    <li>
-      <article className="group h-full overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.05)] transition hover:shadow-[0_16px_28px_rgba(15,23,42,0.08)] md:p-5">
-        <div className="flex min-w-0 flex-row items-stretch gap-4">
-          <div className="relative w-32 shrink-0 overflow-hidden rounded-2xl sm:w-36 md:w-48">
-            <ImageWithFallback
-              src={thumbnail ? resolveAssetUrl(thumbnail) : null}
-              alt={itemName}
-              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-              fallbackText={itemName}
-            />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent" />
+    <article className="group h-full overflow-hidden rounded-2xl border border-gray-200/80 bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.05)] transition-[border-color,box-shadow] duration-200 ease-out hover:border-gray-300 hover:shadow-[0_16px_28px_rgba(15,23,42,0.08)] md:p-5">
+      <div className="flex min-w-0 flex-row items-stretch gap-4">
+        <div className="relative w-32 shrink-0 overflow-hidden rounded-2xl sm:w-36 md:w-48">
+          <ImageWithFallback
+            src={thumbnail ? resolveAssetUrl(thumbnail) : null}
+            alt={itemName}
+            className="h-full w-full transform-gpu object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03]"
+            fallbackText={itemName}
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent" />
+        </div>
+
+        <div className="flex min-w-0 flex-1 flex-col justify-between">
+          <div className="space-y-2">
+            <h2 className="break-words text-lg font-semibold leading-tight text-gray-900 md:text-xl">
+              {itemName}
+            </h2>
+            {lifespan ? (
+              <p className="break-words text-sm font-medium tracking-wide text-gray-600 md:text-base">
+                {lifespan}
+              </p>
+            ) : null}
+
+            <div className="flex flex-col gap-3 pt-1">
+              <MetaDetail
+                icon={<PersonIcon className="h-[18px] w-[18px]" />}
+                label="Age"
+                value={ageLabel}
+                toneClasses="bg-blue-50 text-blue-600"
+              />
+              <MetaDetail
+                icon={<CalendarIcon className="h-[18px] w-[18px]" />}
+                label="FUNERAL SERVICE"
+                value={funeralDate}
+                toneClasses="bg-amber-50 text-amber-600"
+              />
+            </div>
           </div>
 
-          <div className="flex min-w-0 flex-1 flex-col justify-between">
-            <div className="space-y-2">
-              <h2 className="break-words text-lg font-semibold leading-tight text-gray-900 md:text-xl">
-                {itemName}
-              </h2>
-              {lifespan ? (
-                <p className="break-words text-sm font-medium tracking-wide text-gray-600 md:text-base">
-                  {lifespan}
-                </p>
-              ) : null}
+          <div className="mt-5 border-t border-gray-100 pt-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <DetailPageCTA
+                to={detailsPath}
+                label="View Full Obituary"
+                disabled={!canViewDetails}
+                size="md"
+                className="h-10 rounded-lg px-5 text-sm font-semibold"
+              />
 
-              <div className="flex flex-col gap-3 pt-1">
-                <MetaDetail
-                  icon={<PersonIcon className="h-[18px] w-[18px]" />}
-                  label="Age"
-                  value={ageLabel}
-                  toneClasses="bg-blue-50 text-blue-600"
-                />
-                <MetaDetail
-                  icon={<CalendarIcon className="h-[18px] w-[18px]" />}
-                  label="FUNERAL SERVICE"
-                  value={funeralDate}
-                  toneClasses="bg-amber-50 text-amber-600"
-                />
-              </div>
-            </div>
-
-            <div className="mt-5 border-t border-gray-100 pt-4">
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="relative" ref={shareRef}>
                 <Button
-                  as={Link}
-                  to={detailsPath}
-                  disabled={!canViewDetails}
-                  className="h-10 rounded-lg border-transparent bg-gray-900 px-5 text-sm font-semibold text-white hover:bg-gray-800"
+                  variant="ghost"
+                  className="h-12 rounded-xl border border-[#d7d7d7] bg-white px-5 text-[1.0625rem] font-semibold text-[#111111] shadow-none hover:translate-y-0 hover:bg-[#fafafa] active:translate-y-0 active:scale-100 [&>span]:gap-0 [&>span>span:first-child]:hidden [&>span>span:last-child]:inline-flex [&>span>span:last-child]:items-center [&>span>span:last-child]:gap-2"
+                  onClick={handleShare}
+                  aria-label={`Share obituary for ${itemName}`}
+                  aria-expanded={shareOpen}
+                  aria-haspopup="menu"
                 >
-                  View Full Obituary
+                  <ShareIcon className="h-[18px] w-[18px] text-[#111111]" />
+                  <span>Share</span>
                 </Button>
 
-                <div className="relative" ref={shareRef}>
-                  <Button
-                    variant="ghost"
-                    className="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                    onClick={handleShare}
-                    aria-label={`Share obituary for ${itemName}`}
-                    aria-expanded={shareOpen}
-                    aria-haspopup="menu"
-                  >
-                    <ShareIcon className="h-[18px] w-[18px]" />
-                    <span>Share</span>
-                  </Button>
-
-                  {shareOpen ? (
-                    <ShareMenu
-                      url={shareUrl}
-                      title={sharePayload.title}
-                      text={sharePayload.text}
-                    />
-                  ) : null}
-                </div>
+                {shareOpen ? (
+                  <ShareMenu
+                    url={shareUrl}
+                    title={sharePayload.title}
+                    text={sharePayload.text}
+                  />
+                ) : null}
               </div>
             </div>
           </div>
         </div>
-      </article>
-    </li>
+      </div>
+    </article>
   )
 }
 
@@ -697,11 +696,16 @@ function ObituaryList() {
             }
           >
             <div className="space-y-6">
-              <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <StaggerGridReveal
+                as="ul"
+                className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+              >
                 {visibleItems.map((item) => (
-                  <ObituaryCard key={getItemKey(item)} item={item} />
+                  <RevealItem as="li" key={getItemKey(item)}>
+                    <ObituaryCard item={item} />
+                  </RevealItem>
                 ))}
-              </ul>
+              </StaggerGridReveal>
 
               {totalPages > 1 ? (
                 <div className="space-y-2">

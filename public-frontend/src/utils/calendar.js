@@ -22,6 +22,10 @@ export function formatIcsDate(value) {
   return `${year}${month}${day}`
 }
 
+export function hasCalendarDate(value) {
+  return Boolean(formatIcsDate(value))
+}
+
 function formatLocalDate(date) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -42,32 +46,27 @@ export function buildIcsEvent({
   description,
   date,
   uid,
+  url,
   isAllDay = true,
-  isComingSoon = false,
 }) {
   const now = new Date()
   const dtStamp = formatIcsDate(now)
-  const eventDate = date ? formatIcsDate(date) : ''
-  const todayDate = formatLocalDate(now)
-  const summaryText = isComingSoon
-    ? `${title} (Coming Soon)`
-    : title
-  const descriptionText = isComingSoon
-    ? `${description || ''}\nDate to be announced.`.trim()
-    : description || ''
+  const eventDate = formatIcsDate(date)
+  if (!eventDate) {
+    throw new Error('A valid event date is required to create a calendar entry.')
+  }
 
-  const dtStart = eventDate || todayDate
+  const summaryText = title || 'Community Event'
+  const descriptionText = String(description || '').trim()
+  const eventUrl = String(url || '').trim()
+  const dtStart = eventDate
   const dtEnd = (() => {
     if (!isAllDay) return dtStart
-    if (eventDate && /^\d{8}$/.test(eventDate)) {
-      const year = Number(eventDate.slice(0, 4))
-      const month = Number(eventDate.slice(4, 6)) - 1
-      const day = Number(eventDate.slice(6, 8))
-      const nextDate = new Date(Date.UTC(year, month, day + 1))
-      return formatIcsDate(nextDate)
-    }
-    const nextLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
-    return formatLocalDate(nextLocal)
+    const year = Number(eventDate.slice(0, 4))
+    const month = Number(eventDate.slice(4, 6)) - 1
+    const day = Number(eventDate.slice(6, 8))
+    const nextDate = new Date(Date.UTC(year, month, day + 1))
+    return formatIcsDate(nextDate)
   })()
 
   return [
@@ -82,6 +81,7 @@ export function buildIcsEvent({
     isAllDay ? `DTEND;VALUE=DATE:${dtEnd}` : `DTEND:${dtEnd}`,
     `SUMMARY:${escapeIcsText(summaryText)}`,
     descriptionText ? `DESCRIPTION:${escapeIcsText(descriptionText)}` : null,
+    eventUrl ? `URL:${escapeIcsText(eventUrl)}` : null,
     'END:VEVENT',
     'END:VCALENDAR',
   ]
@@ -96,9 +96,8 @@ export function downloadIcs({ filename, content }) {
   anchor.href = url
   anchor.download = filename
   anchor.rel = 'noreferrer'
-  anchor.target = '_blank'
   document.body.appendChild(anchor)
   anchor.click()
   anchor.remove()
-  URL.revokeObjectURL(url)
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

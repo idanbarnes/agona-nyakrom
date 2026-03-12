@@ -13,12 +13,16 @@ import {
   CardContent,
   CardFooter,
   CardSkeleton,
+  DetailPageCTA,
   EmptyState,
   ErrorState,
   ImageWithFallback,
   StateGate,
 } from '../../components/ui/index.jsx'
+import RevealItem from '../../components/motion/RevealItem.jsx'
+import StaggerGridReveal from '../../components/motion/StaggerGridReveal.jsx'
 import ImageLightbox from '../../components/ImageLightbox.jsx'
+import { downloadRemoteFile, openFileFallback } from '../../utils/download.js'
 
 const MORE_COUNT = 5
 const backArrow = String.fromCharCode(8592)
@@ -38,6 +42,70 @@ function formatDate(value) {
     day: 'numeric',
     year: 'numeric',
   })
+}
+
+function CalendarIcon({ className = 'h-4 w-4' }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <rect
+        x="3.5"
+        y="5"
+        width="17"
+        height="15.5"
+        rx="2.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M8 3.5v3M16 3.5v3M3.5 9.5h17"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+    </svg>
+  )
+}
+
+function ShareIcon({ className = 'h-[18px] w-[18px]' }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <circle
+        cx="18"
+        cy="5"
+        r="2.25"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      />
+      <circle
+        cx="6"
+        cy="12"
+        r="2.25"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      />
+      <circle
+        cx="18"
+        cy="19"
+        r="2.25"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      />
+      <path
+        d="m8.1 11 7.8-4.5m-7.8 6 7.8 4.5"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.5"
+      />
+    </svg>
+  )
 }
 
 // Build a share payload with a short description snippet.
@@ -74,7 +142,7 @@ function ShareMenu({ url, title, text }) {
         href={`https://wa.me/?text=${encodedText}%20${encodedUrl}`}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-secondary px-3 text-xs font-medium text-secondary-foreground transition hover:bg-secondary/80"
+        className="inline-flex h-10 items-center justify-center rounded-xl border border-border/70 bg-surface px-3.5 text-xs font-semibold text-foreground transition hover:border-[#7BC77D] hover:bg-[#EDF8EE] hover:text-[#1E6B31]"
       >
         WhatsApp
       </a>
@@ -82,7 +150,7 @@ function ShareMenu({ url, title, text }) {
         href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-secondary px-3 text-xs font-medium text-secondary-foreground transition hover:bg-secondary/80"
+        className="inline-flex h-10 items-center justify-center rounded-xl border border-border/70 bg-surface px-3.5 text-xs font-semibold text-foreground transition hover:border-[#A9C8FF] hover:bg-[#EFF6FF] hover:text-[#2457B5]"
       >
         Facebook
       </a>
@@ -90,14 +158,14 @@ function ShareMenu({ url, title, text }) {
         href={`https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-secondary px-3 text-xs font-medium text-secondary-foreground transition hover:bg-secondary/80"
+        className="inline-flex h-10 items-center justify-center rounded-xl border border-border/70 bg-surface px-3.5 text-xs font-semibold text-foreground transition hover:border-[#1F2937] hover:bg-[#111827] hover:text-white"
       >
         X
       </a>
       <button
         type="button"
         onClick={handleCopy}
-        className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-secondary px-3 text-xs font-medium text-secondary-foreground transition hover:bg-secondary/80"
+        className="inline-flex h-10 items-center justify-center rounded-xl border border-border/70 bg-surface px-3.5 text-xs font-semibold text-foreground transition hover:border-[#E7B76D] hover:bg-accent/60 hover:text-[#9A5600]"
       >
         {copied ? 'Copied!' : 'Copy link'}
       </button>
@@ -108,7 +176,7 @@ function ShareMenu({ url, title, text }) {
 // Simple announcement icon for no-flyer states.
 function AnnouncementIcon() {
   return (
-    <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+    <span className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-border/70 bg-background/70">
       <svg
         viewBox="0 0 24 24"
         width="22"
@@ -133,7 +201,8 @@ function AnnouncementDetail() {
   const [error, setError] = useState(null)
   const [shareUrl, setShareUrl] = useState('')
   const [shareOpen, setShareOpen] = useState(false)
-  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [previewImage, setPreviewImage] = useState(null)
+  const [flyerDownloading, setFlyerDownloading] = useState(false)
 
   useEffect(() => {
     setShareUrl(window.location.href)
@@ -231,8 +300,41 @@ function AnnouncementDetail() {
     setShareOpen((current) => !current)
   }
 
+  const handleFlyerDownload = useCallback(async () => {
+    if (!flyerUrl || flyerDownloading) {
+      return
+    }
+
+    setFlyerDownloading(true)
+
+    try {
+      await downloadRemoteFile({
+        url: flyerUrl,
+        filename: item?.slug
+          ? `announcement-${item.slug}`
+          : item?.title || 'announcement-flyer',
+        fallbackBaseName: 'announcement-flyer',
+      })
+    } catch {
+      openFileFallback(flyerUrl)
+    } finally {
+      setFlyerDownloading(false)
+    }
+  }, [flyerDownloading, flyerUrl, item?.slug, item?.title])
+
+  const handlePreviewImage = useCallback(
+    (src, alt, caption) => {
+      if (!src) {
+        return
+      }
+
+      setPreviewImage({ src, alt, caption })
+    },
+    [],
+  )
+
   return (
-    <section className="container py-8 md:py-12">
+    <section className="container py-6 md:py-10">
       <StateGate
         loading={loading}
         error={error}
@@ -255,87 +357,169 @@ function AnnouncementDetail() {
           />
         }
       >
-        <div className="space-y-8">
+        <div className="mx-auto max-w-6xl space-y-8">
           <Link
             to="/announcements-events"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            className="inline-flex items-center rounded-full border border-transparent px-1 text-sm font-medium text-muted-foreground transition hover:border-border/60 hover:bg-surface hover:px-3 hover:text-foreground"
           >
             {backArrow} Back to Announcements & Events
           </Link>
 
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl font-semibold text-foreground break-words md:text-4xl">
-                {item?.title || 'Announcement detail'}
-              </h1>
-              <Badge variant="muted">Official Announcement</Badge>
-              {!hasFlyer ? <AnnouncementIcon /> : null}
-            </div>
-            <div className="flex flex-wrap gap-2">
+          <article className="relative overflow-hidden rounded-[28px] border border-border/70 bg-surface shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-r from-primary/10 via-transparent to-accent/70"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -left-12 bottom-8 h-32 w-32 rounded-full bg-accent/70 blur-3xl"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-10 top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl"
+            />
+
+            <div
+              className={`relative grid gap-8 p-5 sm:p-7 lg:p-8 xl:gap-10 xl:p-10 ${
+                hasFlyer
+                  ? 'xl:grid-cols-[minmax(0,1.05fr),minmax(320px,0.95fr)] xl:items-start'
+                  : ''
+              }`}
+            >
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <Badge
+                      variant="muted"
+                      className="px-3 py-1 text-[0.72rem] uppercase tracking-[0.18em]"
+                    >
+                      Official Announcement
+                    </Badge>
+                    {dateLabel ? (
+                      <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur">
+                        <CalendarIcon className="h-3.5 w-3.5" />
+                        <span>Published {dateLabel}</span>
+                      </span>
+                    ) : null}
+                    {!hasFlyer ? <AnnouncementIcon /> : null}
+                  </div>
+
+                  <h1 className="max-w-3xl break-words text-3xl font-semibold tracking-tight text-foreground md:text-5xl">
+                    {item?.title || 'Announcement detail'}
+                  </h1>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  {hasFlyer ? (
+                    <>
+                      <Button
+                        variant="secondary"
+                        className="rounded-xl border border-border/70 bg-background/80 px-5"
+                        onClick={handleFlyerDownload}
+                        loading={flyerDownloading}
+                        disabled={flyerDownloading}
+                      >
+                        Download Flyer
+                      </Button>
+                    </>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    aria-label={`Share ${item?.title || 'this announcement'}`}
+                    aria-expanded={shareOpen}
+                    aria-haspopup="menu"
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border/70 bg-background/70 px-5 text-sm font-medium text-foreground transition-[color,background-color,border-color,transform,box-shadow,opacity] duration-200 ease-out hover:-translate-y-[1px] hover:bg-background active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    <ShareIcon className="h-[18px] w-[18px] shrink-0" />
+                    <span className="whitespace-nowrap">Share</span>
+                  </button>
+                </div>
+
+                {shareOpen ? (
+                  <div className="rounded-[22px] border border-border/70 bg-background/75 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur">
+                    <ShareMenu
+                      url={shareUrl}
+                      title={sharePayload.title}
+                      text={sharePayload.text}
+                    />
+                  </div>
+                ) : null}
+              </div>
+
               {hasFlyer ? (
-                <>
-                  <Button
-                    variant="secondary"
-                    onClick={() => setLightboxOpen(true)}
-                  >
-                    View Image
-                  </Button>
-                  <a
-                    href={flyerUrl}
-                    download
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex h-10 items-center justify-center rounded-md border border-border bg-secondary px-4 text-sm font-medium text-secondary-foreground transition hover:bg-secondary/80"
-                  >
-                    Download Flyer
-                  </a>
-                </>
+                <div>
+                  <div className="rounded-[24px] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(249,245,239,0.96))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] sm:p-4">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handlePreviewImage(
+                          flyerUrl,
+                          item?.flyer_alt_text ||
+                            `${item?.title || 'Announcement'} flyer`,
+                          item?.title || 'Announcement flyer',
+                        )
+                      }
+                      aria-label={`View image for ${item?.title || 'this announcement'}`}
+                      className="block w-full cursor-zoom-in rounded-[20px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    >
+                      <div className="aspect-[16/11] overflow-hidden rounded-[20px] border border-border/60 bg-white/80 shadow-[0_14px_30px_rgba(15,23,42,0.08)] sm:aspect-[4/3] xl:aspect-[4/5]">
+                        <ImageWithFallback
+                          src={flyerUrl}
+                          alt={
+                            item?.flyer_alt_text ||
+                            `${item?.title || 'Announcement'} flyer`
+                          }
+                          className="h-full w-full object-contain"
+                          fallbackText={item?.title || 'Announcement'}
+                        />
+                      </div>
+                    </button>
+                  </div>
+                </div>
               ) : null}
-              <Button variant="ghost" onClick={handleShare}>
-                Share
-              </Button>
             </div>
-            {shareOpen ? (
-              <ShareMenu
-                url={shareUrl}
-                title={sharePayload.title}
-                text={sharePayload.text}
-              />
-            ) : null}
-            {hasFlyer ? (
-              <div className="aspect-[16/9] w-full">
-                <ImageWithFallback
-                  src={flyerUrl}
-                  alt={
-                    item?.flyer_alt_text || `${item?.title || 'Announcement'} flyer`
-                  }
-                  className="h-full w-full rounded-xl object-cover"
-                  fallbackText={item?.title || 'Announcement'}
-                />
-              </div>
-            ) : null}
-          </div>
+          </article>
 
-          <div className="space-y-4">
-            <div className="leading-7 text-foreground whitespace-pre-line">
-              {item?.body || 'No additional details provided.'}
-            </div>
-          </div>
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr),320px]">
+            <Card className="overflow-hidden rounded-[24px] border border-border/70 bg-surface shadow-[0_14px_36px_rgba(15,23,42,0.07)]">
+              <CardContent className="p-5 sm:p-7 lg:p-8">
+                <div className="whitespace-pre-line text-[1.02rem] leading-8 text-foreground/90">
+                  {item?.body || 'No additional details provided.'}
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card className="bg-surface">
-            <CardContent className="flex flex-wrap items-center justify-between gap-4">
-              <div className="text-sm text-muted-foreground">
-                Published {dateLabel || 'Recently'}
-              </div>
-              <Button variant="secondary" onClick={handleShare}>
-                Share
-              </Button>
-            </CardContent>
-          </Card>
+            <Card className="overflow-hidden rounded-[24px] border border-border/70 bg-surface shadow-[0_14px_36px_rgba(15,23,42,0.07)]">
+              <CardContent className="space-y-5 p-5 sm:p-6">
+                <div className="rounded-2xl border border-border/70 bg-background/55 px-4 py-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Published
+                    </span>
+                    <span className="text-right text-sm font-semibold text-foreground">
+                      {dateLabel || 'Recently'}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  aria-label={`Share ${item?.title || 'this announcement'}`}
+                  aria-expanded={shareOpen}
+                  aria-haspopup="menu"
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border/70 bg-background/80 px-4 text-sm font-medium text-foreground transition-[color,background-color,border-color,transform,box-shadow,opacity] duration-200 ease-out hover:-translate-y-[1px] hover:bg-background active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  <ShareIcon className="h-[18px] w-[18px] shrink-0" />
+                  <span className="whitespace-nowrap">Share</span>
+                </button>
+              </CardContent>
+            </Card>
+          </div>
 
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-xl font-semibold text-foreground">
+              <h2 className="text-xl font-semibold tracking-tight text-foreground">
                 More Announcements
               </h2>
               <Button as={Link} to="/announcements-events" variant="ghost" size="sm">
@@ -343,60 +527,76 @@ function AnnouncementDetail() {
               </Button>
             </div>
             {moreItems.length ? (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <StaggerGridReveal className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {moreItems.map((announcement) => (
-                  <Card key={announcement.slug || announcement.id} className="overflow-hidden">
-                    {announcement.flyer_image_path ? (
-                      <ImageWithFallback
-                        src={resolveAssetUrl(announcement.flyer_image_path)}
-                        alt={
-                          announcement.flyer_alt_text ||
-                          `${announcement.title || 'Announcement'} flyer`
-                        }
-                        className="h-40 w-full object-cover"
-                        fallbackText={announcement.title || 'Announcement'}
-                      />
-                    ) : (
-                      <div className="flex h-40 w-full items-center justify-center bg-muted text-muted-foreground">
-                        <AnnouncementIcon />
-                      </div>
-                    )}
-                    <CardContent className="space-y-2">
-                      <h3 className="text-base font-semibold text-foreground">
-                        {announcement.title || 'Announcement'}
-                      </h3>
-                      {announcement.excerpt ? (
-                        <p
-                          className="text-sm text-muted-foreground"
-                          style={{
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          {announcement.excerpt}
-                        </p>
-                      ) : null}
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(
-                          announcement.published_at || announcement.created_at,
+                  <RevealItem key={announcement.slug || announcement.id}>
+                    <Card className="group flex h-full flex-col overflow-hidden rounded-[22px] border border-border/70 bg-surface shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+                      <div className="border-b border-border/70 bg-[linear-gradient(180deg,rgba(245,239,230,0.7),rgba(255,255,255,0.9))] p-3">
+                        {announcement.flyer_image_path ? (
+                          <div className="overflow-hidden rounded-[18px] border border-border/60 bg-white/80">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handlePreviewImage(
+                                  resolveAssetUrl(announcement.flyer_image_path),
+                                  announcement.flyer_alt_text ||
+                                    `${announcement.title || 'Announcement'} flyer`,
+                                  announcement.title || 'Announcement flyer',
+                                )
+                              }
+                              aria-label={`View image for ${announcement.title || 'this announcement'}`}
+                              className="h-full w-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                            >
+                              <ImageWithFallback
+                                src={resolveAssetUrl(announcement.flyer_image_path)}
+                                alt={
+                                  announcement.flyer_alt_text ||
+                                  `${announcement.title || 'Announcement'} flyer`
+                                }
+                                className="h-44 w-full transform-gpu object-contain p-3 transition-transform duration-200 ease-out group-hover:scale-[1.02]"
+                                fallbackText={announcement.title || 'Announcement'}
+                              />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex h-44 w-full items-center justify-center rounded-[18px] border border-border/60 bg-background/70 text-muted-foreground">
+                            <AnnouncementIcon />
+                          </div>
                         )}
-                      </p>
-                    </CardContent>
-                    <CardFooter className="justify-start">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        as={Link}
-                        to={`/announcements/${announcement.slug}`}
-                      >
-                        View Details
-                      </Button>
-                    </CardFooter>
-                  </Card>
+                      </div>
+                      <CardContent className="flex flex-1 flex-col space-y-3 p-5">
+                        <h3 className="text-lg font-semibold leading-snug text-foreground transition-colors group-hover:text-[#B45309]">
+                          {announcement.title || 'Announcement'}
+                        </h3>
+                        {announcement.excerpt ? (
+                          <p
+                            className="text-sm leading-6 text-muted-foreground"
+                            style={{
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            {announcement.excerpt}
+                          </p>
+                        ) : null}
+                        <p className="text-sm text-muted-foreground">
+                          {formatDate(
+                            announcement.published_at || announcement.created_at,
+                          )}
+                        </p>
+                      </CardContent>
+                      <CardFooter className="justify-start px-5 pb-5 pt-0">
+                        <DetailPageCTA
+                          to={`/announcements/${announcement.slug}`}
+                          label="View Details"
+                        />
+                      </CardFooter>
+                    </Card>
+                  </RevealItem>
                 ))}
-              </div>
+              </StaggerGridReveal>
             ) : (
               <p className="text-sm text-muted-foreground">
                 No additional announcements available.
@@ -406,12 +606,13 @@ function AnnouncementDetail() {
         </div>
       </StateGate>
 
-      {hasFlyer ? (
+      {previewImage?.src ? (
         <ImageLightbox
-          open={lightboxOpen}
-          onClose={() => setLightboxOpen(false)}
-          src={flyerUrl}
-          alt={item?.flyer_alt_text || `${item?.title || 'Announcement'} flyer`}
+          open={Boolean(previewImage?.src)}
+          onClose={() => setPreviewImage(null)}
+          src={previewImage.src}
+          alt={previewImage.alt}
+          caption={previewImage.caption}
         />
       ) : null}
     </section>
@@ -419,5 +620,3 @@ function AnnouncementDetail() {
 }
 
 export default AnnouncementDetail
-
-

@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  Button,
   Card,
   CardContent,
   CardFooter,
   FormField,
-  InlineError,
   Input,
+  InlineError,
 } from '../../components/ui/index.jsx'
+import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
+import FormActions from '../../components/ui/form-actions.jsx'
 
 function getPreviewUrl(file) {
   if (!file) return ''
@@ -35,12 +36,13 @@ export default function HallOfFameForm({
   description,
   value,
   submitting = false,
+  submitAction = 'publish',
   errorMessage = '',
-  submitLabel,
-  submitDisabled = false,
+  disableDraft = false,
+  disablePublish = false,
   onChange,
   onCancel,
-  onSubmit,
+  onSubmitAction,
   onUploadImage,
 }) {
   const [fieldErrors, setFieldErrors] = useState({})
@@ -66,12 +68,11 @@ export default function HallOfFameForm({
     return Object.keys(nextErrors).length === 0
   }
 
-  const handleSubmit = (event) => {
-    event.preventDefault()
+  const handleAction = (action) => {
     if (!validate()) {
       return
     }
-    onSubmit(event)
+    onSubmitAction(action)
   }
 
   const update = (field, nextValue) => {
@@ -91,7 +92,7 @@ export default function HallOfFameForm({
         <p className="text-sm text-muted-foreground">{description}</p>
       </header>
 
-      <form onSubmit={handleSubmit}>
+      <form>
         <Card>
           <CardContent className="space-y-5 md:space-y-6">
             <InlineError message={errorMessage} />
@@ -99,32 +100,25 @@ export default function HallOfFameForm({
             <FormField
               label="Portrait Image (optional)"
               htmlFor="image"
-              helpText="Recommended portrait ratio: 4:5. Target size: around 600 x 750."
             >
-              <div className="space-y-3 rounded-lg border border-border bg-background p-4">
-                <Input
-                  id="image"
-                  name="image"
-                  type="file"
-                  accept="image/*"
+              <div className="rounded-xl border border-border bg-background/60">
+                <PhotoUploadField
+                  label=""
+                  value={value?.image?.name || ''}
+                  valueType="text"
+                  valueId="image"
+                  fileId="image-file"
+                  fileName="image"
+                  acceptedFileTypes="image/*"
                   onChange={(event) => update('image', event.target.files?.[0] || null)}
+                  aspectRatioHint="4:5"
+                  instructions="Target size: around 600 x 750."
+                  previewSrc={resolvedImageUrl}
+                  previewAlt={value?.name?.trim() || 'Hall of fame portrait preview'}
+                  previewFallback="No portrait selected"
+                  previewContainerClassName="mt-1 w-full max-w-[240px] overflow-hidden rounded-xl border border-border bg-muted/30 aspect-[4/5]"
+                  previewClassName="h-full w-full object-cover"
                 />
-                <div className="w-full max-w-[240px] overflow-hidden rounded-xl border border-border bg-muted/30">
-                  <div className="aspect-[4/5]">
-                    {resolvedImageUrl ? (
-                      <img
-                        src={resolvedImageUrl}
-                        alt={value?.name?.trim() || 'Hall of fame portrait preview'}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center px-4 text-center text-xs text-muted-foreground">
-                        No portrait selected
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
             </FormField>
 
@@ -168,35 +162,21 @@ export default function HallOfFameForm({
               />
             </FormField>
 
-            <FormField label="Published" htmlFor="published">
-              <div className="flex items-center gap-2">
-                <input
-                  id="published"
-                  name="published"
-                  type="checkbox"
-                  checked={Boolean(value?.published)}
-                  onChange={(event) => update('published', event.target.checked)}
-                  className="h-4 w-4 rounded border-border text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-                <span className="text-sm text-muted-foreground">
-                  Publish this Hall of Fame entry.
-                </span>
-              </div>
-            </FormField>
           </CardContent>
 
           <CardFooter>
-            <Button variant="secondary" type="button" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              type="submit"
-              loading={submitting}
-              disabled={submitDisabled}
-            >
-              {submitting ? 'Saving...' : submitLabel}
-            </Button>
+            <FormActions
+              mode="publish"
+              onCancel={onCancel}
+              onAction={(action) => {
+                handleAction(action)
+              }}
+              isSubmitting={submitting}
+              submitAction={submitAction}
+              disableCancel={submitting}
+              disableDraft={disableDraft}
+              disablePublish={disablePublish}
+            />
           </CardFooter>
         </Card>
       </form>

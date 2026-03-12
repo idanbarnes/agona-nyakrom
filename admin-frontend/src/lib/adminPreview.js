@@ -12,6 +12,11 @@ const RESOURCE_ALIASES = {
   page: 'about-pages',
   pages: 'about-pages',
   faq: 'faqs',
+  carousels: 'carousel',
+  slide: 'carousel',
+  slides: 'carousel',
+  'carousel-slide': 'carousel',
+  'carousel-slides': 'carousel',
 }
 
 const SUPPORTED_RESOURCES = new Set([
@@ -26,6 +31,7 @@ const SUPPORTED_RESOURCES = new Set([
   'leaders',
   'about-pages',
   'faqs',
+  'carousel',
 ])
 
 export function normalizePreviewResource(resource) {
