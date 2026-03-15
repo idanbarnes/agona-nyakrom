@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
+import FormActions from '../../components/ui/form-actions.jsx'
 import { createAsafoCompany, uploadAsafoInlineImage } from '../../services/api/adminAsafoApi.js'
 
 const SECTION_PRESETS = {
@@ -19,10 +20,10 @@ const SECTION_PRESETS = {
     display_order: 20,
   },
   'kyeremu-asafo': {
-    label: 'Kyeremu Asafo',
+    label: 'Tuafo Asafo Company',
     entry_type: 'company',
     company_key: 'kyeremu',
-    title: 'Kyeremu Asafo',
+    title: 'Tuafo Asafo Company',
     display_order: 30,
   },
 }
@@ -66,12 +67,16 @@ export default function AdminAsafoCompaniesCreatePage() {
   const initialSection = SECTION_PRESETS[requestedSection] ? requestedSection : DEFAULT_SECTION
   const [state, setState] = useState(getInitialState(initialSection))
   const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [submitAction, setSubmitAction] = useState('publish')
 
-  const onSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (action = 'publish') => {
     setError('')
+    setSubmitAction(action)
+    setSaving(true)
     const form = new FormData()
-    Object.entries(buildPayload(state)).forEach(([key, value]) =>
+    const nextState = { ...state, published: action === 'publish' }
+    Object.entries(buildPayload(nextState)).forEach(([key, value]) =>
       form.append(key, String(value ?? '')),
     )
     try {
@@ -79,6 +84,8 @@ export default function AdminAsafoCompaniesCreatePage() {
       navigate('/admin/asafo-companies')
     } catch (err) {
       setError(err.message || 'Failed to save Asafo section')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -100,10 +107,16 @@ export default function AdminAsafoCompaniesCreatePage() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        void handleSubmit('publish')
+      }}
+      className="space-y-3"
+    >
       <h2 className="text-2xl font-semibold">Create Asafo Section</h2>
       <p className="text-sm text-slate-600">
-        Use one page for each section: Who Are Asafo Companies, Adonsten Asafo, and Kyeremu Asafo.
+        Use one page for each section: Who Are Asafo Companies, Adonsten Asafo, and Tuafo Asafo Company.
       </p>
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
@@ -125,9 +138,18 @@ export default function AdminAsafoCompaniesCreatePage() {
       <input className="w-full rounded border px-3 py-2" placeholder="SEO Meta Title" value={state.seo_meta_title} onChange={(e) => setState((s) => ({ ...s, seo_meta_title: e.target.value }))} />
       <textarea className="w-full rounded border px-3 py-2" placeholder="SEO Meta Description" value={state.seo_meta_description} onChange={(e) => setState((s) => ({ ...s, seo_meta_description: e.target.value }))} />
       <input className="w-full rounded border px-3 py-2" placeholder="SEO Share Image" value={state.seo_share_image} onChange={(e) => setState((s) => ({ ...s, seo_share_image: e.target.value }))} />
-      <label className="flex items-center gap-2"><input type="checkbox" checked={state.published} onChange={(e) => setState((s) => ({ ...s, published: e.target.checked }))} />Published</label>
       <input className="w-32 rounded border px-3 py-2" type="number" value={state.display_order} onChange={(e) => setState((s) => ({ ...s, display_order: Number(e.target.value || 0) }))} />
-      <button className="rounded bg-black px-4 py-2 text-white" type="submit">Save</button>
+      <FormActions
+        mode="publish"
+        onCancel={() => navigate('/admin/asafo-companies')}
+        onAction={(action) => {
+          void handleSubmit(action)
+        }}
+        isSubmitting={saving}
+        submitAction={submitAction}
+        showDraft={false}
+        disableCancel={saving}
+      />
     </form>
   )
 }

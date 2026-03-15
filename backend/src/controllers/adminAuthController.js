@@ -1,4 +1,5 @@
 const authService = require('../services/authService');
+const adminUserService = require('../services/admin/adminUserService');
 const { clearLoginRateLimit } = require('../middleware/adminLoginRateLimit');
 const { success, error } = require('../utils/response');
 
@@ -20,6 +21,37 @@ const login = async (req, res) => {
     }
     console.error('Error logging in admin:', err.message);
     return error(res, 'Failed to login', 500);
+  }
+};
+
+// POST /bootstrap
+const bootstrap = async (req, res) => {
+  try {
+    const { bootstrap_token, email, password, name } = req.body || {};
+
+    if (!bootstrap_token || !email || !password || !name) {
+      return error(res, 'Bootstrap token, name, email, and password are required', 400);
+    }
+
+    const created = await adminUserService.bootstrapAdmin({
+      bootstrapToken: bootstrap_token,
+      email,
+      password,
+      name,
+    });
+
+    return success(
+      res,
+      authService.buildAuthResponse(created),
+      'Admin bootstrap successful',
+      201
+    );
+  } catch (err) {
+    if (err && err.status) {
+      return error(res, err.message, err.status);
+    }
+    console.error('Error bootstrapping admin:', err.message);
+    return error(res, 'Failed to bootstrap admin', 500);
   }
 };
 
@@ -47,6 +79,7 @@ const me = async (req, res) => {
 };
 
 module.exports = {
+  bootstrap,
   login,
   logout,
   me,

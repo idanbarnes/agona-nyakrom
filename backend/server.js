@@ -6,6 +6,7 @@ const express = require('express');
 const cors = require('cors');
 const { connectDB } = require('./src/config/db');
 const { pool } = require('./src/config/db');
+const { uploadsRoot } = require('./src/config/storage');
 
 // Import routers
 const newsRoutes = require('./src/routes/newsRoutes');
@@ -36,6 +37,7 @@ const adminAnnouncementsRoutes = require('./src/routes/adminAnnouncementsRoutes'
 const adminPreviewRoutes = require('./src/routes/admin/previewRoutes');
 const contactAdminRoutes = require('./src/routes/admin/contactAdminRoutes');
 const faqAdminRoutes = require('./src/routes/admin/faqAdminRoutes');
+const adminUserRoutes = require('./src/routes/admin/adminUserRoutes');
 const faqsAdminCompatRoutes = require('./src/routes/faqsAdminCompatRoutes');
 
 // for handling public endpoints routing
@@ -57,12 +59,27 @@ const publicAnnouncementsEventsRoutes = require('./src/routes/publicAnnouncement
 const publicContactRoutes = require('./src/routes/public/contactRoutes');
 const publicFaqRoutes = require('./src/routes/public/faqRoutes');
 
+const normalizeOrigin = (value = '') => String(value).trim().replace(/\/$/, '');
+const isTruthy = (value = '') => ['1', 'true', 'yes', 'on'].includes(String(value).trim().toLowerCase());
+const collectOrigins = (values = []) =>
+  [...new Set(values.map((value) => normalizeOrigin(value)).filter(Boolean))];
+
 // Public site meta configuration for social sharing.
-const PUBLIC_SITE_URL = process.env.PUBLIC_SITE_URL || 'http://localhost:5173';
+const PUBLIC_SITE_URL = normalizeOrigin(process.env.PUBLIC_SITE_URL || 'http://localhost:5174');
+const ADMIN_SITE_URL = normalizeOrigin(process.env.ADMIN_SITE_URL || 'http://localhost:5173');
 const PUBLIC_ASSET_BASE_URL =
   process.env.PUBLIC_ASSET_BASE_URL || process.env.API_BASE_URL || 'http://localhost:5000';
 const DEFAULT_SHARE_IMAGE =
   process.env.PUBLIC_SHARE_IMAGE_URL || `${PUBLIC_SITE_URL}/share-default.svg`;
+const CORS_ALLOWED_ORIGINS = collectOrigins(
+  String(process.env.CORS_ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((value) => value.trim())
+);
+const allowedOrigins = CORS_ALLOWED_ORIGINS.length
+  ? CORS_ALLOWED_ORIGINS
+  : collectOrigins([PUBLIC_SITE_URL, ADMIN_SITE_URL]);
+const TRUST_PROXY = isTruthy(process.env.TRUST_PROXY);
 
 const frontendRoot = path.join(process.cwd(), '..', 'public-frontend');
 const htmlCandidates = [
@@ -163,9 +180,25 @@ const fetchAnnouncementMeta = async (slug) => {
 const app = express();
 
 // Global middleware
-app.use(cors()); // Allow cross-origin requests (frontend and admin panel)
+app.set('trust proxy', TRUST_PROXY);
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      const normalizedOrigin = normalizeOrigin(origin);
+      if (allowedOrigins.includes(normalizedOrigin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+  })
+);
 app.use(express.json()); // Parse incoming JSON payloads
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use('/uploads', express.static(uploadsRoot));
 
 app.use('/api/news', newsRoutes);
 app.use('/api/obituaries', obituaryRoutes);
@@ -196,6 +229,7 @@ app.use('/api/admin/events', adminEventsRoutes);
 app.use('/api/admin/announcements', adminAnnouncementsRoutes);
 app.use('/api/admin/contact', contactAdminRoutes);
 app.use('/api/admin/faqs', faqAdminRoutes);
+app.use('/api/admin/users', adminUserRoutes);
 app.use('/api/faqs', faqsAdminCompatRoutes);
 
 //for handling public endpoints (registerd)

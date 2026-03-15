@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import SmartLink from '../components/navigation/SmartLink.jsx'
 
 function getSiteName(settings) {
   return settings?.site_name || settings?.siteName || 'Nyakrom Community'
@@ -218,9 +218,9 @@ function RenderNavLink({ href, children, className }) {
   }
 
   return (
-    <Link to={href} className={className}>
+    <SmartLink href={href} className={className}>
       {children}
-    </Link>
+    </SmartLink>
   )
 }
 
@@ -420,12 +420,12 @@ function Footer({ settings, loading, error }) {
                 <li>Contact details unavailable.</li>
               ) : null}
             </ul>
-            <Link
-              to="/contact"
+            <SmartLink
+              href="/contact"
               className="mt-4 inline-flex h-10 items-center rounded-md bg-[#D97706] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#B45309]"
             >
               Send Message
-            </Link>
+            </SmartLink>
           </section>
         </div>
 

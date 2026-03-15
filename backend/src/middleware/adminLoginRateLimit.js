@@ -6,12 +6,7 @@ const MAX_ATTEMPTS = Number(process.env.ADMIN_LOGIN_RATE_LIMIT_MAX_ATTEMPTS || 5
 const attempts = new Map();
 
 const getClientKey = (req) => {
-  const forwardedFor = req.headers['x-forwarded-for'];
-  if (typeof forwardedFor === 'string' && forwardedFor.trim()) {
-    return forwardedFor.split(',')[0].trim();
-  }
-
-  return req.ip || req.connection?.remoteAddress || 'unknown';
+  return req.ip || req.socket?.remoteAddress || req.connection?.remoteAddress || 'unknown';
 };
 
 const getEntry = (key) => {

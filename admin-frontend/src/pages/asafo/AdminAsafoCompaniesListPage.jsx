@@ -15,9 +15,9 @@ const SECTION_CARDS = [
   },
   {
     id: 'kyeremu-asafo',
-    title: 'Kyeremu Asafo',
+    title: 'Tuafo Asafo Company',
     subtitle: 'Asafo Company 2',
-    description: 'Manage section content for Kyeremu Asafo.',
+    description: 'Manage section content for Tuafo Asafo Company.',
   },
 ]
 

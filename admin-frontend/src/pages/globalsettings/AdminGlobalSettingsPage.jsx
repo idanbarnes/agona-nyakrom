@@ -249,6 +249,13 @@ function AdminGlobalSettingsPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
+  const handleCancel = () => {
+    navigate('/dashboard')
+    window.setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    }, 0)
+  }
+
   useEffect(() => {
     let isMounted = true
 
@@ -653,18 +660,18 @@ function AdminGlobalSettingsPage() {
           </CardContent>
         </Card>
 
-        <div className="sticky bottom-4 z-20 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
-          <FormActions
-            mode="publish"
-            onCancel={() => navigate('/admin')}
-            onAction={(action) => {
-              void submitSettings(action)
-            }}
-            isSubmitting={isSaving}
-            submitAction={submitAction}
-            disableCancel={isSaving}
-          />
-        </div>
+        <FormActions
+          mode="publish"
+          onCancel={handleCancel}
+          onAction={(action) => {
+            void submitSettings(action)
+          }}
+          isSubmitting={isSaving}
+          submitAction={submitAction}
+          showDraft={false}
+          disableCancel={isSaving}
+          className="flex flex-wrap items-center justify-end gap-3 pt-2"
+        />
       </form>
     </section>
   )

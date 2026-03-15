@@ -18,7 +18,7 @@ function resolveErrorMessage(error) {
 
   try {
     return JSON.stringify(error)
-  } catch (resolveError) {
+  } catch {
     return 'Something went wrong.'
   }
 }

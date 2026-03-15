@@ -75,6 +75,13 @@ function AdminContactInfoPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
+  const handleCancel = () => {
+    navigate('/dashboard')
+    window.setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    }, 0)
+  }
+
   useEffect(() => {
     let mounted = true
 
@@ -467,11 +474,11 @@ function AdminContactInfoPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Office Hours</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-3 md:grid-cols-3">
+	            <Card>
+	              <CardHeader>
+	                <CardTitle>Office Hours</CardTitle>
+	              </CardHeader>
+	              <CardContent className="grid gap-3 md:grid-cols-3">
                 <Input
                   placeholder="Days"
                   value={formState.office_hours.days || ''}
@@ -496,11 +503,23 @@ function AdminContactInfoPage() {
                     <option key={timezone} value={timezone}>
                       {timezone}
                     </option>
-                  ))}
-                </Select>
-              </CardContent>
-            </Card>
-          </div>
+	                  ))}
+	                </Select>
+	              </CardContent>
+	            </Card>
+
+	            <FormActions
+	              mode="publish"
+	              onCancel={handleCancel}
+	              onAction={() => {
+	                void handleSave()
+	              }}
+	              isSubmitting={isSaving}
+	              showDraft={false}
+	              disableCancel={isSaving}
+	              className="flex flex-wrap items-center justify-end gap-3 pt-2"
+	            />
+	          </div>
 
           <div>
             <Card className="sticky top-24">
@@ -578,24 +597,8 @@ function AdminContactInfoPage() {
         </div>
       )}
 
-      {!isLoading ? (
-        <div className="sticky bottom-4 z-20 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
-          <FormActions
-            mode="single"
-            onCancel={() => navigate('/admin')}
-            onSubmit={() => {
-              void handleSave()
-            }}
-            isSubmitting={isSaving}
-            submitLabel="Publish"
-            submitLoadingLabel="Publishing..."
-            submitClassName="border-emerald-600 bg-emerald-600 text-white transition-transform duration-200 hover:-translate-y-0.5 hover:bg-emerald-700 focus-visible:ring-emerald-600"
-            disableCancel={isSaving}
-          />
-        </div>
-      ) : null}
-    </section>
-  )
-}
+	    </section>
+	  )
+	}
 
 export default AdminContactInfoPage

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
+import FormActions from '../../components/ui/form-actions.jsx'
 import { getSingleAsafoCompany, updateAsafoCompany, uploadAsafoInlineImage } from '../../services/api/adminAsafoApi.js'
 
 const SECTION_LABELS = {
@@ -8,7 +9,20 @@ const SECTION_LABELS = {
   adonten: 'Adonsten Asafo',
   adonsten: 'Adonsten Asafo',
   dotsen: 'Adonsten Asafo',
-  kyeremu: 'Kyeremu Asafo',
+  kyeremu: 'Tuafo Asafo Company',
+}
+
+function normalizeTuafoTitle(value) {
+  const normalizedValue = String(value || '').trim()
+  if (!normalizedValue) {
+    return ''
+  }
+
+  if (normalizedValue === 'Kyeremu Asafo' || normalizedValue === 'Kyeremu Asafo Company') {
+    return 'Tuafo Asafo Company'
+  }
+
+  return normalizedValue
 }
 
 const buildPayload = (state) => ({
@@ -35,16 +49,31 @@ export default function AdminAsafoCompaniesEditPage() {
   const navigate = useNavigate()
   const [state, setState] = useState(null)
   const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [submitAction, setSubmitAction] = useState('publish')
 
   useEffect(() => {
-    getSingleAsafoCompany(id).then((res) => setState(res?.data || null))
+    getSingleAsafoCompany(id).then((res) => {
+      const nextState = res?.data || null
+      if (!nextState) {
+        setState(null)
+        return
+      }
+
+      setState({
+        ...nextState,
+        title: normalizeTuafoTitle(nextState.title),
+      })
+    })
   }, [id])
 
-  const onSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (action = 'publish') => {
     setError('')
+    setSubmitAction(action)
+    setSaving(true)
     const form = new FormData()
-    Object.entries(buildPayload(state)).forEach(([key, value]) =>
+    const nextState = { ...state, published: action === 'publish' }
+    Object.entries(buildPayload(nextState)).forEach(([key, value]) =>
       form.append(key, String(value ?? '')),
     )
     try {
@@ -52,6 +81,8 @@ export default function AdminAsafoCompaniesEditPage() {
       navigate('/admin/asafo-companies')
     } catch (err) {
       setError(err.message || 'Failed to save Asafo section')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -63,7 +94,13 @@ export default function AdminAsafoCompaniesEditPage() {
   if (!state) return <p>Loading...</p>
 
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        void handleSubmit('publish')
+      }}
+      className="space-y-3"
+    >
       <h2 className="text-2xl font-semibold">Edit Asafo Section</h2>
       <p className="text-sm text-slate-600">{getSectionLabel(state)}</p>
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -79,9 +116,18 @@ export default function AdminAsafoCompaniesEditPage() {
       <input className="w-full rounded border px-3 py-2" placeholder="SEO Meta Title" value={state.seo_meta_title || ''} onChange={(e) => setState((s) => ({ ...s, seo_meta_title: e.target.value }))} />
       <textarea className="w-full rounded border px-3 py-2" placeholder="SEO Meta Description" value={state.seo_meta_description || ''} onChange={(e) => setState((s) => ({ ...s, seo_meta_description: e.target.value }))} />
       <input className="w-full rounded border px-3 py-2" placeholder="SEO Share Image" value={state.seo_share_image || ''} onChange={(e) => setState((s) => ({ ...s, seo_share_image: e.target.value }))} />
-      <label className="flex items-center gap-2"><input type="checkbox" checked={Boolean(state.published)} onChange={(e) => setState((s) => ({ ...s, published: e.target.checked }))} />Published</label>
       <input className="w-32 rounded border px-3 py-2" type="number" value={state.display_order ?? 0} onChange={(e) => setState((s) => ({ ...s, display_order: Number(e.target.value || 0) }))} />
-      <button className="rounded bg-black px-4 py-2 text-white" type="submit">Save</button>
+      <FormActions
+        mode="publish"
+        onCancel={() => navigate('/admin/asafo-companies')}
+        onAction={(action) => {
+          void handleSubmit(action)
+        }}
+        isSubmitting={saving}
+        submitAction={submitAction}
+        showDraft={false}
+        disableCancel={saving}
+      />
     </form>
   )
 }

@@ -1,5 +1,13 @@
 // Public homepage blocks are rendered here from GET /api/public/homepage; admin controls blocks via /admin/homepage-sections.
-import { createElement, useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  Suspense,
+  createElement,
+  lazy,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { AnimatePresence, motion as Motion, useReducedMotion } from 'framer-motion'
 import {
   getAnnouncementsEvents,
@@ -16,12 +24,17 @@ import {
   Skeleton,
 } from '../components/ui/index.jsx'
 import AnimatedHeroIntro from '../components/motion/AnimatedHeroIntro.jsx'
-import RevealItem from '../components/motion/RevealItem.jsx'
-import StaggerGridReveal from '../components/motion/StaggerGridReveal.jsx'
-import RichTextRenderer from '../components/RichTextRenderer.jsx'
+import SmartLink from '../components/navigation/SmartLink.jsx'
 import { resolveAssetUrl } from '../lib/apiBase.js'
 import { cn } from '../lib/cn.js'
 import { usePublicSettings } from '../layouts/publicSettingsContext.js'
+import { schedulePublicRoutePrefetch } from '../routes/routeLoaders.js'
+
+const RevealItem = lazy(() => import('../components/motion/RevealItem.jsx'))
+const StaggerGridReveal = lazy(
+  () => import('../components/motion/StaggerGridReveal.jsx'),
+)
+const RichTextRenderer = lazy(() => import('../components/RichTextRenderer.jsx'))
 
 function pickFirstString(...values) {
   return values.find((value) => typeof value === 'string' && value.trim())
@@ -683,6 +696,15 @@ function Home() {
   }, [])
 
   useEffect(() => {
+    schedulePublicRoutePrefetch([
+      '/news',
+      '/announcements-events',
+      '/about/who-we-are',
+      '/contact',
+    ])
+  }, [])
+
+  useEffect(() => {
     let isMounted = true
 
     const loadHighlights = async () => {
@@ -1034,7 +1056,7 @@ function Home() {
                       slideCtaText && slideCtaUrl ? (
                         <div className="flex flex-wrap gap-3">
                           <Button
-                            as="a"
+                            as={SmartLink}
                             href={slideCtaUrl}
                             variant="primary"
                             className="h-12 rounded-full px-6 text-base shadow-lg shadow-black/25 transition hover:bg-[#B45309]"
@@ -1043,7 +1065,7 @@ function Home() {
                           </Button>
                           {slideSecondaryCtaText && slideSecondaryCtaUrl ? (
                             <Button
-                              as="a"
+                              as={SmartLink}
                               href={slideSecondaryCtaUrl}
                               variant="ghost"
                               className="h-12 rounded-full border border-white/55 bg-white/8 px-6 text-base text-white backdrop-blur-sm transition hover:bg-white/20"
@@ -1157,44 +1179,55 @@ function Home() {
         )}
       </Section>
 
-      {showHero && (
-        <Section paddingClassName="py-10 md:py-12 lg:py-16">
-          <div className="flex flex-wrap items-end justify-between gap-6">
-            <div className="max-w-2xl space-y-2">
-              {heroTitle && (
-                <h2 className="text-3xl font-semibold leading-snug break-words md:text-4xl">
-                  {heroTitle}
-                </h2>
-              )}
-              {heroSubtitle && (
-                <p className="text-base text-muted-foreground md:text-lg">
-                  {heroSubtitle}
-                </p>
+      <Suspense
+        fallback={
+          <Section paddingClassName="py-10 md:py-12 lg:py-16">
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-4 w-full max-w-2xl" />
+              <Skeleton className="h-4 w-full max-w-xl" />
+            </div>
+          </Section>
+        }
+      >
+        {showHero && (
+          <Section paddingClassName="py-10 md:py-12 lg:py-16">
+            <div className="flex flex-wrap items-end justify-between gap-6">
+              <div className="max-w-2xl space-y-2">
+                {heroTitle && (
+                  <h2 className="text-3xl font-semibold leading-snug break-words md:text-4xl">
+                    {heroTitle}
+                  </h2>
+                )}
+                {heroSubtitle && (
+                  <p className="text-base text-muted-foreground md:text-lg">
+                    {heroSubtitle}
+                  </p>
+                )}
+              </div>
+              {heroCtaText && heroCtaLink && (
+                <Button
+                  as={SmartLink}
+                  href={heroCtaLink}
+                  variant="ghost"
+                  className="h-11 rounded-full border border-primary/20 px-5 text-primary transition hover:bg-[#FDEAD2]"
+                >
+                  {heroCtaText}
+                </Button>
               )}
             </div>
-            {heroCtaText && heroCtaLink && (
-              <Button
-                as="a"
-                href={heroCtaLink}
-                variant="ghost"
-                className="h-11 rounded-full border border-primary/20 px-5 text-primary transition hover:bg-[#FDEAD2]"
-              >
-                {heroCtaText}
-              </Button>
+            {settings?.siteName && (
+              <p className="mt-4 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Site:</span>{' '}
+                {settings.siteName}
+              </p>
             )}
-          </div>
-          {settings?.siteName && (
-            <p className="mt-4 text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Site:</span>{' '}
-              {settings.siteName}
-            </p>
-          )}
-        </Section>
-      )}
+          </Section>
+        )}
 
-      {blocks.length > 0 && (
-        <div className="space-y-0">
-          {blocks.map((block) => {
+        {blocks.length > 0 && (
+          <div className="space-y-0">
+            {blocks.map((block) => {
             const themeVariant = block.theme_variant || 'default'
             const containerClass =
               CONTAINER_WIDTH_CLASSES[block.container_width] ||
@@ -1323,7 +1356,7 @@ function Home() {
                       )}
                       {ctaLabel && ctaHref && (
                         <Button
-                          as="a"
+                          as={SmartLink}
                           href={ctaHref}
                           variant="primary"
                           className="h-12 rounded-full px-6 text-base shadow-sm transition hover:bg-[#B45309] hover:shadow-lg"
@@ -1402,12 +1435,12 @@ function Home() {
                         <RichTextRenderer html={paragraphOne} />
                       </div>
                       <div className="flex flex-wrap gap-4">
-                        <a
+                        <SmartLink
                           href={primaryCtaHref}
                           className="rounded-md bg-[#D97706] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[#B45309]"
                         >
                           {primaryCtaLabel}
-                        </a>
+                        </SmartLink>
                       </div>
                     </div>
 
@@ -1498,7 +1531,7 @@ function Home() {
                       </p>
                     </div>
                     {showCta && (
-                      <a
+                      <SmartLink
                         href={ctaLink}
                         className="hidden h-12 items-center gap-2 self-start rounded-md bg-[#D97706] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#B45309] md:inline-flex"
                       >
@@ -1517,7 +1550,7 @@ function Home() {
                             strokeLinejoin="round"
                           />
                         </svg>
-                      </a>
+                      </SmartLink>
                     )}
                   </div>
 
@@ -1532,7 +1565,7 @@ function Home() {
 
                       return (
                         <RevealItem key={item?.id || item?.href || index}>
-                          <a
+                          <SmartLink
                             href={href}
                             className="group block h-full rounded-lg border border-border/70 bg-white shadow-sm transition-[border-color,box-shadow] duration-200 ease-out hover:border-border hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           >
@@ -1590,7 +1623,7 @@ function Home() {
                                 </span>
                               </div>
                             </div>
-                          </a>
+                          </SmartLink>
                         </RevealItem>
                       )
                     })}
@@ -1598,7 +1631,7 @@ function Home() {
 
                   {showCta && (
                     <div className="mt-10 text-center md:hidden">
-                      <a
+                      <SmartLink
                         href={ctaLink}
                         className="inline-flex h-12 items-center gap-2 rounded-md bg-[#D97706] px-7 text-sm font-semibold text-white transition-colors hover:bg-[#B45309]"
                       >
@@ -1617,7 +1650,7 @@ function Home() {
                             strokeLinejoin="round"
                           />
                         </svg>
-                      </a>
+                      </SmartLink>
                     </div>
                   )}
                 </Section>
@@ -1729,7 +1762,7 @@ function Home() {
                                 </div>
                               ) : (
                                 <>
-                                  <a
+                                  <SmartLink
                                     href={
                                       featured?.slug
                                         ? `${card.detailBase}/${featured.slug}`
@@ -1791,7 +1824,7 @@ function Home() {
                                         {featured?.title || `Latest ${card.title}`}
                                       </p>
                                     </div>
-                                  </a>
+                                  </SmartLink>
 
                                   <div className="space-y-2">
                                     {compactItems.map((item, index) => {
@@ -1813,7 +1846,7 @@ function Home() {
                                         : card.listHref
 
                                       return (
-                                        <a
+                                        <SmartLink
                                           key={item?.id || item?.slug || index}
                                           href={href}
                                           className="group flex items-center gap-3 rounded-lg px-2 py-2 transition hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -1852,7 +1885,7 @@ function Home() {
                                               </p>
                                             ) : null}
                                           </div>
-                                        </a>
+                                        </SmartLink>
                                       )
                                     })}
                                     {Array.from({ length: missingCompactCount }).map(
@@ -1873,12 +1906,12 @@ function Home() {
 
                             <div className="mt-auto border-t border-border/70 px-5 py-3">
                               <div className="flex justify-end">
-                                <a
+                                <SmartLink
                                   href={card.listHref}
                                   className="text-sm font-semibold text-primary transition hover:underline"
                                 >
                                   {`View all ${card.title}`}
-                                </a>
+                                </SmartLink>
                               </div>
                             </div>
                           </Card>
@@ -1990,7 +2023,7 @@ function Home() {
                     </div>
                     {ctaLabel && ctaHref && (
                       <Button
-                        as="a"
+                        as={SmartLink}
                         href={ctaHref}
                         variant="ghost"
                         className="h-11 rounded-full border border-primary/20 px-5 text-primary transition hover:bg-[#FDEAD2]"
@@ -2009,7 +2042,7 @@ function Home() {
                         : ''
                       return (
                         <RevealItem key={item?.href || index}>
-                          <a
+                          <SmartLink
                             href={item?.href || '#'}
                             className="group flex h-full flex-col justify-between rounded-[16px] border border-[#E7DED3] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-[border-color,box-shadow] duration-200 ease-out hover:border-[#dcccb7] hover:shadow-[0_6px_20px_rgba(0,0,0,0.1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           >
@@ -2045,7 +2078,7 @@ function Home() {
                             <div className="mt-5 text-sm font-medium text-primary transition group-hover:translate-x-1">
                               Learn more -&gt;
                             </div>
-                          </a>
+                          </SmartLink>
                         </RevealItem>
                       )
                     })}
@@ -2055,13 +2088,13 @@ function Home() {
             }
 
             return null
-          })}
-        </div>
-      )}
+            })}
+          </div>
+        )}
 
-      {blocks.length === 0 && sections.length > 0 && (
-        <div>
-          {sections.map((section, index) => {
+        {blocks.length === 0 && sections.length > 0 && (
+          <div>
+            {sections.map((section, index) => {
             const sectionTitle = pickFirstString(
               section?.title,
               section?.name,
@@ -2128,13 +2161,13 @@ function Home() {
                 </div>
               </Section>
             )
-          })}
-        </div>
-      )}
+            })}
+          </div>
+        )}
 
-      {featuredBlocks.length > 0 && (
-        <div>
-          {featuredBlocks.map((block, index) => {
+        {featuredBlocks.length > 0 && (
+          <div>
+            {featuredBlocks.map((block, index) => {
             const blockTitle = pickFirstString(
               block?.title,
               block?.name,
@@ -2206,9 +2239,10 @@ function Home() {
                 </div>
               </Section>
             )
-          })}
-        </div>
-      )}
+            })}
+          </div>
+        )}
+      </Suspense>
     </div>
   )
 }

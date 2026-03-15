@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { createElement, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Badge,
@@ -26,6 +26,10 @@ import {
   TrendingUpIcon,
   UsersIcon,
 } from '../components/admin/icons.jsx'
+import {
+  preloadAdminRoute,
+  scheduleAdminRoutePrefetch,
+} from '../routes/routeLoaders.js'
 
 function getItemsAndTotal(payload, fallbackKeys = []) {
   const data = payload?.data ?? payload
@@ -190,6 +194,16 @@ function DashboardPage() {
     return () => {
       isMounted = false
     }
+  }, [])
+
+  useEffect(() => {
+    scheduleAdminRoutePrefetch([
+      '/admin/news/create',
+      '/admin/events/new',
+      '/admin/announcements/new',
+      '/admin/homepage-sections',
+      '/admin/contact',
+    ])
   }, [])
 
   const currentDate = useMemo(
@@ -373,6 +387,8 @@ function DashboardPage() {
           <Button
             variant="secondary"
             onClick={() => navigate('/admin/news/create')}
+            onMouseEnter={() => preloadAdminRoute('/admin/news/create')}
+            onFocus={() => preloadAdminRoute('/admin/news/create')}
             className="border-white/40 bg-white/10 text-white hover:bg-white/20"
           >
             Create Content
@@ -417,6 +433,8 @@ function DashboardPage() {
               icon={action.icon}
               tone={action.tone}
               onClick={() => navigate(action.to)}
+              onMouseEnter={() => preloadAdminRoute(action.to)}
+              onFocus={() => preloadAdminRoute(action.to)}
             />
           ))}
         </div>
@@ -490,13 +508,14 @@ function DashboardPage() {
 
 function StatCard({ label, value, icon: Icon, trend, tone, isLoading }) {
   const styles = toneStyles[tone] || toneStyles.blue
+  const iconElement = createElement(Icon, { className: 'h-5 w-5' })
 
   return (
     <Card>
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between gap-2">
           <div className={cn('flex h-12 w-12 items-center justify-center rounded-lg', styles.iconBadge)}>
-            <Icon className="h-5 w-5" />
+            {iconElement}
           </div>
           <div className={cn('flex items-center gap-1 text-xs font-medium', styles.trend)}>
             <TrendingUpIcon className="h-4 w-4" />
@@ -514,12 +533,13 @@ function StatCard({ label, value, icon: Icon, trend, tone, isLoading }) {
 
 function AnalyticsRow({ label, value, description, icon: Icon, tone }) {
   const styles = toneStyles[tone] || toneStyles.blue
+  const iconElement = createElement(Icon, { className: 'h-4 w-4 text-slate-400' })
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4 text-slate-400" />
+          {iconElement}
           <span className="text-sm text-slate-700">{label}</span>
         </div>
         <span className="text-sm font-semibold text-slate-900">{value}%</span>
@@ -535,13 +555,16 @@ function AnalyticsRow({ label, value, description, icon: Icon, tone }) {
   )
 }
 
-function QuickActionCard({ title, icon: Icon, tone, onClick }) {
+function QuickActionCard({ title, icon: Icon, tone, onClick, onMouseEnter, onFocus }) {
   const styles = toneStyles[tone] || toneStyles.blue
+  const iconElement = createElement(Icon, { className: 'h-5 w-5' })
 
   return (
     <button
       type="button"
       onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onFocus={onFocus}
       className={cn(
         'group rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md',
         styles.quickHover,
@@ -553,7 +576,7 @@ function QuickActionCard({ title, icon: Icon, tone, onClick }) {
           styles.iconBadge,
         )}
       >
-        <Icon className="h-5 w-5" />
+        {iconElement}
       </div>
       <p className="text-sm font-semibold text-slate-900">{title}</p>
     </button>

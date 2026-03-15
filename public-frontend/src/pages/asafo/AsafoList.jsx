@@ -5,6 +5,19 @@ import { resolveAssetUrl } from '../../lib/apiBase.js'
 
 const DEFAULT_SHARE_IMAGE = '/share-default.svg'
 
+function normalizeTuafoTitle(value, fallback = 'Tuafo Asafo Company') {
+  const normalizedValue = String(value || '').trim()
+  if (!normalizedValue) {
+    return fallback
+  }
+
+  if (normalizedValue === 'Kyeremu Asafo' || normalizedValue === 'Kyeremu Asafo Company') {
+    return 'Tuafo Asafo Company'
+  }
+
+  return normalizedValue
+}
+
 const extractFirstImageSrc = (html = '') => {
   const match = String(html).match(/<img[^>]+src=["']([^"']+)["']/i)
   return match?.[1] || ''
@@ -52,7 +65,7 @@ export default function AsafoList() {
         item: intro,
       },
       { id: 'adonsten-asafo', label: 'Adonsten Asafo', item: adonsten },
-      { id: 'kyeremu-asafo', label: 'Kyeremu Asafo', item: kyeremu },
+      { id: 'kyeremu-asafo', label: 'Tuafo Asafo Company', item: kyeremu },
     ]
   }, [items])
 
@@ -83,11 +96,13 @@ export default function AsafoList() {
           <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">Asafo Companies</h1>
         </header>
 
-        {sections.map((section) => (
-          <div key={section.id} className="rounded-2xl border border-border/70 bg-surface px-5 py-6 shadow-sm sm:px-8 sm:py-9 md:px-12">
-            <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-              {section.item?.title || section.label}
-            </h2>
+	        {sections.map((section) => (
+	          <div key={section.id} className="rounded-2xl border border-border/70 bg-surface px-5 py-6 shadow-sm sm:px-8 sm:py-9 md:px-12">
+	            <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+	              {section.id === 'kyeremu-asafo'
+	                ? normalizeTuafoTitle(section.item?.title, section.label)
+	                : section.item?.title || section.label}
+	            </h2>
             {section.item?.subtitle ? <p className="mt-2 text-muted-foreground">{section.item.subtitle}</p> : null}
             <div className="mt-4">
               <RichTextRenderer html={section.item?.body || ''} />

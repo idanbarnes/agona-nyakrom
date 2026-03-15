@@ -52,6 +52,7 @@ function FormActions({
   disableCancel = false,
   disableDraft = false,
   disablePublish = false,
+  showDraft = true,
   disableSubmit = false,
   draftClassName = 'transition-transform duration-200 hover:-translate-y-0.5',
   publishClassName = 'border-emerald-600 bg-emerald-600 text-white transition-transform duration-200 hover:-translate-y-0.5 hover:bg-emerald-700 focus-visible:ring-emerald-600',
@@ -84,17 +85,19 @@ function FormActions({
       <Button variant="secondary" type="button" onClick={onCancel} disabled={disableCancel}>
         {cancelLabel}
       </Button>
-      <Button
-        variant="secondary"
-        type="button"
-        className={draftClassName}
-        loading={isSubmitting && submitAction === 'draft'}
-        disabled={isSubmitting || disableDraft}
-        onClick={() => onAction?.('draft')}
-      >
-        <SaveIcon />
-        {draftLabel}
-      </Button>
+      {showDraft ? (
+        <Button
+          variant="secondary"
+          type="button"
+          className={draftClassName}
+          loading={isSubmitting && submitAction === 'draft'}
+          disabled={isSubmitting || disableDraft}
+          onClick={() => onAction?.('draft')}
+        >
+          <SaveIcon />
+          {draftLabel}
+        </Button>
+      ) : null}
       <Button
         variant="primary"
         type="button"

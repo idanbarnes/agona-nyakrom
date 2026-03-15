@@ -14,8 +14,12 @@ function sanitizeFilename(value) {
     return ''
   }
 
-  return rawValue
-    .replace(/[<>:"/\\|?*\u0000-\u001F]+/g, '-')
+  const withoutControlCharacters = Array.from(rawValue, (character) =>
+    character.charCodeAt(0) < 32 ? '-' : character,
+  ).join('')
+
+  return withoutControlCharacters
+    .replace(/[<>:"/\\|?*]+/g, '-')
     .replace(/\s+/g, ' ')
     .trim()
 }

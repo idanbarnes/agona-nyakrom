@@ -7,6 +7,7 @@ import {
   dropdownInOut,
   mobileMenuPanelInOut,
 } from '../motion/variants.js'
+import { preloadPublicRoute } from '../routes/routeLoaders.js'
 
 const navItems = [
   { label: 'Home', to: '/' },
@@ -79,6 +80,9 @@ function DesktopNavLink({ item }) {
   return (
     <NavLink
       to={item.to}
+      onMouseEnter={() => preloadPublicRoute(item.to)}
+      onFocus={() => preloadPublicRoute(item.to)}
+      onTouchStart={() => preloadPublicRoute(item.to)}
       className={({ isActive }) =>
         `${linkBaseClass} ${isActive ? activeDesktopLinkClass : ''}`
       }
@@ -125,6 +129,9 @@ function DesktopDropdown({ item, isOpen, onToggle, onClose, isActive, variants }
                   to={child.to}
                   role="menuitem"
                   onClick={onClose}
+                  onMouseEnter={() => preloadPublicRoute(child.to)}
+                  onFocus={() => preloadPublicRoute(child.to)}
+                  onTouchStart={() => preloadPublicRoute(child.to)}
                   className={({ isActive: childActive }) =>
                     `flex items-center rounded-lg px-3.5 py-2.5 text-sm font-medium text-white/85 transition-all duration-200 hover:translate-x-[2px] hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111827] ${
                       childActive ? 'bg-white/10 text-white' : ''
@@ -166,6 +173,9 @@ function MobileAccordionSection({ item, expanded, onToggle, onNavigate, isActive
               <NavLink
                 to={child.to}
                 onClick={onNavigate}
+                onMouseEnter={() => preloadPublicRoute(child.to)}
+                onFocus={() => preloadPublicRoute(child.to)}
+                onTouchStart={() => preloadPublicRoute(child.to)}
                 className={({ isActive }) =>
                   `flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-gray-200 transition-colors duration-200 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111827] ${
                     isActive ? activeMobileLinkClass : ''
@@ -307,6 +317,9 @@ function Navbar({ settings, loading }) {
       >
         <NavLink
           to="/"
+          onMouseEnter={() => preloadPublicRoute('/')}
+          onFocus={() => preloadPublicRoute('/')}
+          onTouchStart={() => preloadPublicRoute('/')}
           className="inline-flex min-w-0 max-w-[calc(100%-4.5rem)] items-center gap-2 pr-12 text-sm font-semibold tracking-tight text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111827] lg:max-w-none lg:pr-0"
         >
           <span
@@ -419,6 +432,9 @@ function Navbar({ settings, loading }) {
                             to={item.to}
                             ref={index === 0 ? firstMobileLinkRef : null}
                             onClick={() => setIsMobileOpen(false)}
+                            onMouseEnter={() => preloadPublicRoute(item.to)}
+                            onFocus={() => preloadPublicRoute(item.to)}
+                            onTouchStart={() => preloadPublicRoute(item.to)}
                             className={({ isActive }) =>
                               `flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-gray-100 transition-colors duration-200 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111827] ${
                                 isActive ? activeMobileLinkClass : ''

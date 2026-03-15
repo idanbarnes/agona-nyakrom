@@ -26,7 +26,7 @@ export { ImageWithFallback } from './image-with-fallback.jsx'
 export { StateGate } from './state-gate.jsx'
 export { Modal } from './modal.jsx'
 export { ConfirmDialog } from './confirm-dialog.jsx'
-export { toastStyles, ToastMessage } from './toast.jsx'
+export { ToastMessage } from './toast.jsx'
 export {
   Table,
   TableToolbar,

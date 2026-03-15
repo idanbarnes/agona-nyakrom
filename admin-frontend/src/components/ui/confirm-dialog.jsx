@@ -25,11 +25,11 @@ export function ConfirmDialog({
       onClose={onCancel}
       title={heading}
       footer={
-        <div className="flex w-full flex-wrap justify-end gap-2">
-          <Button variant="secondary" onClick={onCancel}>
+        <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="secondary" className="w-full sm:w-auto" onClick={onCancel}>
             {cancelLabel}
           </Button>
-          <Button variant={variant} onClick={onConfirm}>
+          <Button variant={variant} className="w-full sm:w-auto" onClick={onConfirm}>
             {confirmLabel}
           </Button>
         </div>

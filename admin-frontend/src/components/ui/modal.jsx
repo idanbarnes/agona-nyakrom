@@ -52,7 +52,7 @@ export function Modal({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
       <div
         className="absolute inset-0 bg-black/50"
         onClick={closeOnOverlayClick ? onClose : undefined}
@@ -63,7 +63,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         className={cn(
-          'relative z-10 w-full rounded-lg border border-border bg-surface p-6 text-foreground shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+          'relative z-10 w-full max-h-[calc(100vh-2rem)] overflow-y-auto rounded-xl border border-border bg-surface p-4 text-foreground shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:p-6',
           sizeStyles[size],
         )}
       >

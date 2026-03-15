@@ -18,7 +18,7 @@ const extractToken = (req) => {
 
 const fetchAdminById = async (id) => {
   const { rows } = await pool.query(
-    'SELECT id, email, name FROM admins WHERE id = $1 AND active = true LIMIT 1',
+    'SELECT id, email, name, role FROM admins WHERE id = $1 AND active = true LIMIT 1',
     [id]
   );
   return rows[0] || null;
@@ -47,6 +47,7 @@ const requireAdminAuth = async (req, res, next) => {
       id: admin.id,
       email: admin.email,
       name: admin.name,
+      role: admin.role,
     };
 
     return next();
@@ -80,6 +81,7 @@ const optionalAdminAuth = async (req, res, next) => {
       id: admin.id,
       email: admin.email,
       name: admin.name,
+      role: admin.role,
     };
 
     return next();

@@ -25,7 +25,6 @@ export { ErrorState, InlineError } from './error-state.jsx'
 export { ImageWithFallback } from './image-with-fallback.jsx'
 export { StateGate } from './state-gate.jsx'
 export { Modal } from './modal.jsx'
-export { toastStyles } from './toast.jsx'
 export {
   Table,
   TableToolbar,

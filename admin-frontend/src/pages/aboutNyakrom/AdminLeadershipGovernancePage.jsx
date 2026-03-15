@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   createLeader,
@@ -345,7 +345,7 @@ export default function AdminLeadershipGovernancePage() {
     }
   }, [category, location.pathname, location.search, navigate])
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setIsLoading(true)
     setErrorMessage('')
     try {
@@ -356,12 +356,12 @@ export default function AdminLeadershipGovernancePage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [category])
 
   useEffect(() => {
     setForm((current) => ({ ...current, category }))
     load()
-  }, [category])
+  }, [category, load])
 
   const uploadBodyImage = async (file) => {
     const uploaded = await uploadLeaderInlineImage(file)

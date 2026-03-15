@@ -1,8 +1,14 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
-import { Button } from '../components/ui/index.jsx'
+import { Badge, Button } from '../components/ui/index.jsx'
 import { useAdminSession } from '../context/AdminSessionContext.jsx'
+import { getAuthAdmin, getAuthToken, isMasterAdmin, setAuthAdmin } from '../lib/auth.js'
+import { apiRequest } from '../lib/apiClient.js'
 import { cn } from '../lib/cn.js'
+import {
+  preloadAdminRoute,
+  scheduleAdminRoutePrefetch,
+} from '../routes/routeLoaders.js'
 import {
   AwardIcon,
   BookOpenIcon,
@@ -52,6 +58,7 @@ const navItems = [
   { label: 'Homepage Settings', to: '/admin/homepage-sections', icon: HomeIcon },
   { label: 'Contact Information', to: '/admin/contact', icon: PhoneIcon },
   { label: 'Contact FAQs', to: '/admin/faqs', icon: HelpCircleIcon },
+  { label: 'Admin Users', to: '/admin/users', icon: UsersIcon },
   { label: 'Global Settings', to: '/admin/global-settings', icon: SettingsIcon },
 ]
 
@@ -73,19 +80,84 @@ function isAboutNyakromPath(pathname) {
   return pathname.startsWith('/admin/about-nyakrom/') || pathname.startsWith('/admin/landmarks')
 }
 
+function formatAdminRole(role) {
+  if (role === 'master_admin') {
+    return 'Master Admin'
+  }
+
+  if (role === 'admin') {
+    return 'Admin'
+  }
+
+  return 'Authenticated Admin'
+}
+
+function getAdminInitials(admin) {
+  const source = String(admin?.name || admin?.email || 'A').trim()
+  if (!source) {
+    return 'A'
+  }
+
+  const words = source.split(/\s+/).filter(Boolean)
+  if (words.length >= 2) {
+    return `${words[0][0] || ''}${words[1][0] || ''}`.toUpperCase()
+  }
+
+  return source.slice(0, 2).toUpperCase()
+}
+
 function AdminLayout() {
   const location = useLocation()
   const { hardLogout } = useAdminSession()
-  const [isAboutNyakromOpen, setIsAboutNyakromOpen] = useState(() =>
-    isAboutNyakromPath(location.pathname),
-  )
+  const [currentAdmin, setCurrentAdmin] = useState(() => getAuthAdmin())
+  const [aboutNyakromMenuState, setAboutNyakromMenuState] = useState(() => ({
+    autoOpenedPath: isAboutNyakromPath(location.pathname) ? location.pathname : '',
+    isOpen: isAboutNyakromPath(location.pathname),
+  }))
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const canManageAdmins = currentAdmin?.role
+    ? currentAdmin.role === 'master_admin'
+    : isMasterAdmin()
 
   useEffect(() => {
-    if (isAboutNyakromPath(location.pathname)) {
-      setIsAboutNyakromOpen(true)
+    scheduleAdminRoutePrefetch([
+      '/dashboard',
+      '/admin/news',
+      '/admin/events/new',
+      '/admin/homepage-sections',
+    ])
+  }, [])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    const syncCurrentAdmin = async () => {
+      if (!getAuthToken()) {
+        setCurrentAdmin(null)
+        return
+      }
+
+      try {
+        const admin = await apiRequest('/api/admin/auth/me')
+        if (isCancelled || !admin) {
+          return
+        }
+
+        setAuthAdmin(admin)
+        setCurrentAdmin(admin)
+      } catch {
+        if (!isCancelled) {
+          setCurrentAdmin(getAuthAdmin())
+        }
+      }
     }
-  }, [location.pathname])
+
+    syncCurrentAdmin()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [])
 
   const handleLogout = () => {
     hardLogout('manual_logout', {
@@ -117,6 +189,19 @@ function AdminLayout() {
   }, [location.pathname])
 
   const isAboutNyakromActive = isAboutNyakromPath(location.pathname)
+  const shouldAutoOpenAboutNyakrom =
+    isAboutNyakromActive &&
+    aboutNyakromMenuState.autoOpenedPath !== location.pathname
+  const isAboutNyakromOpen = shouldAutoOpenAboutNyakrom
+    ? true
+    : aboutNyakromMenuState.isOpen
+
+  const toggleAboutNyakromOpen = () => {
+    setAboutNyakromMenuState((current) => ({
+      autoOpenedPath: isAboutNyakromActive ? location.pathname : current.autoOpenedPath,
+      isOpen: !isAboutNyakromOpen,
+    }))
+  }
 
   const sidebar = (onNavigate) => (
     <div className="flex h-full flex-col bg-white">
@@ -135,13 +220,19 @@ function AdminLayout() {
         </button>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-5">
-        {navItems.slice(0, 8).map((item) => (
+        {navItems
+          .filter((item) => item.to !== '/admin/users' || canManageAdmins)
+          .slice(0, 8)
+          .map((item) => (
           <NavLink
             key={item.to}
             className={navLinkClass}
             to={item.to}
             end={item.to === '/dashboard'}
             onClick={onNavigate}
+            onMouseEnter={() => preloadAdminRoute(item.to)}
+            onFocus={() => preloadAdminRoute(item.to)}
+            onTouchStart={() => preloadAdminRoute(item.to)}
           >
             <item.icon className="h-4 w-4" />
             <span>{item.label}</span>
@@ -151,7 +242,7 @@ function AdminLayout() {
         <div className="pt-2">
           <button
             type="button"
-            onClick={() => setIsAboutNyakromOpen((current) => !current)}
+            onClick={toggleAboutNyakromOpen}
             aria-expanded={isAboutNyakromOpen}
             className={cn(
               'flex min-h-11 w-full items-center justify-between rounded-lg px-3 text-left text-sm font-medium transition-colors',
@@ -183,6 +274,9 @@ function AdminLayout() {
                 to={item.to}
                 end={item.to !== '/admin/landmarks'}
                 onClick={onNavigate}
+                onMouseEnter={() => preloadAdminRoute(item.to)}
+                onFocus={() => preloadAdminRoute(item.to)}
+                onTouchStart={() => preloadAdminRoute(item.to)}
               >
                 {item.label}
               </NavLink>
@@ -191,13 +285,19 @@ function AdminLayout() {
         </div>
 
         <div className="mt-2 border-t border-slate-200 pt-3">
-          {navItems.slice(8).map((item) => (
+          {navItems
+            .filter((item) => item.to !== '/admin/users' || canManageAdmins)
+            .slice(8)
+            .map((item) => (
             <NavLink
               key={item.to}
               className={navLinkClass}
               to={item.to}
               end={item.to === '/dashboard'}
               onClick={onNavigate}
+              onMouseEnter={() => preloadAdminRoute(item.to)}
+              onFocus={() => preloadAdminRoute(item.to)}
+              onTouchStart={() => preloadAdminRoute(item.to)}
             >
               <item.icon className="h-4 w-4" />
               <span>{item.label}</span>
@@ -207,13 +307,24 @@ function AdminLayout() {
       </nav>
 
       <div className="border-t border-slate-200 p-4">
-        <div className="flex items-center gap-3 rounded-lg bg-slate-50 p-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700">
-            AN
+        <div className="rounded-xl bg-slate-50 p-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700">
+              {getAdminInitials(currentAdmin)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-slate-900">
+                {currentAdmin?.name || formatAdminRole(currentAdmin?.role)}
+              </p>
+              <p className="truncate text-xs text-slate-500">
+                {currentAdmin?.email || 'Signed-in admin'}
+              </p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-slate-900">Admin User</p>
-            <p className="truncate text-xs text-slate-500">admin@nyakrom.gov.gh</p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Badge variant="success">Active</Badge>
+            <Badge variant="muted">{formatAdminRole(currentAdmin?.role)}</Badge>
           </div>
         </div>
       </div>

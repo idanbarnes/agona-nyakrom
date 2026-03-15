@@ -1,21 +1,19 @@
-const path = require('path');
 const fs = require('fs').promises;
 const multer = require('multer');
+const { tmpUploadsRoot } = require('../config/storage');
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; //5 MB
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
-const tmpDir = path.join(process.cwd(), 'uploads', 'tmp');
-
 const ensureTmpDir = async () => {
-  await fs.mkdir(tmpDir, { recursive: true });
+  await fs.mkdir(tmpUploadsRoot, { recursive: true });
 };
 
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
     try {
       await ensureTmpDir();
-      cb(null, tmpDir);
+      cb(null, tmpUploadsRoot);
     } catch (err) {
       cb(err);
     }

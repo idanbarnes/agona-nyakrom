@@ -7,6 +7,7 @@ import { Label } from '../components/ui/label.jsx'
 import {
   consumeLoginReason,
   consumePostLoginRedirect,
+  setAuthAdmin,
   setAuthToken,
 } from '../lib/auth.js'
 import { postJson } from '../lib/apiClient.js'
@@ -157,6 +158,7 @@ function LoginPage() {
       }
 
       setAuthToken(data.token)
+      setAuthAdmin(data.admin || null)
       navigate(redirectTo, { replace: true })
     } catch (error) {
       setErrorMessage(error.message || 'Unable to sign in.')

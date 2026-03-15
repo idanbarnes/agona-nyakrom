@@ -5,6 +5,7 @@ const { adminLoginRateLimit } = require('../middleware/adminLoginRateLimit');
 const { requireAdminAuth } = require('../middleware/authMiddleware');
 
 // Public login route
+router.post('/bootstrap', adminAuthController.bootstrap);
 router.post('/login', adminLoginRateLimit, adminAuthController.login);
 router.post('/logout', requireAdminAuth, adminAuthController.logout);
 

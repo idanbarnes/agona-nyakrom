@@ -1,6 +1,12 @@
 const path = require('path');
 const fs = require('fs').promises;
 const sharp = require('sharp');
+const { uploadsRoot } = require('../config/storage');
+const {
+  buildCloudinaryFolder,
+  isCloudinaryStorageEnabled,
+  uploadImageBuffer,
+} = require('./cloudinaryService');
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -34,8 +40,6 @@ const carouselVariants = [
   { key: 'mobile', width: 768, height: 320 },
 ];
 
-const uploadsRoot = path.join(process.cwd(), 'uploads');
-
 const ensureDir = async (dir) => {
   await fs.mkdir(dir, { recursive: true });
 };
@@ -64,15 +68,42 @@ const validateInput = (file, section, uniqueId) => {
 const buildFilename = (section, uniqueId, variantKey) =>
   `${section}-${uniqueId}-${variantKey}.webp`;
 
-const saveVariant = async (buffer, dir, filename, width) => {
+const cleanupTempFile = async (file) => {
+  if (!file?.path) {
+    return;
+  }
+
+  try {
+    await fs.unlink(file.path);
+  } catch (error) {
+    if (error?.code !== 'ENOENT') {
+      console.warn(`Failed to remove temporary upload ${file.path}: ${error.message}`);
+    }
+  }
+};
+
+const buildVariantBuffer = async (buffer, width) => {
   let pipeline = sharp(buffer).rotate(); // auto-orient based on EXIF
 
   if (width) {
     pipeline = pipeline.resize({ width, withoutEnlargement: true });
   }
 
+  return pipeline.webp({ quality: 80 }).toBuffer();
+};
+
+const getStoredVariantPath = async ({ outputBuffer, dir, filename, sectionDir }) => {
+  if (isCloudinaryStorageEnabled()) {
+    return uploadImageBuffer({
+      buffer: outputBuffer,
+      folder: buildCloudinaryFolder(sectionDir),
+      publicId: filename.replace(/\.webp$/i, ''),
+      filename,
+    });
+  }
+
   const outputPath = path.join(dir, filename);
-  await pipeline.webp({ quality: 80 }).toFile(outputPath);
+  await fs.writeFile(outputPath, outputBuffer);
 
   // Return a normalized, DB-friendly relative path
   return path.join('uploads', path.basename(dir), filename).replace(/\\+/g, '/');
@@ -141,49 +172,56 @@ const getCarouselCropRect = ({ crop, width, height, uniqueId }) => {
 const processCarouselImage = async (file, uniqueId, crop) => {
   validateInput(file, 'carousel', uniqueId);
 
-  const buffer = await getFileBuffer(file);
-  const sectionDir = SECTION_DIRS.carousel;
-  const targetDir = path.join(uploadsRoot, sectionDir);
+  try {
+    const buffer = await getFileBuffer(file);
+    const sectionDir = SECTION_DIRS.carousel;
+    const targetDir = path.join(uploadsRoot, sectionDir);
 
-  await ensureDir(targetDir);
+    if (!isCloudinaryStorageEnabled()) {
+      await ensureDir(targetDir);
+    }
 
-  const base = sharp(buffer).rotate();
-  const metadata = await base.metadata();
-  if (!metadata.width || !metadata.height) {
-    throw new Error('Unable to read image dimensions.');
+    const base = sharp(buffer).rotate();
+    const metadata = await base.metadata();
+    if (!metadata.width || !metadata.height) {
+      throw new Error('Unable to read image dimensions.');
+    }
+
+    const cropRect = getCarouselCropRect({
+      crop,
+      width: metadata.width,
+      height: metadata.height,
+      uniqueId,
+    });
+
+    const results = {};
+
+    for (const { key, width, height } of carouselVariants) {
+      const filename = buildFilename('carousel', uniqueId, key);
+      const outputBuffer = await base
+        .clone()
+        .extract(cropRect)
+        .resize({ width, height, fit: 'cover' })
+        .webp({ quality: 82 })
+        .toBuffer();
+
+      results[key] = await getStoredVariantPath({
+        outputBuffer,
+        dir: targetDir,
+        filename,
+        sectionDir,
+      });
+    }
+
+    results.large = results.desktop;
+    results.medium = results.tablet;
+    results.thumbnail = results.mobile;
+    results.original = results.desktop;
+
+    return results;
+  } finally {
+    await cleanupTempFile(file);
   }
-
-  const cropRect = getCarouselCropRect({
-    crop,
-    width: metadata.width,
-    height: metadata.height,
-    uniqueId,
-  });
-
-  const results = {};
-
-  for (const { key, width, height } of carouselVariants) {
-    const filename = buildFilename('carousel', uniqueId, key);
-    const outputPath = path.join(targetDir, filename);
-
-    await base
-      .clone()
-      .extract(cropRect)
-      .resize({ width, height, fit: 'cover' })
-      .webp({ quality: 82 })
-      .toFile(outputPath);
-
-    results[key] = path
-      .join('uploads', path.basename(targetDir), filename)
-      .replace(/\\+/g, '/');
-  }
-
-  results.large = results.desktop;
-  results.medium = results.tablet;
-  results.thumbnail = results.mobile;
-  results.original = results.desktop;
-
-  return results;
 };
 
 /**
@@ -196,20 +234,32 @@ const processCarouselImage = async (file, uniqueId, crop) => {
 const processImage = async (file, section, uniqueId) => {
   validateInput(file, section, uniqueId);
 
-  const buffer = await getFileBuffer(file);
-  const sectionDir = SECTION_DIRS[section];
-  const targetDir = path.join(uploadsRoot, sectionDir);
+  try {
+    const buffer = await getFileBuffer(file);
+    const sectionDir = SECTION_DIRS[section];
+    const targetDir = path.join(uploadsRoot, sectionDir);
 
-  await ensureDir(targetDir);
+    if (!isCloudinaryStorageEnabled()) {
+      await ensureDir(targetDir);
+    }
 
-  const results = {};
+    const results = {};
 
-  for (const { key, width } of variants) {
-    const filename = buildFilename(section, uniqueId, key);
-    results[key] = await saveVariant(buffer, targetDir, filename, width);
+    for (const { key, width } of variants) {
+      const filename = buildFilename(section, uniqueId, key);
+      const outputBuffer = await buildVariantBuffer(buffer, width);
+      results[key] = await getStoredVariantPath({
+        outputBuffer,
+        dir: targetDir,
+        filename,
+        sectionDir,
+      });
+    }
+
+    return results;
+  } finally {
+    await cleanupTempFile(file);
   }
-
-  return results;
 };
 
 module.exports = {

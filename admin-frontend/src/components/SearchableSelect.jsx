@@ -29,13 +29,6 @@ export default function SearchableSelect({
   const [query, setQuery] = useState(selectedOption)
   const [activeIndex, setActiveIndex] = useState(-1)
 
-  useEffect(() => {
-    if (!isOpen) {
-      setQuery(selectedOption)
-      setActiveIndex(-1)
-    }
-  }, [isOpen, selectedOption])
-
   const filteredOptions = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
     if (!normalizedQuery) return options
@@ -45,49 +38,59 @@ export default function SearchableSelect({
   }, [options, query])
 
   useEffect(() => {
-    setActiveIndex(filteredOptions.length ? 0 : -1)
-  }, [filteredOptions.length])
-
-  useEffect(() => {
     const handleClickOutside = (event) => {
       if (!containerRef.current) return
       if (containerRef.current.contains(event.target)) return
+      setQuery(selectedOption)
+      setActiveIndex(-1)
       setIsOpen(false)
     }
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  }, [selectedOption])
 
   const handleFocus = () => {
+    setQuery(selectedOption)
+    setActiveIndex(options.length ? 0 : -1)
     setIsOpen(true)
   }
 
   const handleChange = (event) => {
     setQuery(event.target.value)
+    setActiveIndex(0)
     setIsOpen(true)
   }
 
   const handleKeyDown = (event) => {
+    const normalizedActiveIndex =
+      activeIndex >= 0 && activeIndex < filteredOptions.length ? activeIndex : 0
+
     if (event.key === 'ArrowDown') {
       event.preventDefault()
       if (!isOpen) {
+        setQuery(selectedOption)
+        setActiveIndex(filteredOptions.length ? 0 : -1)
         setIsOpen(true)
         return
       }
       if (!filteredOptions.length) return
-      setActiveIndex((prev) => (prev + 1) % filteredOptions.length)
+      setActiveIndex((normalizedActiveIndex + 1) % filteredOptions.length)
     }
 
     if (event.key === 'ArrowUp') {
       event.preventDefault()
       if (!isOpen) {
+        setQuery(selectedOption)
+        setActiveIndex(filteredOptions.length ? 0 : -1)
         setIsOpen(true)
         return
       }
       if (!filteredOptions.length) return
-      setActiveIndex((prev) =>
-        prev <= 0 ? filteredOptions.length - 1 : prev - 1,
+      setActiveIndex(() =>
+        normalizedActiveIndex <= 0
+          ? filteredOptions.length - 1
+          : normalizedActiveIndex - 1,
       )
     }
 
@@ -105,6 +108,8 @@ export default function SearchableSelect({
 
     if (event.key === 'Escape') {
       event.preventDefault()
+      setQuery(selectedOption)
+      setActiveIndex(-1)
       setIsOpen(false)
     }
   }
@@ -117,6 +122,7 @@ export default function SearchableSelect({
   }
 
   const showCustom = value && !selectedOption
+  const displayedQuery = isOpen ? query : selectedOption
 
   return (
     <div ref={containerRef} className="space-y-2">
@@ -124,7 +130,7 @@ export default function SearchableSelect({
       <div className="relative">
         <Input
           ref={inputRef}
-          value={query}
+          value={displayedQuery}
           onFocus={handleFocus}
           onChange={handleChange}
           onKeyDown={handleKeyDown}

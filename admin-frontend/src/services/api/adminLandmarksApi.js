@@ -30,7 +30,7 @@ async function parseJsonResponse(response) {
   let payload
   try {
     payload = await response.json()
-  } catch (error) {
+  } catch {
     throw new Error('Unexpected server response.')
   }
 

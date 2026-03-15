@@ -9,6 +9,28 @@ if (!JWT_SECRET) {
   throw new Error('JWT_SECRET is not set in environment variables.');
 }
 
+const buildAuthResponse = (admin) => {
+  const token = jwt.sign(
+    {
+      id: admin.id,
+      email: admin.email,
+      role: admin.role || 'admin',
+    },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN }
+  );
+
+  return {
+    token,
+    admin: {
+      id: admin.id,
+      email: admin.email,
+      name: admin.name,
+      role: admin.role || 'admin',
+    },
+  };
+};
+
 /**
  * Authenticate an admin and return a signed JWT plus public admin info.
  * @param {string} emailOrUsername
@@ -38,27 +60,10 @@ const loginAdmin = async (emailOrUsername, password) => {
     throw invalidCredsError;
   }
 
-  // Sign JWT
-  const token = jwt.sign(
-    {
-      id: admin.id,
-      email: admin.email,
-      role: 'admin',
-    },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN }
-  );
-
-  return {
-    token,
-    admin: {
-      id: admin.id,
-      email: admin.email,
-      name: admin.name,
-    },
-  };
+  return buildAuthResponse(admin);
 };
 
 module.exports = {
+  buildAuthResponse,
   loginAdmin,
 };
