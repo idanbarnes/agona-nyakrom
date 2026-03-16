@@ -9,7 +9,7 @@
     "start": "node server.js",
     "start:render": "npm run start:prod",
     "start:prod": "npm run migrate && node server.js",
-    "migrate": "knex --knexfile knexfile.js migrate:latest",
+    "migrate": "node ./node_modules/knex/bin/cli.js --knexfile knexfile.js migrate:latest",
     "migrate:local-to-neon": "node src/scripts/migrateLocalDbToNeon.js",
     "admin:create": "node src/scripts/createAdmin.js",
     "seed:admin": "node src/scripts/seedAdmin.js",
