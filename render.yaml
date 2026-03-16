@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: agonanyakrom-admin
+    runtime: static
+    rootDir: admin-frontend
+    buildCommand: npm run build:render
+    staticPublishPath: ./admin-frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://agonanyakrom-api.onrender.com
+      - key: VITE_PUBLIC_SITE_URL
+        value: https://agonanyakrom.onrender.com
