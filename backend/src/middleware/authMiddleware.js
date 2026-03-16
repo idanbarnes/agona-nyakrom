@@ -1,12 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { pool } = require('../config/db');
 const { error } = require('../utils/response');
-
-const JWT_SECRET = process.env.JWT_SECRET;
-
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET is not set in environment variables.');
-}
+const { getJwtSecret } = require('../config/env');
 
 const extractToken = (req) => {
   const authHeader = req.headers.authorization || '';
@@ -33,7 +28,7 @@ const requireAdminAuth = async (req, res, next) => {
 
     let payload;
     try {
-      payload = jwt.verify(token, JWT_SECRET);
+      payload = jwt.verify(token, getJwtSecret());
     } catch (err) {
       return error(res, 'Invalid or expired token', 401);
     }
@@ -66,7 +61,7 @@ const optionalAdminAuth = async (req, res, next) => {
 
     let payload;
     try {
-      payload = jwt.verify(token, JWT_SECRET);
+      payload = jwt.verify(token, getJwtSecret());
     } catch (err) {
       // If token is present but invalid, treat as unauthenticated but continue
       return next();

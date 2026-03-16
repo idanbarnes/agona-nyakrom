@@ -1,22 +1,19 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../config/db');
+const { getJwtSecret } = require('../config/env');
 
-const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d';
 
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET is not set in environment variables.');
-}
-
 const buildAuthResponse = (admin) => {
+  const jwtSecret = getJwtSecret();
   const token = jwt.sign(
     {
       id: admin.id,
       email: admin.email,
       role: admin.role || 'admin',
     },
-    JWT_SECRET,
+    jwtSecret,
     { expiresIn: JWT_EXPIRES_IN }
   );
 

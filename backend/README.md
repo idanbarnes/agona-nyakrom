@@ -37,20 +37,20 @@ npm install
 - Copy `.env.example` to `.env`
 - Fill in database credentials and secrets:
   - `PORT`
-  - `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
+  - `DATABASE_URL` or `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
+  - `DB_SSL=true` for hosted Postgres such as Neon
   - `JWT_SECRET`
+  - `PREVIEW_TOKEN_SECRET` (recommended; falls back to `JWT_SECRET` if omitted)
   - `UPLOAD_DIR`, `MAX_FILE_SIZE_MB`
 
 3. Database & migrations
 
 - Ensure PostgreSQL is running and the database exists.
-- Run migrations with Knex CLI:
+- Run migrations with the package script:
 
 ```bash
-npx knex migrate:latest --env development
+npm run migrate
 ```
-
-TODO: confirm preferred migration command or add a script to `package.json`.
 
 4. Start the server
 
@@ -58,13 +58,38 @@ TODO: confirm preferred migration command or add a script to `package.json`.
 npm run dev
 ```
 
-TODO: add a production start script if needed.
-
 ## Scripts
 
-- `npm run dev`: start the API server (`server.js`).
+- `npm run dev`: run migrations and start the API server locally.
+- `npm run start:prod`: run migrations and start the API in production.
+- `npm run start:render`: Render-friendly production start command.
+- `npm run build:render`: Render-friendly backend build command.
+- `npm run migrate`: run the latest Knex migrations.
 - `npm run seed:admin`: seed an initial admin user (script exists).
 - `npm test`: placeholder (no tests configured).
+
+## Render Deployment
+
+For Render web services, use:
+
+- Root Directory: `backend`
+- Build Command: `npm run build:render`
+- Start Command: `npm run start:render`
+- Health Check Path: `/api/health`
+
+Required Render environment variables:
+
+- `NODE_ENV=production`
+- `DATABASE_URL`
+- `DB_SSL=true`
+- `JWT_SECRET`
+- `PREVIEW_TOKEN_SECRET`
+
+If `MEDIA_STORAGE=cloudinary`, you must also set:
+
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
 
 ## API
 
@@ -89,8 +114,10 @@ Uploaded files are stored in `uploads/`. Configure limits with `UPLOAD_DIR` and
 ## Troubleshooting
 
 - Missing `.env`: copy `.env.example` and set values.
-- DB connection errors: verify `DB_*` settings and PostgreSQL availability.
-- Migration errors: ensure the database exists and run `npx knex migrate:latest`.
+- Render does not read your local `.env`; configure environment variables in the Render dashboard.
+- DB connection errors on Render: confirm `DATABASE_URL` is set on the Render service and `DB_SSL=true`.
+- JWT startup errors on Render: confirm `JWT_SECRET` is set in the Render Environment panel and is not still the placeholder value.
+- Migration errors: ensure the database exists and run `npm run migrate`.
 
 ## License
 

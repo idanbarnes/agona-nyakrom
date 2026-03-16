@@ -1,5 +1,6 @@
 // Entry point for the Agona Nyakrom backend
 require('dotenv').config();
+const { validateRuntimeEnv } = require('./src/config/env');
 const path = require('path');
 const fs = require('fs');
 const express = require('express');
@@ -7,6 +8,8 @@ const cors = require('cors');
 const { connectDB } = require('./src/config/db');
 const { pool } = require('./src/config/db');
 const { uploadsRoot } = require('./src/config/storage');
+
+validateRuntimeEnv();
 
 // Import routers
 const newsRoutes = require('./src/routes/newsRoutes');
@@ -325,13 +328,14 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
+const HOST = '0.0.0.0';
 
 // Bootstrap the server and ensure DB connectivity before listening
 const startServer = async () => {
   try {
     await connectDB();
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
+    app.listen(PORT, HOST, () => {
+      console.log(`Server is running on ${HOST}:${PORT}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error.message);

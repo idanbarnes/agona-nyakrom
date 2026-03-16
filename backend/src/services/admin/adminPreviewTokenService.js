@@ -1,16 +1,13 @@
 const jwt = require('jsonwebtoken');
+const { getPreviewTokenSecret } = require('../../config/env');
 
-const PREVIEW_TOKEN_SECRET = process.env.PREVIEW_TOKEN_SECRET || process.env.JWT_SECRET;
 const PREVIEW_TOKEN_TTL_SECONDS = Math.max(
   60,
   Number(process.env.ADMIN_PREVIEW_TOKEN_TTL_SECONDS) || 15 * 60
 );
 
-if (!PREVIEW_TOKEN_SECRET) {
-  throw new Error('PREVIEW_TOKEN_SECRET or JWT_SECRET must be configured.');
-}
-
 const issuePreviewToken = ({ resource, previewId, adminId }) => {
+  const previewTokenSecret = getPreviewTokenSecret();
   const token = jwt.sign(
     {
       typ: 'admin_preview',
@@ -18,7 +15,7 @@ const issuePreviewToken = ({ resource, previewId, adminId }) => {
       id: String(previewId),
       admin_id: adminId ? String(adminId) : null,
     },
-    PREVIEW_TOKEN_SECRET,
+    previewTokenSecret,
     { expiresIn: PREVIEW_TOKEN_TTL_SECONDS }
   );
 
@@ -32,7 +29,7 @@ const issuePreviewToken = ({ resource, previewId, adminId }) => {
 };
 
 const verifyPreviewToken = (token) => {
-  return jwt.verify(token, PREVIEW_TOKEN_SECRET);
+  return jwt.verify(token, getPreviewTokenSecret());
 };
 
 module.exports = {
