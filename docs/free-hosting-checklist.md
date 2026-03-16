@@ -88,22 +88,23 @@ These values are prepared in [admin-frontend/.env.production.example](/C:/agona-
 Create a new Render Web Service from this repo with:
 
 - Root Directory: `backend`
-- Build Command: `npm install`
-- Start Command: `npm run start:prod`
+- Build Command: `npm run build:render`
+- Start Command: `npm run start:render`
 - Health Check Path: `/api/health`
 - Instance Type: `Free`
 
-Why `npm run start:prod`:
+Why these scripts:
 
-- Render's free web services do not support a separate pre-deploy command.
-- This script runs migrations and then starts the API in one step.
+- `npm run build:render` installs backend dependencies in the backend root.
+- `npm run start:render` runs migrations and then starts the API in one step.
+- Render's free web services do not support a separate pre-deploy command, so the migration must stay in the start path.
 
 ### Public Static Site
 
 Create a new Render Static Site from this repo with:
 
 - Root Directory: `public-frontend`
-- Build Command: `npm install && npm run build`
+- Build Command: `npm run build:render`
 - Publish Directory: `dist`
 
 Add a rewrite rule for the SPA:
@@ -117,7 +118,7 @@ Add a rewrite rule for the SPA:
 Create a new Render Static Site from this repo with:
 
 - Root Directory: `admin-frontend`
-- Build Command: `npm install && npm run build`
+- Build Command: `npm run build:render`
 - Publish Directory: `dist`
 
 Add the same SPA rewrite rule:

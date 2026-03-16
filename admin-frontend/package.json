@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:render": "npm install && npm run build",
     "lint": "eslint .",
     "preview": "vite preview",
     "smoke:e2e": "node ../scripts/frontends-smoke.mjs admin",
