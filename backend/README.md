@@ -66,6 +66,7 @@ npm run dev
 - `npm run build:render`: Render-friendly backend build command.
 - `npm run migrate`: run the latest Knex migrations.
 - `npm run seed:admin`: seed an initial admin user (script exists).
+- `npm run migrate:uploads-to-cloudinary`: upload old local `uploads/` files to Cloudinary and rewrite matching image paths in the database.
 - `npm test`: placeholder (no tests configured).
 
 ## Render Deployment
@@ -110,6 +111,9 @@ TODO: add specific endpoint details per route file if needed.
 
 Uploaded files are stored in `uploads/`. Configure limits with `UPLOAD_DIR` and
 `MAX_FILE_SIZE_MB`.
+
+If you moved from local uploads to Cloudinary after developing locally, run the
+one-time migration documented in [migrate-local-uploads-to-cloudinary.md](/C:/agona-nyakrom/docs/migrate-local-uploads-to-cloudinary.md).
 
 ## Troubleshooting
 
