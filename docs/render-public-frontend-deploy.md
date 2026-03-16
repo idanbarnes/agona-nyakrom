@@ -1,24 +1,23 @@
-# Deploy Admin Frontend To Render Static Site
+# Deploy Public Frontend To Render Static Site
 
-This admin frontend is ready to deploy to Render as a static site.
+This public frontend is ready to deploy to Render as a static site.
 
 ## Files Already Prepared
 
-- `admin-frontend/package.json`
+- `public-frontend/package.json`
   - includes `npm run build:render`
-- `admin-frontend/.env.production.example`
-  - contains the required production frontend environment variables
+- `public-frontend/.env.production.example`
+  - contains the required production frontend environment variable
 - `render.yaml`
-  - includes a Render static-site blueprint for the admin frontend
+  - includes a Render static-site blueprint for the public frontend
   - includes the SPA rewrite rule `/* -> /index.html`
 
 ## Required Environment Variables
 
-Set these for the admin static site:
+Set this for the public static site:
 
 ```env
 VITE_API_BASE_URL=https://agonanyakrom-api.onrender.com
-VITE_PUBLIC_SITE_URL=https://agonanyakrom.onrender.com
 ```
 
 ## Manual Render Settings
@@ -26,7 +25,7 @@ VITE_PUBLIC_SITE_URL=https://agonanyakrom.onrender.com
 If you create the service manually in the Render dashboard, use:
 
 - Service Type: `Static Site`
-- Root Directory: `admin-frontend`
+- Root Directory: `public-frontend`
 - Build Command: `npm run build:render`
 - Publish Directory: `dist`
 
@@ -44,9 +43,9 @@ You can also create or sync the service from the root `render.yaml` file.
 
 That blueprint already includes:
 
-- service name: `agonanyakrom-admin`
+- service name: `agonanyakrom`
 - runtime: `static`
-- root directory: `admin-frontend`
+- root directory: `public-frontend`
 - build command: `npm run build:render`
 - publish path: `dist`
 - SPA rewrite rule

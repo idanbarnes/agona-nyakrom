@@ -1,5 +1,18 @@
 services:
   - type: web
+    name: agonanyakrom
+    runtime: static
+    rootDir: public-frontend
+    buildCommand: npm run build:render
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://agonanyakrom-api.onrender.com
+  - type: web
     name: agonanyakrom-admin
     runtime: static
     rootDir: admin-frontend
