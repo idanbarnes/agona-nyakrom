@@ -1,5 +1,3 @@
-// For postgre connection and migration
-
 require('dotenv').config();
 
 const ssl = process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false;
@@ -22,16 +20,20 @@ const buildConnection = () => {
   };
 };
 
+const sharedConfig = {
+  client: 'pg',
+  connection: buildConnection(),
+  migrations: {
+    directory: './migrations',
+  },
+  pool: {
+    min: 2,
+    max: 10,
+  },
+};
+
 module.exports = {
-  development: {
-    client: 'pg',
-    connection: buildConnection(),
-    migrations: {
-      directory: './migrations'
-    },
-    pool: {
-      min: 2,
-      max: 10
-    }
-  }
+  development: sharedConfig,
+  production: sharedConfig,
+  staging: sharedConfig,
 };
