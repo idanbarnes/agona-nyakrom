@@ -8,6 +8,58 @@ const mapImages = (row) => ({
   thumbnail: row?.thumbnail_image_path || null,
 });
 
+const parseArrayField = (value) => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value !== 'string' || !value.trim()) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+};
+
+const normalizeWhoWeAreGallery = (value, context = '') => {
+  const gallery = parseArrayField(value).map((item) => ({
+    image_id: String(
+      item?.image_id ||
+        item?.imageId ||
+        item?.image_url ||
+        item?.imageUrl ||
+        item?.url ||
+        item?.src ||
+        ''
+    ).trim(),
+    alt_text: String(item?.alt_text || item?.altText || item?.alt || '').trim(),
+  }));
+
+  if (Array.isArray(value)) {
+    const hasLegacyShape = value.some(
+      (item) =>
+        item &&
+        typeof item === 'object' &&
+        !item.image_id &&
+        (item.imageId || item.image_url || item.imageUrl || item.url || item.src)
+    );
+
+    if (hasLegacyShape) {
+      console.warn(`Normalized legacy who_we_are_gallery payload${context ? ` for ${context}` : ''}.`);
+    }
+  } else if (value && typeof value === 'string' && value.trim() && gallery.length === 0) {
+    console.warn(
+      `Received malformed who_we_are_gallery payload${context ? ` for ${context}` : ''}; defaulting to empty array.`
+    );
+  }
+
+  return gallery;
+};
+
 const mapSection = (row) => {
   if (!row) return null;
   const {
@@ -150,10 +202,10 @@ const getPublishedBlocks = async () => {
 
   return rows.map((row) => ({
     ...row,
-    who_we_are_stats: row.who_we_are_stats || [],
-    who_we_are_gallery: row.who_we_are_gallery || [],
-    hof_manual_item_ids: row.hof_manual_item_ids || [],
-    gateway_items: row.gateway_items || [],
+    who_we_are_stats: parseArrayField(row.who_we_are_stats),
+    who_we_are_gallery: normalizeWhoWeAreGallery(row.who_we_are_gallery, `homepage block ${row.id}`),
+    hof_manual_item_ids: parseArrayField(row.hof_manual_item_ids),
+    gateway_items: parseArrayField(row.gateway_items),
   }));
 };
 

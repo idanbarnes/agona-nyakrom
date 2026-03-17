@@ -24,6 +24,7 @@ import {
   getWhoWeAreDefaultGallery,
   getWhoWeAreDefaultStats,
   resetTypeSpecificFields,
+  sanitizeWhoWeAreGallery,
   validateByType,
   WHO_WE_ARE_STAT_ICON_OPTIONS,
 } from './homepageBlockFormUtils.js'
@@ -207,7 +208,7 @@ function AdminHomepageSectionsEditPage() {
           who_we_are_gallery:
             Array.isArray(block?.who_we_are_gallery) &&
             block.who_we_are_gallery.length > 0
-              ? block.who_we_are_gallery
+              ? sanitizeWhoWeAreGallery(block.who_we_are_gallery)
               : getWhoWeAreDefaultGallery(),
           who_we_are_gallery_files: [null, null, null, null],
           hof_selection_mode: block?.hof_selection_mode || 'random',
@@ -712,7 +713,15 @@ function AdminHomepageSectionsEditPage() {
                                 event.target.files?.[0] || null
                               )
                             }
-                            existingAssetUrl={item?.image_id || ''}
+                            existingAssetUrl={
+                              item?.image_id ||
+                              item?.imageId ||
+                              item?.image_url ||
+                              item?.imageUrl ||
+                              item?.url ||
+                              item?.src ||
+                              ''
+                            }
                             existingAssetLabel="Current image"
                           />
                         </div>

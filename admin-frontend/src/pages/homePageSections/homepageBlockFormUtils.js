@@ -240,8 +240,19 @@ export const sanitizeWhoWeAreStats = (items) =>
 
 export const sanitizeWhoWeAreGallery = (items) =>
   (Array.isArray(items) ? items : []).map((item) => ({
-    image_id: item?.image_id?.trim() || '',
-    alt_text: item?.alt_text?.trim() || '',
+    image_id:
+      item?.image_id?.trim() ||
+      item?.imageId?.trim() ||
+      item?.image_url?.trim() ||
+      item?.imageUrl?.trim() ||
+      item?.url?.trim() ||
+      item?.src?.trim() ||
+      '',
+    alt_text:
+      item?.alt_text?.trim() ||
+      item?.altText?.trim() ||
+      item?.alt?.trim() ||
+      '',
   }))
 
 export const buildPayload = (formState, blockType) => {

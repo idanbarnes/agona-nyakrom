@@ -116,8 +116,10 @@ const sanitizeWhoWeAreStats = (value) => {
 const sanitizeWhoWeAreGallery = (value) => {
   const parsed = parseJsonArray(value);
   return (Array.isArray(parsed) ? parsed : []).map((item) => ({
-    image_id: String(item?.image_id || item?.imageId || '').trim(),
-    alt_text: String(item?.alt_text || item?.altText || '').trim(),
+    image_id: String(
+      item?.image_id || item?.imageId || item?.image_url || item?.imageUrl || item?.url || item?.src || ''
+    ).trim(),
+    alt_text: String(item?.alt_text || item?.altText || item?.alt || '').trim(),
   }));
 };
 

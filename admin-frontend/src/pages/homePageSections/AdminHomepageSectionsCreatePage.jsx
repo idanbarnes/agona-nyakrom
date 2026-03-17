@@ -563,7 +563,15 @@ function AdminHomepageSectionsCreatePage() {
                                 event.target.files?.[0] || null
                               )
                             }
-                            existingAssetUrl={item?.image_id || ''}
+                            existingAssetUrl={
+                              item?.image_id ||
+                              item?.imageId ||
+                              item?.image_url ||
+                              item?.imageUrl ||
+                              item?.url ||
+                              item?.src ||
+                              ''
+                            }
                             existingAssetLabel="Current image"
                           />
                         </div>

@@ -549,8 +549,15 @@ function normalizeWhoWeAreGallery(rawGallery) {
   return DEFAULT_WHO_WE_ARE_GALLERY.map((fallback, index) => {
     const item = source[index] || {}
     return {
-      image_id: item?.image_id || fallback.image_id,
-      alt_text: item?.alt_text || fallback.alt_text,
+      image_id:
+        item?.image_id ||
+        item?.imageId ||
+        item?.image_url ||
+        item?.imageUrl ||
+        item?.url ||
+        item?.src ||
+        fallback.image_id,
+      alt_text: item?.alt_text || item?.altText || item?.alt || fallback.alt_text,
     }
   })
 }
