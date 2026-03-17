@@ -30,6 +30,12 @@ const extractFirstImageSrc = (html = '') => {
   return match ? match[1] : null;
 };
 
+const hasLegacyLocalAssetReference = (value = '') =>
+  typeof value === 'string' &&
+  /(?:https?:\/\/(?:localhost|127(?:\.\d{1,3}){3})(?::\d+)?\/uploads\/|(?:^|["'\s(])\/?uploads\/)/i.test(
+    value
+  );
+
 const mapRow = (row) => {
   if (!row) return null;
   return {
@@ -122,6 +128,12 @@ const getPublishedBySlug = async (slug) => {
 
   const page = mapRow(rows[0]);
   if (!page) return null;
+
+  if (hasLegacyLocalAssetReference(page.body) || hasLegacyLocalAssetReference(page.seo_share_image)) {
+    console.warn(
+      `Published about page "${slug}" still contains legacy local asset references. Consider migrating uploads to Cloudinary.`
+    );
+  }
 
   const shareImage =
     page.seo_share_image || extractFirstImageSrc(page.body) || DEFAULT_SHARE_IMAGE;

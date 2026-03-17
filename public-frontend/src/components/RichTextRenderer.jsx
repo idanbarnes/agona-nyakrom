@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import ImageLightbox from './ImageLightbox.jsx'
-import { API_BASE_URL } from '../lib/apiBase.js'
+import { resolveAssetUrl } from '../lib/apiBase.js'
 
 const BLOCKED_TAGS = new Set(['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'textarea'])
 
@@ -30,18 +30,7 @@ function normalizeImageSource(src = '') {
     return rawSrc
   }
 
-  if (/^(https?:|data:image\/|blob:)/i.test(rawSrc)) {
-    return rawSrc
-  }
-
-  const normalizedPath = rawSrc.startsWith('/') ? rawSrc : `/${rawSrc}`
-  const base = (API_BASE_URL || '').trim().replace(/\/$/, '')
-
-  if (/^https?:\/\//i.test(base)) {
-    return `${base}${normalizedPath}`
-  }
-
-  return normalizedPath
+  return resolveAssetUrl(rawSrc)
 }
 
 function sanitizeRichHtml(html = '') {
