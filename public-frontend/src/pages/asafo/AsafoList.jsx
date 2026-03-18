@@ -39,9 +39,40 @@ const setMeta = (selector, value, attr = 'content') => {
 
 export default function AsafoList() {
   const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    getAsafoCompanies().then((res) => setItems(res?.data || []))
+    let cancelled = false
+
+    setLoading(true)
+    setError('')
+
+    getAsafoCompanies()
+      .then((res) => {
+        if (cancelled) {
+          return
+        }
+
+        setItems(Array.isArray(res?.data) ? res.data : [])
+      })
+      .catch((fetchError) => {
+        if (cancelled) {
+          return
+        }
+
+        setItems([])
+        setError(fetchError?.message || 'Failed to load Asafo Companies content.')
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const sections = useMemo(() => {
@@ -95,6 +126,9 @@ export default function AsafoList() {
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary/80">About Nyakrom</p>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">Asafo Companies</h1>
         </header>
+
+        {loading ? <p className="text-sm text-muted-foreground">Loading Asafo Companies...</p> : null}
+        {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
 	        {sections.map((section) => (
 	          <div key={section.id} className="rounded-2xl border border-border/70 bg-surface px-5 py-6 shadow-sm sm:px-8 sm:py-9 md:px-12">

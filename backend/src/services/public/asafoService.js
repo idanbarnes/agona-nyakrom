@@ -26,8 +26,35 @@ const baseSelect = `
   updated_at
 `;
 
+const buildLegacyBodyFallback = (row = {}) =>
+  [row.history, row.description, row.events]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+    .map((value) => `<p>${value}</p>`)
+    .join('');
+
+const resolveAsafoBody = (row = {}) => {
+  const primaryBody = String(row.body || '').trim();
+  if (primaryBody) {
+    return sanitizeBody(primaryBody);
+  }
+
+  const legacyBody = buildLegacyBodyFallback(row);
+  if (!legacyBody) {
+    return '';
+  }
+
+  if (row.published) {
+    console.warn(
+      `Published asafo entry "${row.slug || row.company_key || row.id}" is using legacy content fields. Consider re-saving it from admin.`
+    );
+  }
+
+  return sanitizeBody(legacyBody);
+};
+
 const mapAsafo = (row) => {
-  const safeBody = sanitizeBody(row.body || '');
+  const safeBody = resolveAsafoBody(row);
   const shareImage =
     row.seo_share_image || extractFirstImageSrc(safeBody) || row.medium_image_path || DEFAULT_SHARE_IMAGE;
 
