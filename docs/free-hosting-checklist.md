@@ -113,6 +113,9 @@ Add a rewrite rule for the SPA:
 - Destination: `/index.html`
 - Action: `Rewrite`
 
+Without this rewrite, refreshing client-side routes like `/about/who-we-are`
+will 404 on the public site.
+
 ### Admin Static Site
 
 Create a new Render Static Site from this repo with:

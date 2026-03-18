@@ -4,6 +4,8 @@ const sharp = require('sharp');
 const { uploadsRoot } = require('../config/storage');
 const {
   buildCloudinaryFolder,
+  deleteCloudinaryImage,
+  extractCloudinaryPublicId,
   isCloudinaryStorageEnabled,
   uploadImageBuffer,
 } = require('./cloudinaryService');
@@ -39,6 +41,7 @@ const carouselVariants = [
   { key: 'tablet', width: 1280, height: 533 },
   { key: 'mobile', width: 768, height: 320 },
 ];
+const managedVariantKeys = variants.map((variant) => variant.key);
 
 const ensureDir = async (dir) => {
   await fs.mkdir(dir, { recursive: true });
@@ -80,6 +83,134 @@ const cleanupTempFile = async (file) => {
       console.warn(`Failed to remove temporary upload ${file.path}: ${error.message}`);
     }
   }
+};
+
+const parseManagedVariantName = (value = '') => {
+  const normalized = String(value || '').trim().replace(/\.(webp|png|jpe?g)$/i, '');
+  const match = normalized.match(/^(.*)-(original|large|medium|thumbnail)$/i);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    familyName: match[1],
+    variantKey: match[2].toLowerCase(),
+  };
+};
+
+const extractLocalUploadRelativePath = (value = '') => {
+  const rawValue = String(value || '').trim();
+  if (!rawValue) {
+    return '';
+  }
+
+  let candidate = rawValue;
+  if (/^https?:\/\//i.test(rawValue)) {
+    try {
+      candidate = new URL(rawValue).pathname || '';
+    } catch (error) {
+      return '';
+    }
+  }
+
+  const normalized = candidate.replace(/\\+/g, '/');
+  const uploadMatch = normalized.match(/\/?uploads\/.+$/i);
+  if (!uploadMatch) {
+    return '';
+  }
+
+  return uploadMatch[0].replace(/^\/+/, '');
+};
+
+const getManagedImageFamilyInfo = (storedRef = '') => {
+  const cloudinaryPublicId = extractCloudinaryPublicId(storedRef);
+  if (cloudinaryPublicId) {
+    const parsed = path.posix.parse(cloudinaryPublicId);
+    const variantInfo = parseManagedVariantName(parsed.base);
+    if (!variantInfo) {
+      return null;
+    }
+
+    return {
+      storage: 'cloudinary',
+      familyKey: `cloudinary:${path.posix.join(parsed.dir, variantInfo.familyName)}`,
+      folder: parsed.dir,
+      familyName: variantInfo.familyName,
+    };
+  }
+
+  const relativeUploadPath = extractLocalUploadRelativePath(storedRef);
+  if (!relativeUploadPath) {
+    return null;
+  }
+
+  const parsed = path.posix.parse(relativeUploadPath);
+  const variantInfo = parseManagedVariantName(parsed.base);
+  if (!variantInfo) {
+    return null;
+  }
+
+  return {
+    storage: 'local',
+    familyKey: `local:${path.posix.join(parsed.dir, variantInfo.familyName)}`,
+    dir: parsed.dir,
+    familyName: variantInfo.familyName,
+  };
+};
+
+const getManagedImageFamilyKey = (storedRef = '') => getManagedImageFamilyInfo(storedRef)?.familyKey || '';
+
+const removeLocalVariantFile = async (absolutePath) => {
+  try {
+    await fs.unlink(absolutePath);
+    return 'deleted';
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      return 'not found';
+    }
+    throw error;
+  }
+};
+
+const cleanupStoredImageFamily = async (storedRef = '') => {
+  const family = getManagedImageFamilyInfo(storedRef);
+  if (!family) {
+    return { skipped: true, deleted: 0, notFound: 0 };
+  }
+
+  const results = await Promise.allSettled(
+    managedVariantKeys.map(async (variantKey) => {
+      if (family.storage === 'cloudinary') {
+        const publicId = path.posix
+          .join(family.folder || '', `${family.familyName}-${variantKey}`)
+          .replace(/^\/+/, '');
+        return deleteCloudinaryImage(publicId);
+      }
+
+      const relativePath = path.posix.join(family.dir || '', `${family.familyName}-${variantKey}.webp`);
+      const absolutePath = path.join(uploadsRoot, relativePath.replace(/^uploads\//i, ''));
+      return removeLocalVariantFile(absolutePath);
+    })
+  );
+
+  const summary = { skipped: false, deleted: 0, notFound: 0 };
+
+  results.forEach((result) => {
+    if (result.status === 'rejected') {
+      throw result.reason;
+    }
+
+    if (result.value === 'ok' || result.value === 'deleted') {
+      summary.deleted += 1;
+      return;
+    }
+
+    if (result.value === 'not found') {
+      summary.notFound += 1;
+    }
+  });
+
+  return summary;
 };
 
 const buildVariantBuffer = async (buffer, width) => {
@@ -263,6 +394,8 @@ const processImage = async (file, section, uniqueId) => {
 };
 
 module.exports = {
+  cleanupStoredImageFamily,
+  getManagedImageFamilyKey,
   processImage,
   processCarouselImage,
 };

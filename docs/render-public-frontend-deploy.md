@@ -37,6 +37,12 @@ Then add this rewrite rule:
 
 This rewrite is required because the app uses React Router with `BrowserRouter`.
 
+If you skip this rewrite, hard-refreshing nested routes such as `/about/who-we-are`
+will return a 404 in production even though client-side navigation works.
+
+If you still see a 404 after adding the rewrite, verify that your public domain is
+attached to the Render static site for `public-frontend`, not the backend API service.
+
 ## Blueprint Option
 
 You can also create or sync the service from the root `render.yaml` file.

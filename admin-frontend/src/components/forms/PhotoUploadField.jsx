@@ -1,5 +1,6 @@
 import { useId, useRef } from 'react'
 import { Button, ImageWithFallback, Input } from '../ui/index.jsx'
+import { buildApiUrl } from '../../lib/apiClient.js'
 
 function UploadIcon({ className = 'h-4 w-4' }) {
   return (
@@ -57,6 +58,25 @@ export default function PhotoUploadField({
   const resolvedFileId = fileId || `${autoId}-file`
   const resolvedFileName = fileName || resolvedFileId
   const displayValue = value || fileValue?.name || ''
+  const resolvedExistingAssetUrl = (() => {
+    const rawPath = String(existingAssetUrl || '').trim()
+    if (!rawPath) {
+      return ''
+    }
+
+    if (/^(https?:|data:image\/|blob:)/i.test(rawPath)) {
+      return rawPath
+    }
+
+    if (/^\/\//.test(rawPath)) {
+      if (typeof window !== 'undefined' && window.location?.protocol) {
+        return `${window.location.protocol}${rawPath}`
+      }
+      return `https:${rawPath}`
+    }
+
+    return buildApiUrl(rawPath.startsWith('/') ? rawPath : `/${rawPath}`)
+  })()
 
   return (
     <div className="space-y-2 p-4">
@@ -121,11 +141,11 @@ export default function PhotoUploadField({
       {aspectRatioHint ? (
         <p className="text-xs text-muted-foreground">Recommended ratio: {aspectRatioHint}</p>
       ) : null}
-      {existingAssetUrl ? (
+      {resolvedExistingAssetUrl ? (
         <p className="text-xs text-muted-foreground">
           {existingAssetLabel}:{' '}
           <a
-            href={existingAssetUrl}
+            href={resolvedExistingAssetUrl}
             target="_blank"
             rel="noreferrer"
             className="text-primary underline-offset-4 hover:underline"

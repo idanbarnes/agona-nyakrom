@@ -128,6 +128,88 @@ const processImageIfPresent = async (file, uniqueId) => {
   return mediaService.processImage(file, 'homepage', uniqueId);
 };
 
+const getStoredHomepageImageRef = (images, contextLabel = 'image') => {
+  const resolved = String(
+    images?.original || images?.large || images?.medium || images?.thumbnail || ''
+  ).trim();
+
+  if (!resolved) {
+    throw new Error(`Uploaded ${contextLabel} could not be stored. Please try again.`);
+  }
+
+  return resolved;
+};
+
+const collectHomepageAssetRefs = (block) => {
+  if (!block || typeof block !== 'object') {
+    return [];
+  }
+
+  return [
+    block.media_image_id,
+    block.background_image_id,
+    ...(Array.isArray(block.who_we_are_gallery)
+      ? block.who_we_are_gallery.map((item) => item?.image_id)
+      : []),
+  ]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+};
+
+const collectHomepageAssetFamilyKeys = (block) =>
+  new Set(
+    collectHomepageAssetRefs(block)
+      .map((ref) => mediaService.getManagedImageFamilyKey(ref))
+      .filter(Boolean)
+  );
+
+const cleanupRemovedHomepageAssets = async ({ previousBlock, nextBlock = null, excludeBlockIds = [] }) => {
+  const nextFamilyKeys = collectHomepageAssetFamilyKeys(nextBlock);
+  const removedRefsByFamilyKey = new Map();
+
+  collectHomepageAssetRefs(previousBlock).forEach((ref) => {
+    const familyKey = mediaService.getManagedImageFamilyKey(ref);
+    if (!familyKey || nextFamilyKeys.has(familyKey) || removedRefsByFamilyKey.has(familyKey)) {
+      return;
+    }
+
+    removedRefsByFamilyKey.set(familyKey, ref);
+  });
+
+  if (!removedRefsByFamilyKey.size) {
+    return;
+  }
+
+  const excludedIds = new Set(
+    excludeBlockIds
+      .map((value) => String(value || '').trim())
+      .filter(Boolean)
+  );
+
+  const remainingBlocks = (await homepageBlockAdminService.getAll()).filter(
+    (block) => !excludedIds.has(String(block?.id || '').trim())
+  );
+  const remainingFamilyKeys = new Set();
+
+  remainingBlocks.forEach((block) => {
+    collectHomepageAssetFamilyKeys(block).forEach((familyKey) => {
+      remainingFamilyKeys.add(familyKey);
+    });
+  });
+
+  for (const [familyKey, ref] of removedRefsByFamilyKey.entries()) {
+    if (remainingFamilyKeys.has(familyKey)) {
+      continue;
+    }
+
+    try {
+      await mediaService.cleanupStoredImageFamily(ref);
+    } catch (cleanupError) {
+      console.warn(`Failed to clean up homepage asset "${ref}": ${cleanupError.message}`);
+    }
+  }
+};
+
 const listUploadedFiles = (req) => {
   if (Array.isArray(req.files)) {
     return req.files;
@@ -269,7 +351,7 @@ const applyWhoWeAreGalleryUploads = async (
     const images = await processImageIfPresent(file, `${uniqueId}-who-we-are-${index + 1}`);
     gallery[index] = {
       ...gallery[index],
-      image_id: images?.original || gallery[index]?.image_id || '',
+      image_id: getStoredHomepageImageRef(images, `Who We Are gallery image ${index + 1}`),
     };
   }
 
@@ -622,7 +704,7 @@ const createHomepageBlock = async (req, res) => {
     const imageFile = extractImageFromRequest(req);
     if (imageFile) {
       const images = await processImageIfPresent(imageFile, uniqueId);
-      payload.media_image_id = images?.original || null;
+      payload.media_image_id = getStoredHomepageImageRef(images, 'homepage block image');
     }
     if (payload.block_type === 'who_we_are') {
       await applyWhoWeAreGalleryUploads(payload, req, uniqueId);
@@ -643,6 +725,9 @@ const createHomepageBlock = async (req, res) => {
     console.error('Error creating homepage block:', err.message);
     if (err.message === 'No fields provided to create.') {
       return error(res, err.message, 400);
+    }
+    if (err.message.startsWith('Uploaded ')) {
+      return error(res, err.message, 500);
     }
     if (err.message.toLowerCase().includes('json')) {
       return error(
@@ -670,7 +755,7 @@ const updateHomepageBlock = async (req, res) => {
     const imageFile = extractImageFromRequest(req);
     if (imageFile) {
       const images = await processImageIfPresent(imageFile, uniqueId);
-      payload.media_image_id = images?.original || null;
+      payload.media_image_id = getStoredHomepageImageRef(images, 'homepage block image');
     }
     const targetBlockType = payload.block_type || existing.block_type;
     if (targetBlockType === 'who_we_are') {
@@ -696,11 +781,19 @@ const updateHomepageBlock = async (req, res) => {
 
     const prepared = preparePublishState(payload, existing);
     const updated = await homepageBlockAdminService.update(id, prepared);
+    await cleanupRemovedHomepageAssets({
+      previousBlock: existing,
+      nextBlock: updated,
+      excludeBlockIds: [updated?.id],
+    });
     return success(res, updated, 'Homepage block updated successfully');
   } catch (err) {
     console.error('Error updating homepage block:', err.message);
     if (err.message === 'No fields provided to update.') {
       return error(res, err.message, 400);
+    }
+    if (err.message.startsWith('Uploaded ')) {
+      return error(res, err.message, 500);
     }
     if (err.message.toLowerCase().includes('json')) {
       return error(
@@ -723,6 +816,11 @@ const deleteHomepageBlock = async (req, res) => {
     }
 
     await homepageBlockAdminService.delete(id);
+    await cleanupRemovedHomepageAssets({
+      previousBlock: existing,
+      nextBlock: null,
+      excludeBlockIds: [id],
+    });
     return success(res, { id }, 'Homepage block deleted successfully');
   } catch (err) {
     console.error('Error deleting homepage block:', err.message);

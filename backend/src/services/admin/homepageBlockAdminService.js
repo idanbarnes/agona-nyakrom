@@ -1,4 +1,5 @@
 const { pool } = require('../../config/db');
+const { resolveCloudinaryDeliveryUrl } = require('../cloudinaryService');
 
 const baseSelect = `
   id,
@@ -49,6 +50,39 @@ const baseSelect = `
   updated_at
 `;
 
+const parseArrayField = (value) => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value !== 'string' || !value.trim()) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+};
+
+const normalizeWhoWeAreGallery = (value) =>
+  parseArrayField(value).map((item) => ({
+    image_id: resolveCloudinaryDeliveryUrl(
+      String(
+        item?.image_id ||
+          item?.imageId ||
+          item?.image_url ||
+          item?.imageUrl ||
+          item?.url ||
+          item?.src ||
+          ''
+      ).trim()
+    ),
+    alt_text: String(item?.alt_text || item?.altText || item?.alt || '').trim(),
+  }));
+
 const mapBlock = (row) => {
   if (!row) return null;
 
@@ -67,16 +101,16 @@ const mapBlock = (row) => {
     secondary_cta_href: row.secondary_cta_href,
     theme_variant: row.theme_variant,
     container_width: row.container_width,
-    media_image_id: row.media_image_id,
+    media_image_id: resolveCloudinaryDeliveryUrl(row.media_image_id),
     media_alt_text: row.media_alt_text,
     layout_variant: row.layout_variant,
     who_we_are_paragraph_one: row.who_we_are_paragraph_one,
     who_we_are_paragraph_two: row.who_we_are_paragraph_two,
-    who_we_are_stats: row.who_we_are_stats || [],
-    who_we_are_gallery: row.who_we_are_gallery || [],
+    who_we_are_stats: parseArrayField(row.who_we_are_stats),
+    who_we_are_gallery: normalizeWhoWeAreGallery(row.who_we_are_gallery),
     hof_selection_mode: row.hof_selection_mode,
     hof_items_count: row.hof_items_count,
-    hof_manual_item_ids: row.hof_manual_item_ids || [],
+    hof_manual_item_ids: parseArrayField(row.hof_manual_item_ids),
     hof_filter_tag: row.hof_filter_tag,
     hof_show_cta: row.hof_show_cta,
     hof_cta_label: row.hof_cta_label,
@@ -91,9 +125,9 @@ const mapBlock = (row) => {
     quote_text: row.quote_text,
     quote_author: row.quote_author,
     background_style: row.background_style,
-    background_image_id: row.background_image_id,
+    background_image_id: resolveCloudinaryDeliveryUrl(row.background_image_id),
     background_overlay_strength: row.background_overlay_strength,
-    gateway_items: row.gateway_items || [],
+    gateway_items: parseArrayField(row.gateway_items),
     gateway_columns_desktop: row.gateway_columns_desktop,
     gateway_columns_tablet: row.gateway_columns_tablet,
     gateway_columns_mobile: row.gateway_columns_mobile,

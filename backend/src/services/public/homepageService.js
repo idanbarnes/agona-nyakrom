@@ -1,5 +1,6 @@
 // Public homepage payload served by GET /api/public/homepage; admin controls blocks via /admin/homepage-sections.
 const { pool } = require('../../config/db');
+const { resolveCloudinaryDeliveryUrl } = require('../cloudinaryService');
 
 const mapImages = (row) => ({
   original: row?.original_image_path || null,
@@ -26,8 +27,8 @@ const parseArrayField = (value) => {
 };
 
 const normalizeWhoWeAreGallery = (value, context = '') => {
-  const gallery = parseArrayField(value).map((item) => ({
-    image_id: String(
+  const gallery = parseArrayField(value).map((item) => {
+    const rawImageId = String(
       item?.image_id ||
         item?.imageId ||
         item?.image_url ||
@@ -35,9 +36,19 @@ const normalizeWhoWeAreGallery = (value, context = '') => {
         item?.url ||
         item?.src ||
         ''
-    ).trim(),
-    alt_text: String(item?.alt_text || item?.altText || item?.alt || '').trim(),
-  }));
+    ).trim();
+
+    if (/^cloudinary:\/\//i.test(rawImageId)) {
+      console.warn(
+        `Normalized cloudinary placeholder in who_we_are_gallery${context ? ` for ${context}` : ''}.`
+      );
+    }
+
+    return {
+      image_id: resolveCloudinaryDeliveryUrl(rawImageId),
+      alt_text: String(item?.alt_text || item?.altText || item?.alt || '').trim(),
+    };
+  });
 
   if (Array.isArray(value)) {
     const hasLegacyShape = value.some(
@@ -202,6 +213,8 @@ const getPublishedBlocks = async () => {
 
   return rows.map((row) => ({
     ...row,
+    media_image_id: resolveCloudinaryDeliveryUrl(row.media_image_id),
+    background_image_id: resolveCloudinaryDeliveryUrl(row.background_image_id),
     who_we_are_stats: parseArrayField(row.who_we_are_stats),
     who_we_are_gallery: normalizeWhoWeAreGallery(row.who_we_are_gallery, `homepage block ${row.id}`),
     hof_manual_item_ids: parseArrayField(row.hof_manual_item_ids),

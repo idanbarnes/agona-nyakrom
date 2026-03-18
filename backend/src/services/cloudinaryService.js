@@ -23,6 +23,8 @@ const getCloudinaryConfig = () => {
   };
 };
 
+const getCloudinaryCloudName = () => String(process.env.CLOUDINARY_CLOUD_NAME || '').trim();
+
 const buildSignature = (params, apiSecret) => {
   const payload = Object.keys(params)
     .sort()
@@ -69,13 +71,108 @@ const uploadImageBuffer = async ({ buffer, folder, publicId, filename }) => {
   return payload.secure_url || payload.url;
 };
 
+const deleteCloudinaryImage = async (publicId, { invalidate = true } = {}) => {
+  const normalizedPublicId = String(publicId || '').trim().replace(/\.(webp|png|jpe?g)$/i, '');
+  if (!normalizedPublicId) {
+    return 'skipped';
+  }
+
+  if (typeof fetch !== 'function' || typeof FormData !== 'function') {
+    throw new Error('Cloudinary deletions require a Node.js runtime with fetch and FormData support.');
+  }
+
+  const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
+  const timestamp = Math.floor(Date.now() / 1000);
+  const params = {
+    invalidate: invalidate ? 'true' : 'false',
+    public_id: normalizedPublicId,
+    timestamp,
+  };
+
+  const signature = buildSignature(params, apiSecret);
+  const form = new FormData();
+  form.append('api_key', apiKey);
+  form.append('timestamp', String(timestamp));
+  form.append('signature', signature);
+  form.append('public_id', normalizedPublicId);
+  form.append('invalidate', invalidate ? 'true' : 'false');
+
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
+    method: 'POST',
+    body: form,
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload?.error?.message || 'Cloudinary delete failed.');
+  }
+
+  return payload?.result || 'unknown';
+};
+
 const buildCloudinaryFolder = (sectionDir = '') => {
   const { baseFolder } = getCloudinaryConfig();
   return [baseFolder, sectionDir].filter(Boolean).join('/');
 };
 
+const extractCloudinaryPublicId = (value = '') => {
+  const rawValue = String(value || '').trim();
+  if (!rawValue) {
+    return '';
+  }
+
+  if (/^cloudinary:\/\//i.test(rawValue)) {
+    return rawValue
+      .replace(/^cloudinary:\/\//i, '')
+      .replace(/^\/+/, '')
+      .replace(/\.(webp|png|jpe?g)$/i, '');
+  }
+
+  try {
+    const parsedUrl = new URL(rawValue);
+    const uploadMarker = '/image/upload/';
+    const markerIndex = parsedUrl.pathname.indexOf(uploadMarker);
+    if (markerIndex === -1) {
+      return '';
+    }
+
+    let remainder = parsedUrl.pathname.slice(markerIndex + uploadMarker.length).replace(/^\/+/, '');
+    remainder = remainder.replace(/^v\d+\//, '');
+
+    return decodeURIComponent(remainder).replace(/\.(webp|png|jpe?g)$/i, '');
+  } catch (error) {
+    return '';
+  }
+};
+
+const resolveCloudinaryDeliveryUrl = (value = '') => {
+  const rawValue = String(value || '').trim();
+  if (!rawValue) {
+    return '';
+  }
+
+  if (!/^cloudinary:\/\//i.test(rawValue)) {
+    return rawValue;
+  }
+
+  const cloudName = getCloudinaryCloudName();
+  if (!cloudName) {
+    return rawValue;
+  }
+
+  const publicId = rawValue.replace(/^cloudinary:\/\//i, '').replace(/^\/+/, '');
+  if (!publicId) {
+    return '';
+  }
+
+  return `https://res.cloudinary.com/${cloudName}/image/upload/${publicId}`;
+};
+
 module.exports = {
   buildCloudinaryFolder,
+  deleteCloudinaryImage,
+  extractCloudinaryPublicId,
   isCloudinaryStorageEnabled,
+  resolveCloudinaryDeliveryUrl,
   uploadImageBuffer,
 };
