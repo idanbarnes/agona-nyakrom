@@ -2,6 +2,8 @@ const { pool } = require('../config/db');
 
 const ALLOWED_SLUGS = ['history', 'who-we-are', 'about-agona-nyakrom-town'];
 const DEFAULT_SHARE_IMAGE = process.env.PUBLIC_SHARE_IMAGE_URL || '/share-default.svg';
+const isCloudinaryStorageEnabled =
+  String(process.env.MEDIA_STORAGE || 'local').trim().toLowerCase() === 'cloudinary';
 
 const baseSelect = `
   id,
@@ -129,7 +131,10 @@ const getPublishedBySlug = async (slug) => {
   const page = mapRow(rows[0]);
   if (!page) return null;
 
-  if (hasLegacyLocalAssetReference(page.body) || hasLegacyLocalAssetReference(page.seo_share_image)) {
+  if (
+    isCloudinaryStorageEnabled &&
+    (hasLegacyLocalAssetReference(page.body) || hasLegacyLocalAssetReference(page.seo_share_image))
+  ) {
     console.warn(
       `Published about page "${slug}" still contains legacy local asset references. Consider migrating uploads to Cloudinary.`
     );
