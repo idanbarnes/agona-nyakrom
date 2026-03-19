@@ -1,14 +1,22 @@
 import SmartLink from '../components/navigation/SmartLink.jsx'
+import {
+  DEFAULT_FOOTER_QUICK_LINKS,
+  DEFAULT_SITE_NAME,
+  DEFAULT_SITE_TAGLINE,
+  FOOTER_COMMUNITY_LINKS,
+  FOOTER_SECTION_TITLES,
+  PUBLIC_UI_LABELS,
+} from '../constants/publicChrome.js'
 
 function getSiteName(settings) {
-  return settings?.site_name || settings?.siteName || 'Nyakrom Community'
+  return settings?.site_name || settings?.siteName || DEFAULT_SITE_NAME
 }
 
 function getTagline(settings) {
   return (
     settings?.tagline ||
     settings?.site_tagline ||
-    'Preserving our heritage, building our future.'
+    DEFAULT_SITE_TAGLINE
   )
 }
 
@@ -249,21 +257,9 @@ function Footer({ settings, loading, error }) {
   const quickLinks =
     navigationLinks.length > 0
       ? navigationLinks.slice(0, 5)
-      : [
-          { label: 'Our History', url: '/about/history' },
-          { label: 'Who We Are', url: '/about/who-we-are' },
-          { label: 'Leadership', url: '/about/leadership-governance' },
-          { label: 'Hall of Fame', url: '/hall-of-fame' },
-          { label: 'FAQs', url: '/contact?tab=faqs' },
-        ]
+      : DEFAULT_FOOTER_QUICK_LINKS
 
-  const communityLinks = [
-    { label: 'News', url: '/news' },
-    { label: 'Announcements & Events', url: '/announcements-events' },
-    { label: 'Clans', url: '/clans' },
-    { label: 'Asafo Companies', url: '/asafo-companies' },
-    { label: 'Obituaries', url: '/obituaries' },
-  ]
+  const communityLinks = FOOTER_COMMUNITY_LINKS
 
   return (
     <footer className="bg-[#111827] text-[#D1D5DB]">
@@ -304,7 +300,7 @@ function Footer({ settings, loading, error }) {
           </section>
 
           <section>
-            <h3 className="mb-4 text-base font-semibold text-white">Quick Links</h3>
+            <h3 className="mb-4 text-base font-semibold text-white">{FOOTER_SECTION_TITLES.quickLinks}</h3>
             <ul className="space-y-2 text-sm">
               {quickLinks.map((link, index) => (
                 <li key={`${link.url || link.label}-${index}`}>
@@ -320,7 +316,7 @@ function Footer({ settings, loading, error }) {
           </section>
 
           <section>
-            <h3 className="mb-4 text-base font-semibold text-white">Community</h3>
+            <h3 className="mb-4 text-base font-semibold text-white">{FOOTER_SECTION_TITLES.community}</h3>
             <ul className="space-y-2 text-sm">
               {communityLinks.map((link) => (
                 <li key={link.url}>
@@ -336,7 +332,7 @@ function Footer({ settings, loading, error }) {
           </section>
 
           <section>
-            <h3 className="mb-4 text-base font-semibold text-white">Contact Us</h3>
+            <h3 className="mb-4 text-base font-semibold text-white">{FOOTER_SECTION_TITLES.contact}</h3>
             <ul className="space-y-3 text-sm">
               {address ? (
                 <li className="flex items-start gap-3">
@@ -417,14 +413,14 @@ function Footer({ settings, loading, error }) {
                 </li>
               ) : null}
               {!address && !phone && !email && !loading && error ? (
-                <li>Contact details unavailable.</li>
+                <li>{PUBLIC_UI_LABELS.contactDetailsUnavailable}</li>
               ) : null}
             </ul>
             <SmartLink
               href="/contact"
               className="mt-4 inline-flex h-10 items-center rounded-md bg-[#D97706] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#B45309]"
             >
-              Send Message
+              {PUBLIC_UI_LABELS.sendMessage}
             </SmartLink>
           </section>
         </div>

@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import RichTextRenderer from '../../components/RichTextRenderer.jsx'
+import { EmptyState, ErrorState, RichContentPageSkeleton } from '../../components/ui/index.jsx'
 import { getAboutPageBySlug } from '../../api/endpoints.js'
+import {
+  ABOUT_PAGE_TITLES,
+  ABOUT_SECTION_LABEL,
+  PUBLIC_UI_LABELS,
+} from '../../constants/publicChrome.js'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
-
-const titles = {
-  history: 'History',
-  'who-we-are': 'Who We Are',
-  'about-agona-nyakrom-town': 'About Agona Nyakrom Town',
-}
 
 const DEFAULT_SHARE_IMAGE = '/share-default.svg'
 
@@ -42,7 +42,7 @@ export default function AboutRichPage() {
     setLoading(true)
     setError(null)
 
-    if (!titles[slug]) {
+    if (!ABOUT_PAGE_TITLES[slug]) {
       Promise.resolve().then(() => {
         if (!cancelled) {
           setPage(null)
@@ -75,7 +75,7 @@ export default function AboutRichPage() {
   }, [slug])
 
   const pageTitle = useMemo(
-    () => page?.page_title || titles[slug] || 'About Nyakrom',
+    () => page?.page_title || ABOUT_PAGE_TITLES[slug] || ABOUT_SECTION_LABEL,
     [page, slug],
   )
 
@@ -96,28 +96,39 @@ export default function AboutRichPage() {
   }, [page, pageTitle])
 
   if (loading) {
-    return (
-      <section className="container py-10 sm:py-12 lg:py-16">
-        <h1 className="text-3xl font-semibold md:text-4xl">{pageTitle}</h1>
-        <p className="mt-3 text-muted-foreground">Loading content...</p>
-      </section>
-    )
+    return <RichContentPageSkeleton sectionLabel={ABOUT_SECTION_LABEL} />
   }
 
   if (error?.status === 404 || !page) {
     return (
-      <section className="container py-10 sm:py-12 lg:py-16">
-        <h1 className="text-3xl font-semibold md:text-4xl">{pageTitle}</h1>
-        <p className="mt-3 text-muted-foreground">Content not available.</p>
+      <section className="bg-background py-10 sm:py-12 lg:py-16">
+        <div className="container max-w-5xl space-y-8">
+          <header className="space-y-3 border-b border-border pb-6 sm:pb-8">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary/80">{ABOUT_SECTION_LABEL}</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">{pageTitle}</h1>
+          </header>
+          <EmptyState
+            title={PUBLIC_UI_LABELS.contentNotAvailableTitle}
+            description={PUBLIC_UI_LABELS.contentNotAvailableDescription}
+          />
+        </div>
       </section>
     )
   }
 
   if (error) {
     return (
-      <section className="container py-10 sm:py-12 lg:py-16">
-        <h1 className="text-3xl font-semibold md:text-4xl">{pageTitle}</h1>
-        <p className="mt-3 text-muted-foreground">Unable to load content.</p>
+      <section className="bg-background py-10 sm:py-12 lg:py-16">
+        <div className="container max-w-5xl space-y-8">
+          <header className="space-y-3 border-b border-border pb-6 sm:pb-8">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary/80">{ABOUT_SECTION_LABEL}</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">{pageTitle}</h1>
+          </header>
+          <ErrorState
+            title={PUBLIC_UI_LABELS.unableToLoadContentTitle}
+            message={error?.message || PUBLIC_UI_LABELS.unableToLoadContentMessage}
+          />
+        </div>
       </section>
     )
   }
@@ -126,7 +137,7 @@ export default function AboutRichPage() {
     <section className="bg-background py-10 sm:py-12 lg:py-16">
       <div className="container max-w-5xl space-y-8">
         <header className="space-y-3 border-b border-border pb-6 sm:pb-8">
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary/80">About Nyakrom</p>
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary/80">{ABOUT_SECTION_LABEL}</p>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">{pageTitle}</h1>
           {page.subtitle ? (
             <p className="max-w-3xl text-base leading-7 text-muted-foreground md:text-lg">{page.subtitle}</p>

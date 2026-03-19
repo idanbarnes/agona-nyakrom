@@ -1,6 +1,7 @@
 const aboutPageService = require('../../services/aboutPageService');
 const mediaService = require('../../services/mediaService');
 const { success, error } = require('../../utils/response');
+const { invalidatePublicAboutPage } = require('../../utils/publicCacheInvalidation');
 
 const getAboutPage = async (req, res) => {
   try {
@@ -22,6 +23,7 @@ const togglePublish = async (req, res) => {
       ...current,
       published: req.body?.published === true || req.body?.published === 'true',
     });
+    invalidatePublicAboutPage(req.params.slug);
     return success(res, page, 'Publish status updated successfully');
   } catch (err) {
     if (err.status === 400) {
@@ -51,6 +53,7 @@ const upsertAboutPage = async (req, res) => {
     };
 
     const page = await aboutPageService.upsertBySlug(slug, payload);
+    invalidatePublicAboutPage(slug);
     return success(res, page, 'About page saved successfully');
   } catch (err) {
     if (err.status === 400) {

@@ -1,5 +1,6 @@
 const contactCmsService = require('../../services/contactCmsService');
 const { success, error } = require('../../utils/response');
+const { invalidatePublicContactContent } = require('../../utils/publicCacheInvalidation');
 
 const getAdminFaqs = async (req, res) => {
   try {
@@ -29,6 +30,7 @@ const getAdminFaqs = async (req, res) => {
 const createAdminFaq = async (req, res) => {
   try {
     const created = await contactCmsService.createFaq(req.body || {}, req.admin?.id || null);
+    invalidatePublicContactContent();
     return success(res, created, 'FAQ created successfully', 201);
   } catch (err) {
     if (err.status === 400) {
@@ -64,6 +66,7 @@ const updateAdminFaq = async (req, res) => {
       return error(res, 'FAQ not found', 404);
     }
 
+    invalidatePublicContactContent();
     return success(res, updated, 'FAQ updated successfully');
   } catch (err) {
     if (err.status === 400) {
@@ -80,6 +83,7 @@ const deleteAdminFaq = async (req, res) => {
     if (!removed) {
       return error(res, 'FAQ not found', 404);
     }
+    invalidatePublicContactContent();
     return success(res, { id: req.params.id }, 'FAQ deleted successfully');
   } catch (err) {
     console.error('Error deleting FAQ:', err.message);
@@ -91,6 +95,7 @@ const reorderAdminFaqs = async (req, res) => {
   try {
     const items = req.body?.items || req.body;
     const updated = await contactCmsService.reorderFaqs(items, req.admin?.id || null);
+    invalidatePublicContactContent();
     return success(res, updated, 'FAQs reordered successfully');
   } catch (err) {
     if (err.status === 400) {
@@ -107,6 +112,7 @@ const toggleAdminFaqStatus = async (req, res) => {
     if (!updated) {
       return error(res, 'FAQ not found', 404);
     }
+    invalidatePublicContactContent();
     return success(res, updated, 'FAQ status updated successfully');
   } catch (err) {
     console.error('Error toggling FAQ status:', err.message);
@@ -122,6 +128,7 @@ const runBulkAction = async (req, res, action) => {
       adminId: req.admin?.id || null,
     });
 
+    invalidatePublicContactContent();
     return success(res, result, 'Bulk FAQ action completed successfully');
   } catch (err) {
     if (err.status === 400) {

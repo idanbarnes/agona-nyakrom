@@ -3,6 +3,7 @@ const mediaService = require('../../services/mediaService');
 const { requireFields, isValidSlugFormat } = require('../../utils/validators');
 const { generateSlug } = require('../../utils/slugify');
 const { success, error } = require('../../utils/response');
+const { invalidatePublicLandmarks } = require('../../utils/publicCacheInvalidation');
 
 const processImageIfPresent = async (file, uniqueId) => {
   if (!file) return {};
@@ -58,6 +59,7 @@ const createLandmark = async (req, res) => {
       images,
       published,
     });
+    invalidatePublicLandmarks(created);
 
     return success(res, created, 'Landmark created successfully', 201);
   } catch (err) {
@@ -113,6 +115,7 @@ const updateLandmark = async (req, res) => {
       images,
       published,
     });
+    invalidatePublicLandmarks({ ...existing, ...updated });
 
     return success(res, updated, 'Landmark updated successfully');
   } catch (err) {
@@ -137,6 +140,7 @@ const deleteLandmark = async (req, res) => {
     }
 
     await landmarkAdminService.delete(id);
+    invalidatePublicLandmarks(existing);
     return success(res, { id }, 'Landmark deleted successfully');
   } catch (err) {
     console.error('Error deleting landmark:', err.message);

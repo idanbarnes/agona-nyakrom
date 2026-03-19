@@ -2,16 +2,22 @@ const globalSettingsService = require('../../services/public/globalSettingsServi
 const { isTransientDatabaseError } = require('../../config/db');
 const { success, error } = require('../../utils/response');
 const { setNoStoreHeaders, setPublicCacheHeaders } = require('../../utils/cacheHeaders');
+const { rememberPublicData } = require('../../utils/publicDataCache');
 
 // GET /api/public/global-settings
 const getGlobalSettings = async (req, res) => {
   try {
-    const settings = await globalSettingsService.getPublished();
+    const { value: settings, cacheStatus } = await rememberPublicData(
+      'public:global-settings',
+      () => globalSettingsService.getPublished(),
+      { ttlMs: 30 * 1000 }
+    );
     if (!settings) {
       setNoStoreHeaders(res);
       return error(res, 'Global settings not found', 404);
     }
     setPublicCacheHeaders(res);
+    res.set('X-App-Cache', cacheStatus);
     return success(res, settings, 'Global settings fetched successfully');
   } catch (err) {
     console.error('Error fetching global settings (public):', err.message);

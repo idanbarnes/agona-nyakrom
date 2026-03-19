@@ -1,5 +1,6 @@
 const contactCmsService = require('../../services/contactCmsService');
 const { success, error } = require('../../utils/response');
+const { invalidatePublicContactContent } = require('../../utils/publicCacheInvalidation');
 
 const parseJsonField = (value, fieldName) => {
   if (value === undefined) return undefined;
@@ -38,6 +39,7 @@ const updateAdminContact = async (req, res) => {
     };
 
     const updated = await contactCmsService.upsertContactInfo(payload, req.admin?.id || null);
+    invalidatePublicContactContent();
     return success(res, updated, 'Contact information updated successfully');
   } catch (err) {
     if (err.status === 400) {
@@ -55,6 +57,7 @@ const patchEmails = async (req, res) => {
       { emails },
       req.admin?.id || null
     );
+    invalidatePublicContactContent();
     return success(res, updated, 'Contact emails updated successfully');
   } catch (err) {
     if (err.status === 400) {
@@ -72,6 +75,7 @@ const patchPhones = async (req, res) => {
       { phones },
       req.admin?.id || null
     );
+    invalidatePublicContactContent();
     return success(res, updated, 'Contact phones updated successfully');
   } catch (err) {
     if (err.status === 400) {
@@ -89,6 +93,7 @@ const patchAddress = async (req, res) => {
       { address },
       req.admin?.id || null
     );
+    invalidatePublicContactContent();
     return success(res, updated, 'Contact address updated successfully');
   } catch (err) {
     if (err.status === 400) {
@@ -106,6 +111,7 @@ const patchOfficeHours = async (req, res) => {
       { office_hours: officeHours },
       req.admin?.id || null
     );
+    invalidatePublicContactContent();
     return success(res, updated, 'Contact office hours updated successfully');
   } catch (err) {
     if (err.status === 400) {

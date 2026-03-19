@@ -5,6 +5,7 @@ const { getPaginationParams } = require('../../utils/pagination');
 const { requireFields } = require('../../utils/validators');
 const { generateSlug } = require('../../utils/slugify');
 const { success, error } = require('../../utils/response');
+const { invalidatePublicClans } = require('../../utils/publicCacheInvalidation');
 
 const processImageIfPresent = async (file, uniqueId) => {
   if (!file) return {};
@@ -67,6 +68,7 @@ const createClan = async (req, res) => {
       images,
       published,
     });
+    invalidatePublicClans(created);
 
     return success(res, created, 'Clan created successfully', 201);
   } catch (err) {
@@ -113,6 +115,7 @@ const updateClan = async (req, res) => {
       images,
       published,
     });
+    invalidatePublicClans({ ...existing, ...updated });
 
     return success(res, updated, 'Clan updated successfully');
   } catch (err) {
@@ -137,6 +140,7 @@ const deleteClan = async (req, res) => {
     }
 
     await clanAdminService.delete(id);
+    invalidatePublicClans(existing);
     return success(res, { id }, 'Clan deleted successfully');
   } catch (err) {
     console.error('Error deleting clan:', err.message);

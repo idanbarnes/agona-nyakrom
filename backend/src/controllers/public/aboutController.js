@@ -3,6 +3,7 @@ const { isTransientDatabaseError } = require('../../config/db');
 const { success, error } = require('../../utils/response');
 const { setNoStoreHeaders, setPublicCacheHeaders } = require('../../utils/cacheHeaders');
 const { resolvePreviewAccess } = require('../../utils/previewAccess');
+const { rememberPublicData } = require('../../utils/publicDataCache');
 
 const getPublicAboutPage = async (req, res) => {
   try {
@@ -12,9 +13,18 @@ const getPublicAboutPage = async (req, res) => {
       return error(res, preview.errorMessage, 401);
     }
 
-    const page = preview.isAuthorized
-      ? await aboutPageService.getBySlug(preview.previewId)
-      : await aboutPageService.getPublishedBySlug(req.params.slug);
+    const { slug } = req.params;
+    const cachedResponse = preview.isAuthorized
+      ? {
+          value: await aboutPageService.getBySlug(preview.previewId),
+          cacheStatus: 'BYPASS',
+        }
+      : await rememberPublicData(
+          `public:about:${slug}`,
+          () => aboutPageService.getPublishedBySlug(slug),
+          { ttlMs: 30 * 1000 }
+        );
+    const page = cachedResponse.value;
 
     if (!page) {
       setNoStoreHeaders(res);
@@ -24,6 +34,7 @@ const getPublicAboutPage = async (req, res) => {
       setNoStoreHeaders(res);
     } else {
       setPublicCacheHeaders(res);
+      res.set('X-App-Cache', cachedResponse.cacheStatus);
     }
     return success(res, page, 'About page fetched successfully');
   } catch (err) {

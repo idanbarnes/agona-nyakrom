@@ -2,6 +2,7 @@ const asafoAdminService = require('../../services/admin/asafoAdminService');
 const mediaService = require('../../services/mediaService');
 const { generateSlug } = require('../../utils/slugify');
 const { success, error } = require('../../utils/response');
+const { invalidatePublicAsafo } = require('../../utils/publicCacheInvalidation');
 
 const processImageIfPresent = async (file, uniqueId) => {
   if (!file) return {};
@@ -65,6 +66,7 @@ const createAsafoEntry = async (req, res) => {
     const images = await processImageIfPresent(imageFile, payload.company_key || payload.entry_type || 'asafo');
 
     const created = await asafoAdminService.createEntry({ ...payload, images });
+    invalidatePublicAsafo(created);
     return success(res, created, 'Asafo entry created successfully', 201);
   } catch (err) {
     if (err.status) return error(res, err.message, err.status);
@@ -90,6 +92,7 @@ const updateAsafoEntry = async (req, res) => {
       ...payload,
       images: Object.keys(images).length ? images : undefined,
     });
+    invalidatePublicAsafo({ ...existing, ...updated });
 
     return success(res, updated, 'Asafo entry updated successfully');
   } catch (err) {
@@ -104,8 +107,11 @@ const updateAsafoEntry = async (req, res) => {
 
 const deleteAsafoEntry = async (req, res) => {
   try {
+    const existing = await asafoAdminService.getById(req.params.id);
+    if (!existing) return error(res, 'Asafo entry not found', 404);
     const deleted = await asafoAdminService.removeEntry(req.params.id);
     if (!deleted) return error(res, 'Asafo entry not found', 404);
+    invalidatePublicAsafo(existing);
     return success(res, { id: req.params.id }, 'Asafo entry deleted successfully');
   } catch (err) {
     if (err.status) return error(res, err.message, err.status);

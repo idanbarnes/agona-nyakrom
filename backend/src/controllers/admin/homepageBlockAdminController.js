@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const homepageBlockAdminService = require('../../services/admin/homepageBlockAdminService');
 const mediaService = require('../../services/mediaService');
 const { success, error } = require('../../utils/response');
+const { invalidatePublicHomepage } = require('../../utils/publicCacheInvalidation');
 
 const allowedBlockTypes = new Set([
   'editorial_feature',
@@ -720,6 +721,7 @@ const createHomepageBlock = async (req, res) => {
 
     const prepared = preparePublishState(payload, null);
     const created = await homepageBlockAdminService.create(prepared);
+    invalidatePublicHomepage();
     return success(res, created, 'Homepage block created successfully', 201);
   } catch (err) {
     console.error('Error creating homepage block:', err.message);
@@ -786,6 +788,7 @@ const updateHomepageBlock = async (req, res) => {
       nextBlock: updated,
       excludeBlockIds: [updated?.id],
     });
+    invalidatePublicHomepage();
     return success(res, updated, 'Homepage block updated successfully');
   } catch (err) {
     console.error('Error updating homepage block:', err.message);
@@ -821,6 +824,7 @@ const deleteHomepageBlock = async (req, res) => {
       nextBlock: null,
       excludeBlockIds: [id],
     });
+    invalidatePublicHomepage();
     return success(res, { id }, 'Homepage block deleted successfully');
   } catch (err) {
     console.error('Error deleting homepage block:', err.message);

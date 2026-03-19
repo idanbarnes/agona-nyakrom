@@ -2,6 +2,7 @@ const carouselAdminService = require('../../services/admin/carouselAdminService'
 const mediaService = require('../../services/mediaService');
 const { getPaginationParams } = require('../../utils/pagination');
 const { success, error } = require('../../utils/response');
+const { invalidatePublicCarousel } = require('../../utils/publicCacheInvalidation');
 
 const processImageIfPresent = async (file, uniqueId, crop) => {
   if (!file) return {};
@@ -87,6 +88,7 @@ const createCarouselSlide = async (req, res) => {
       images,
       crop,
     });
+    invalidatePublicCarousel();
 
     return success(res, created, 'Carousel slide created successfully', 201);
   } catch (err) {
@@ -161,6 +163,7 @@ const updateCarouselSlide = async (req, res) => {
       images,
       crop,
     });
+    invalidatePublicCarousel();
 
     return success(res, updated, 'Carousel slide updated successfully');
   } catch (err) {
@@ -182,6 +185,7 @@ const deleteCarouselSlide = async (req, res) => {
     }
 
     await carouselAdminService.delete(id);
+    invalidatePublicCarousel();
     return success(res, { id }, 'Carousel slide deleted successfully');
   } catch (err) {
     console.error('Error deleting carousel slide:', err.message);

@@ -3,6 +3,7 @@ const mediaService = require('../../services/mediaService');
 const { isValidSlugFormat } = require('../../utils/validators');
 const { generateSlug } = require('../../utils/slugify');
 const { success, error } = require('../../utils/response');
+const { invalidatePublicHallOfFame } = require('../../utils/publicCacheInvalidation');
 
 const parseBoolean = (value) => value === true || value === 'true';
 
@@ -94,6 +95,7 @@ const createHallOfFame = async (req, res) => {
       published: payload.published ?? false,
       is_featured: payload.is_featured ?? false,
     });
+    invalidatePublicHallOfFame(created);
 
     return success(res, created, 'Hall of fame entry created successfully', 201);
   } catch (err) {
@@ -137,6 +139,7 @@ const updateHallOfFame = async (req, res) => {
       slug,
       images: Object.keys(images).length > 0 ? images : undefined,
     });
+    invalidatePublicHallOfFame({ ...existing, ...updated });
 
     return success(res, updated, 'Hall of fame entry updated successfully');
   } catch (err) {
@@ -160,6 +163,7 @@ const deleteHallOfFame = async (req, res) => {
     }
 
     await hallOfFameAdminService.delete(id);
+    invalidatePublicHallOfFame(existing);
     return success(res, { id }, 'Hall of fame entry deleted successfully');
   } catch (err) {
     console.error('Error deleting hall of fame entry:', err.message);

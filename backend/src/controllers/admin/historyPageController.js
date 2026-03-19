@@ -2,6 +2,7 @@ const historyPageService = require('../../services/admin/historyPageService');
 const mediaService = require('../../services/mediaService');
 const { requireFields } = require('../../utils/validators');
 const { success, error } = require('../../utils/response');
+const { invalidatePublicHistoryPage } = require('../../utils/publicCacheInvalidation');
 
 const parseJsonField = (value, fieldName) => {
   if (value === undefined) return undefined;
@@ -86,6 +87,7 @@ const upsertHistoryPage = async (req, res) => {
         published,
         images,
       });
+      invalidatePublicHistoryPage();
       return success(res, created, 'History page created successfully', 201);
     }
 
@@ -104,6 +106,7 @@ const upsertHistoryPage = async (req, res) => {
       published,
       images,
     });
+    invalidatePublicHistoryPage();
 
     return success(res, updated, 'History page updated successfully');
   } catch (err) {

@@ -8,27 +8,12 @@ import {
   mobileMenuPanelInOut,
 } from '../motion/variants.js'
 import { preloadPublicRoute } from '../routes/routeLoaders.js'
-
-const navItems = [
-  { label: 'Home', to: '/' },
-  {
-    label: 'About Nyakrom',
-    children: [
-      { label: 'History', to: '/about/history' },
-      { label: 'Who We Are', to: '/about/who-we-are' },
-      { label: 'About Agona Nyakrom Town', to: '/about/about-agona-nyakrom-town' },
-      { label: 'Leadership & Governance', to: '/about/leadership-governance' },
-      { label: 'Landmarks', to: '/landmarks' },
-    ],
-  },
-  { label: 'Clans', to: '/clans' },
-  { label: 'Asafo Companies', to: '/asafo-companies' },
-  { label: 'Hall of Fame', to: '/hall-of-fame' },
-  { label: 'Obituaries', to: '/obituaries' },
-  { label: 'News', to: '/news' },
-  { label: 'Announcements & Events', to: '/announcements-events' },
-  { label: 'Contact Us', to: '/contact' },
-]
+import {
+  ABOUT_SECTION_LABEL,
+  DEFAULT_SITE_NAME,
+  PUBLIC_NAV_ITEMS,
+  PUBLIC_UI_LABELS,
+} from '../constants/publicChrome.js'
 
 // STEP 0 — DISCOVERY NOTES (kept in code per request)
 // - Current items/routes are defined in navItems above and remain unchanged (same labels, order, and paths).
@@ -121,7 +106,7 @@ function DesktopDropdown({ item, isOpen, onToggle, onClose, isActive, variants }
             className="absolute left-0 top-full z-50 mt-2 w-72 rounded-xl border border-white/10 bg-[#111827] p-2 shadow-lg shadow-black/20"
           >
             <li className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-wide text-white/50 uppercase">
-              About Nyakrom
+              {ABOUT_SECTION_LABEL}
             </li>
             {item.children.map((child) => (
               <li key={child.to} role="none">
@@ -204,8 +189,8 @@ function Navbar({ settings, loading }) {
   const firstMobileLinkRef = useRef(null)
   const desktopDropdownRef = useRef(null)
 
-  const siteName = settings?.site_name || settings?.siteName || 'Nyakrom Community'
-  const resolvedItems = useMemo(() => navItems, [])
+  const siteName = settings?.site_name || settings?.siteName || DEFAULT_SITE_NAME
+  const resolvedItems = useMemo(() => PUBLIC_NAV_ITEMS, [])
   const dropdownVariants = useMemo(
     () => dropdownInOut(Boolean(reduceMotion)),
     [reduceMotion],
@@ -364,7 +349,7 @@ function Navbar({ settings, loading }) {
           onClick={() => setIsMobileOpen((prev) => !prev)}
           // Keep toggle anchored to the right edge so viewport changes cannot push it off-canvas.
           className="absolute top-1/2 right-4 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg border border-[#374151] text-gray-100 transition-[background-color,transform] duration-200 ease-out hover:bg-white/10 active:scale-[0.98] motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111827] lg:hidden"
-          aria-label={isMobileOpen ? 'Close menu' : 'Open menu'}
+          aria-label={isMobileOpen ? PUBLIC_UI_LABELS.closeMenu : PUBLIC_UI_LABELS.openMenu}
           aria-expanded={isMobileOpen}
           aria-controls="mobile-navigation-dialog"
         >
@@ -386,7 +371,7 @@ function Navbar({ settings, loading }) {
                 type="button"
                 className="absolute inset-0 bg-black/40"
                 onClick={() => setIsMobileOpen(false)}
-                aria-label="Close menu overlay"
+                aria-label={PUBLIC_UI_LABELS.closeMenuOverlay}
                 variants={mobileBackdropVariants}
                 initial="hidden"
                 animate="show"
@@ -397,7 +382,7 @@ function Navbar({ settings, loading }) {
                 id="mobile-navigation-dialog"
                 role="dialog"
                 aria-modal="true"
-                aria-label="Mobile navigation menu"
+                aria-label={PUBLIC_UI_LABELS.mobileNavigationMenu}
                 ref={mobileDialogRef}
                 variants={mobileMenuPanelVariants}
                 initial="hidden"
@@ -449,7 +434,7 @@ function Navbar({ settings, loading }) {
                   </ul>
 
                   {loading ? (
-                    <p className="mt-3 px-3 text-xs text-gray-400">Loading site settings...</p>
+                    <p className="mt-3 px-3 text-xs text-gray-400">{PUBLIC_UI_LABELS.loadingSiteSettings}</p>
                   ) : null}
                 </div>
               </Motion.aside>

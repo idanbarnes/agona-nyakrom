@@ -1,5 +1,6 @@
 const globalSettingsService = require('../../services/admin/globalSettingsService');
 const { success, error } = require('../../utils/response');
+const { invalidatePublicGlobalSettings } = require('../../utils/publicCacheInvalidation');
 
 const parseJsonField = (value, fieldName) => {
   if (value === undefined) return undefined;
@@ -75,6 +76,7 @@ const updateGlobalSettings = async (req, res) => {
       footer_text,
       published,
     });
+    invalidatePublicGlobalSettings();
 
     return success(res, updated, 'Global settings updated successfully');
   } catch (err) {

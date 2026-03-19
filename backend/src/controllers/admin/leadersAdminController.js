@@ -1,6 +1,7 @@
 const leaderService = require('../../services/leaderService');
 const mediaService = require('../../services/mediaService');
 const { success, error } = require('../../utils/response');
+const { invalidatePublicLeaders } = require('../../utils/publicCacheInvalidation');
 
 const buildSlug = (value = '') =>
   String(value)
@@ -73,6 +74,7 @@ const createLeader = async (req, res) => {
     }
 
     const created = await leaderService.createLeader(payload);
+    invalidatePublicLeaders(created);
     return success(res, created, 'Leader created successfully', 201);
   } catch (err) {
     if (err.status === 400) return error(res, err.message, 400);
@@ -126,6 +128,7 @@ const updateLeader = async (req, res) => {
     if (!updated) {
       return error(res, 'Leader not found', 404);
     }
+    invalidatePublicLeaders(updated);
     return success(res, updated, 'Leader updated successfully');
   } catch (err) {
     if (err.status === 400) return error(res, err.message, 400);
@@ -160,6 +163,7 @@ const toggleLeaderPublish = async (req, res) => {
       return error(res, 'Leader not found', 404);
     }
 
+    invalidatePublicLeaders(updated);
     return success(res, updated, 'Leader publish status updated successfully');
   } catch (err) {
     if (err.status === 400) return error(res, err.message, 400);
@@ -183,6 +187,7 @@ const setLeaderDisplayOrder = async (req, res) => {
       return error(res, 'Leader not found', 404);
     }
 
+    invalidatePublicLeaders(updated);
     return success(res, updated, 'Leader display order updated successfully');
   } catch (err) {
     if (err.status === 400) return error(res, err.message, 400);
@@ -193,10 +198,15 @@ const setLeaderDisplayOrder = async (req, res) => {
 
 const deleteLeader = async (req, res) => {
   try {
+    const existing = await leaderService.getById(req.params.id);
+    if (!existing) {
+      return error(res, 'Leader not found', 404);
+    }
     const removed = await leaderService.deleteLeader(req.params.id);
     if (!removed) {
       return error(res, 'Leader not found', 404);
     }
+    invalidatePublicLeaders(existing);
     return success(res, null, 'Leader deleted successfully');
   } catch (err) {
     console.error('Error deleting leader:', err.message);

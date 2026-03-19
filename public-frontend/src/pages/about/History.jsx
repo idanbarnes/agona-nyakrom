@@ -2,6 +2,16 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getHistory } from '../../api/endpoints.js'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import {
+  EmptyState,
+  ErrorState,
+  RichContentPageSkeleton,
+} from '../../components/ui/index.jsx'
+import {
+  ABOUT_PAGE_TITLES,
+  ABOUT_SECTION_LABEL,
+  PUBLIC_UI_LABELS,
+} from '../../constants/publicChrome.js'
 
 // Consider several flags that backends use for publish state.
 function isUnpublished(history) {
@@ -99,46 +109,56 @@ function History() {
     'text-2xl font-semibold text-foreground break-words md:text-3xl'
 
   if (loading) {
-    return (
-      <section className={sectionClassName}>
-        <h1 className={titleClassName}>History</h1>
-        <p className="text-sm text-muted-foreground">Loading history...</p>
-      </section>
-    )
+    return <RichContentPageSkeleton sectionLabel={ABOUT_SECTION_LABEL} />
   }
 
   if (error) {
     if (error?.status === 404) {
       return (
-        <section className={sectionClassName}>
-          <h1 className={titleClassName}>History</h1>
-          <p className="text-sm text-muted-foreground">
-            History content not available yet.
-          </p>
+        <section className="bg-background py-10 sm:py-12 lg:py-16">
+          <div className="container max-w-5xl space-y-8">
+            <header className="space-y-3 border-b border-border pb-6 sm:pb-8">
+              <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary/80">{ABOUT_SECTION_LABEL}</p>
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">{ABOUT_PAGE_TITLES.history}</h1>
+            </header>
+            <EmptyState
+              title="History content not available"
+              description={PUBLIC_UI_LABELS.contentNotAvailableDescription}
+            />
+          </div>
         </section>
       )
     }
 
     return (
-      <section className={sectionClassName}>
-        <h1 className={titleClassName}>History</h1>
-        <p className="text-sm text-muted-foreground">
-          Unable to load history content.
-        </p>
-        <pre className="text-sm text-muted-foreground">
-          {error?.message || String(error)}
-        </pre>
+      <section className="bg-background py-10 sm:py-12 lg:py-16">
+        <div className="container max-w-5xl space-y-8">
+          <header className="space-y-3 border-b border-border pb-6 sm:pb-8">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary/80">{ABOUT_SECTION_LABEL}</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">{ABOUT_PAGE_TITLES.history}</h1>
+          </header>
+          <ErrorState
+            title="Unable to load history content"
+            message={error?.message || PUBLIC_UI_LABELS.unableToLoadContentMessage}
+          />
+        </div>
       </section>
     )
   }
 
   if (!history || isUnpublished(history)) {
     return (
-      <section className={sectionClassName}>
-        <h1 className={titleClassName}>History</h1>
-        <p className="text-sm text-muted-foreground">
-          History content not available yet.
-        </p>
+      <section className="bg-background py-10 sm:py-12 lg:py-16">
+        <div className="container max-w-5xl space-y-8">
+          <header className="space-y-3 border-b border-border pb-6 sm:pb-8">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary/80">{ABOUT_SECTION_LABEL}</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">{ABOUT_PAGE_TITLES.history}</h1>
+          </header>
+          <EmptyState
+            title="History content not available"
+            description={PUBLIC_UI_LABELS.contentNotAvailableDescription}
+          />
+        </div>
       </section>
     )
   }

@@ -2,6 +2,7 @@ const homepageSectionAdminService = require('../../services/admin/homepageSectio
 const mediaService = require('../../services/mediaService');
 const { requireFields, isValidSlugFormat } = require('../../utils/validators');
 const { success, error } = require('../../utils/response');
+const { invalidatePublicHomepage } = require('../../utils/publicCacheInvalidation');
 
 const processImageIfPresent = async (file, uniqueId) => {
   if (!file) return {};
@@ -53,6 +54,7 @@ const createHomepageSection = async (req, res) => {
       published,
       images,
     });
+    invalidatePublicHomepage();
 
     return success(res, created, 'Homepage section created successfully', 201);
   } catch (err) {
@@ -101,6 +103,7 @@ const updateHomepageSection = async (req, res) => {
       published,
       images,
     });
+    invalidatePublicHomepage();
 
     return success(res, updated, 'Homepage section updated successfully');
   } catch (err) {
@@ -125,6 +128,7 @@ const deleteHomepageSection = async (req, res) => {
     }
 
     await homepageSectionAdminService.delete(id);
+    invalidatePublicHomepage();
     return success(res, { id }, 'Homepage section deleted successfully');
   } catch (err) {
     console.error('Error deleting homepage section:', err.message);
