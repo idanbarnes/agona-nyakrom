@@ -1,14 +1,17 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   createHallOfFame,
   uploadHallOfFameInlineImage,
 } from '../../services/api/adminHallOfFameApi.js'
 import { getAuthToken } from '../../lib/auth.js'
+import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 import HallOfFameForm from './HallOfFameForm.jsx'
 
 function AdminHallOfFameCreatePage() {
+  const location = useLocation()
   const navigate = useNavigate()
+  const cancelTarget = resolveAdminCancelTarget(location.pathname)
   const [formState, setFormState] = useState({
     name: '',
     title: '',
@@ -79,7 +82,7 @@ function AdminHallOfFameCreatePage() {
       submitAction={submitAction}
       errorMessage={errorMessage}
       onChange={handleChange}
-      onCancel={() => navigate('/admin/hall-of-fame')}
+      onCancel={() => navigate(cancelTarget)}
       onSubmitAction={handleSubmit}
       onUploadImage={handleUploadBodyImage}
     />

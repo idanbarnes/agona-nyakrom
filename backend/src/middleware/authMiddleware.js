@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { pool } = require('../config/db');
+const { isTransientDatabaseError, pool } = require('../config/db');
 const { error } = require('../utils/response');
 const { getJwtSecret } = require('../config/env');
 
@@ -48,6 +48,9 @@ const requireAdminAuth = async (req, res, next) => {
     return next();
   } catch (err) {
     console.error('Auth middleware error:', err.message);
+    if (isTransientDatabaseError(err)) {
+      return error(res, 'Authentication service temporarily unavailable', 503);
+    }
     return error(res, 'Authentication failed', 401);
   }
 };

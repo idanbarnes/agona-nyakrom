@@ -6,6 +6,7 @@ import {
 } from '../../services/api/adminObituariesApi.js'
 import { getAuthToken } from '../../lib/auth.js'
 import { useDraftAutosave } from '../../hooks/useDraftAutosave.js'
+import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
 import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
@@ -103,6 +104,7 @@ function AdminObituariesEditPage() {
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
+  const cancelTarget = resolveAdminCancelTarget(location.pathname)
   const previewUrlRef = useRef({ deceased: null, poster: null })
   const draftAppliedRef = useRef(false)
   const [initialState, setInitialState] = useState(null)
@@ -659,7 +661,7 @@ function AdminObituariesEditPage() {
 
         <FormActions
           mode="publish"
-          onCancel={() => navigate('/admin/obituaries')}
+          onCancel={() => navigate(cancelTarget)}
           onAction={(action) => {
             void handleSubmit(action)
           }}

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
 import FormActions from '../../components/ui/form-actions.jsx'
 import { getAuthToken } from '../../lib/auth.js'
+import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 import {
   createAsafoCompany,
   getAllAsafoCompanies,
@@ -79,8 +80,10 @@ const buildPayload = (state, section) => ({
 
 export default function AdminAsafoCompaniesSectionPage() {
   const { sectionId } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const section = SECTION_CONFIG[sectionId]
+  const cancelTarget = resolveAdminCancelTarget(location.pathname)
   const [entryId, setEntryId] = useState(null)
   const [state, setState] = useState(EMPTY_EDITOR_STATE)
   const [error, setError] = useState('')
@@ -230,7 +233,7 @@ export default function AdminAsafoCompaniesSectionPage() {
         />
         <FormActions
           mode="publish"
-          onCancel={() => navigate('/admin/asafo-companies')}
+          onCancel={() => navigate(cancelTarget)}
           onAction={(action) => {
             void handleSubmit(action)
           }}

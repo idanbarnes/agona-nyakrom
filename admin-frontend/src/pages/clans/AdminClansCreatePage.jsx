@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   createClan,
   createClanLeader,
@@ -18,6 +18,7 @@ import {
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
 import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 import FormActions from '../../components/ui/form-actions.jsx'
+import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 import ClanLeadersManager from './components/ClanLeadersManager.jsx'
 import {
   createClanLeaderDraft,
@@ -40,7 +41,9 @@ function buildLeaderFormData(leader) {
 }
 
 function AdminClansCreatePage() {
+  const location = useLocation()
   const navigate = useNavigate()
+  const cancelTarget = resolveAdminCancelTarget(location.pathname)
   const [formState, setFormState] = useState({
     name: '',
     caption: '',
@@ -278,7 +281,7 @@ function AdminClansCreatePage() {
           <CardFooter>
             <FormActions
               mode="publish"
-              onCancel={() => navigate('/admin/clans')}
+              onCancel={() => navigate(cancelTarget)}
               onAction={(action) => {
                 void handleSubmit(action)
               }}

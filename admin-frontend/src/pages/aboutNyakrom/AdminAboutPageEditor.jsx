@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { getAuthToken } from '../../lib/auth.js'
 import {
   getAboutPage,
@@ -8,6 +8,8 @@ import {
 } from '../../services/api/adminAboutNyakromApi.js'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
 import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
+import FormActions from '../../components/ui/form-actions.jsx'
+import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 
 const labels = {
   history: 'History',
@@ -27,10 +29,13 @@ const initialState = {
 
 export default function AdminAboutPageEditor() {
   const { slug } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const [state, setState] = useState(initialState)
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
+  const [submitAction, setSubmitAction] = useState('publish')
+  const cancelTarget = resolveAdminCancelTarget(location.pathname)
 
   useEffect(() => {
     if (!getAuthToken()) return navigate('/login', { replace: true })
@@ -61,15 +66,21 @@ export default function AdminAboutPageEditor() {
     }
     event.target.value = ''
   }
-  const onSubmit = async (e) => {
-    e.preventDefault()
+  const onSubmit = async (action = 'publish') => {
     setSaving(true)
     setMessage('')
+    setSubmitAction(action)
     try {
-      await saveAboutPage(slug, state)
-      setMessage('Saved successfully')
+      const nextState = { ...state, published: action === 'publish' }
+      await saveAboutPage(slug, nextState)
+      setState((current) => ({ ...current, published: nextState.published }))
+      setMessage(
+        nextState.published
+          ? 'Page published successfully.'
+          : 'Page saved as draft successfully.'
+      )
     } catch (err) {
-      setMessage(err.message)
+      setMessage(err.message || 'Unable to save page.')
     } finally {
       setSaving(false)
     }
@@ -79,7 +90,13 @@ export default function AdminAboutPageEditor() {
     <section className="space-y-4">
       <h2 className="text-xl font-semibold">About Nyakrom: {labels[slug] || slug}</h2>
       {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
-      <form onSubmit={onSubmit} className="space-y-3">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          void onSubmit('publish')
+        }}
+        className="space-y-3"
+      >
         <input name="page_title" placeholder="Page Title" value={state.page_title || ''} onChange={onChange} className="w-full rounded border px-3 py-2" />
         <input name="subtitle" placeholder="Subtitle (optional)" value={state.subtitle || ''} onChange={onChange} className="w-full rounded border px-3 py-2" />
 
@@ -90,7 +107,6 @@ export default function AdminAboutPageEditor() {
           onUploadImage={uploadBodyImage}
         />
 
-        <label className="flex items-center gap-2"><input type="checkbox" name="published" checked={Boolean(state.published)} onChange={onChange} />Published</label>
         <input name="seo_meta_title" placeholder="SEO Meta Title (optional)" value={state.seo_meta_title || ''} onChange={onChange} className="w-full rounded border px-3 py-2" />
         <textarea name="seo_meta_description" placeholder="SEO Meta Description (optional)" value={state.seo_meta_description || ''} onChange={onChange} className="w-full rounded border px-3 py-2" />
         <div className="rounded-xl border border-border bg-background/60">
@@ -108,7 +124,15 @@ export default function AdminAboutPageEditor() {
             existingAssetUrl={state.seo_share_image || ''}
           />
         </div>
-        <button className="rounded bg-black px-4 py-2 text-white" disabled={saving} type="submit">{saving ? 'Saving...' : 'Save'}</button>
+        <FormActions
+          mode="publish"
+          onCancel={() => navigate(cancelTarget)}
+          onAction={(action) => {
+            void onSubmit(action)
+          }}
+          isSubmitting={saving}
+          submitAction={submitAction}
+        />
       </form>
     </section>
   )

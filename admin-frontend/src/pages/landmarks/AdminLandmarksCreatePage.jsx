@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { createLandmark } from '../../services/api/adminLandmarksApi.js'
 import { getAuthToken } from '../../lib/auth.js'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
 import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 import FormActions from '../../components/ui/form-actions.jsx'
+import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 import {
   Card,
   CardContent,
@@ -15,7 +16,9 @@ import {
 } from '../../components/ui/index.jsx'
 
 function AdminLandmarksCreatePage() {
+  const location = useLocation()
   const navigate = useNavigate()
+  const cancelTarget = resolveAdminCancelTarget(location.pathname)
   const [formState, setFormState] = useState({
     name: '',
     description: '',
@@ -129,7 +132,7 @@ function AdminLandmarksCreatePage() {
           <CardFooter>
             <FormActions
               mode="publish"
-              onCancel={() => navigate('/admin/landmarks')}
+              onCancel={() => navigate(cancelTarget)}
               onAction={(action) => {
                 void handleSubmit(action)
               }}

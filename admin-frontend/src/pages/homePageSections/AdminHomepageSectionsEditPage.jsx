@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   getSingleBlock,
   updateBlock,
 } from '../../services/api/adminHomepageBlocksApi.js'
 import { getAuthToken } from '../../lib/auth.js'
 import FormActions from '../../components/ui/form-actions.jsx'
+import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 import {
   Card,
   CardContent,
@@ -115,7 +116,9 @@ function areValuesEqual(leftValue, rightValue) {
 
 function AdminHomepageSectionsEditPage() {
   const { id } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
+  const cancelTarget = resolveAdminCancelTarget(location.pathname)
   const [initialState, setInitialState] = useState(null)
   const [formState, setFormState] = useState({
     block_type: '',
@@ -1187,7 +1190,7 @@ function AdminHomepageSectionsEditPage() {
           <CardFooter>
             <FormActions
               mode="publish"
-              onCancel={() => navigate('/admin/homepage-sections')}
+              onCancel={() => navigate(cancelTarget)}
               onAction={(action) => {
                 void handleSubmit(action)
               }}

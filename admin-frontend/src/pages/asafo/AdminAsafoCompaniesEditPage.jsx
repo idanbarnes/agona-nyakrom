@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
 import FormActions from '../../components/ui/form-actions.jsx'
+import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 import { getSingleAsafoCompany, updateAsafoCompany, uploadAsafoInlineImage } from '../../services/api/adminAsafoApi.js'
 
 const SECTION_LABELS = {
@@ -46,7 +47,9 @@ const getSectionLabel = (state) => {
 
 export default function AdminAsafoCompaniesEditPage() {
   const { id } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
+  const cancelTarget = resolveAdminCancelTarget(location.pathname)
   const [state, setState] = useState(null)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -119,7 +122,7 @@ export default function AdminAsafoCompaniesEditPage() {
       <input className="w-32 rounded border px-3 py-2" type="number" value={state.display_order ?? 0} onChange={(e) => setState((s) => ({ ...s, display_order: Number(e.target.value || 0) }))} />
       <FormActions
         mode="publish"
-        onCancel={() => navigate('/admin/asafo-companies')}
+        onCancel={() => navigate(cancelTarget)}
         onAction={(action) => {
           void handleSubmit(action)
         }}

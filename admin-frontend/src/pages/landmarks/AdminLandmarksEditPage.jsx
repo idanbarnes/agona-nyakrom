@@ -9,6 +9,7 @@ import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor
 import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
 import FormActions from '../../components/ui/form-actions.jsx'
+import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 import {
   Card,
   CardContent,
@@ -22,6 +23,7 @@ function AdminLandmarksEditPage() {
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
+  const cancelTarget = resolveAdminCancelTarget(location.pathname)
   const [initialState, setInitialState] = useState(null)
   const [formState, setFormState] = useState({
     name: '',
@@ -211,7 +213,7 @@ function AdminLandmarksEditPage() {
           <CardFooter>
             <FormActions
               mode="publish"
-              onCancel={() => navigate('/admin/landmarks')}
+              onCancel={() => navigate(cancelTarget)}
               onAction={(action) => {
                 void handleSubmit(action)
               }}

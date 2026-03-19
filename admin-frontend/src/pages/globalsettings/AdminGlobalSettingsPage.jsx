@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import FormActions from '../../components/ui/form-actions.jsx'
+import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 import {
   Badge,
   Button,
@@ -241,7 +242,9 @@ function sanitizeNavigationLinks(links) {
 }
 
 function AdminGlobalSettingsPage() {
+  const location = useLocation()
   const navigate = useNavigate()
+  const cancelTarget = resolveAdminCancelTarget(location.pathname)
   const [formState, setFormState] = useState(EMPTY_FORM_STATE)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -250,7 +253,7 @@ function AdminGlobalSettingsPage() {
   const [successMessage, setSuccessMessage] = useState('')
 
   const handleCancel = () => {
-    navigate('/dashboard')
+    navigate(cancelTarget)
     window.setTimeout(() => {
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     }, 0)

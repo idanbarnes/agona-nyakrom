@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import FormActions from '../../components/ui/form-actions.jsx'
+import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 import {
   Button,
   Card,
@@ -68,7 +69,9 @@ function moveItem(items, index, direction) {
 }
 
 function AdminContactInfoPage() {
+  const location = useLocation()
   const navigate = useNavigate()
+  const cancelTarget = resolveAdminCancelTarget(location.pathname)
   const [formState, setFormState] = useState(initialState)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -76,7 +79,7 @@ function AdminContactInfoPage() {
   const [successMessage, setSuccessMessage] = useState('')
 
   const handleCancel = () => {
-    navigate('/dashboard')
+    navigate(cancelTarget)
     window.setTimeout(() => {
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     }, 0)

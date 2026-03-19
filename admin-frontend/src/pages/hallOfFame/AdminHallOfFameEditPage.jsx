@@ -6,6 +6,7 @@ import {
   uploadHallOfFameInlineImage,
 } from '../../services/api/adminHallOfFameApi.js'
 import { getAuthToken } from '../../lib/auth.js'
+import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 import HallOfFameForm from './HallOfFameForm.jsx'
 import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
 
@@ -13,6 +14,7 @@ function AdminHallOfFameEditPage() {
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
+  const cancelTarget = resolveAdminCancelTarget(location.pathname)
   const [initialState, setInitialState] = useState(null)
   const [formState, setFormState] = useState({
     id: '',
@@ -166,7 +168,7 @@ function AdminHallOfFameEditPage() {
       errorMessage={errorMessage}
       disableDraft={!hasChanges}
       onChange={handleChange}
-      onCancel={() => navigate('/admin/hall-of-fame')}
+      onCancel={() => navigate(cancelTarget)}
       onSubmitAction={handleSubmit}
       onUploadImage={handleUploadBodyImage}
     />

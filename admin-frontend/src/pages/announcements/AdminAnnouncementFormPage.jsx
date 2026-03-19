@@ -7,6 +7,7 @@ import {
 } from '../../services/api/adminAnnouncementsApi.js'
 import { getAuthToken } from '../../lib/auth.js'
 import { buildApiUrl } from '../../lib/apiClient.js'
+import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
 import FormActions from '../../components/ui/form-actions.jsx'
@@ -38,6 +39,7 @@ function AdminAnnouncementFormPage({ mode = 'create' }) {
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
+  const cancelTarget = resolveAdminCancelTarget(location.pathname)
   const [initialState, setInitialState] = useState(null)
   const [formState, setFormState] = useState({
     title: '',
@@ -341,7 +343,7 @@ function AdminAnnouncementFormPage({ mode = 'create' }) {
           <CardFooter>
             <FormActions
               mode="publish"
-              onCancel={() => navigate('/admin/announcements')}
+              onCancel={() => navigate(cancelTarget)}
               onAction={(action) => {
                 void handleSubmit(action)
               }}

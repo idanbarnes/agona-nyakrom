@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { getEvent, createEvent, updateEvent } from '../../services/api/adminEventsApi.js'
 import { getAuthToken } from '../../lib/auth.js'
 import { buildApiUrl } from '../../lib/apiClient.js'
+import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 import SearchableSelect from '../../components/SearchableSelect.jsx'
 import { eventTags } from '../../constants/eventTags.js'
 import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
@@ -71,6 +72,7 @@ function AdminEventFormPage({ mode = 'create' }) {
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
+  const cancelTarget = resolveAdminCancelTarget(location.pathname)
   const [initialState, setInitialState] = useState(null)
   const [formState, setFormState] = useState({
     title: '',
@@ -459,7 +461,7 @@ function AdminEventFormPage({ mode = 'create' }) {
           <CardFooter>
             <FormActions
               mode="publish"
-              onCancel={() => navigate('/admin/events')}
+              onCancel={() => navigate(cancelTarget)}
               onAction={(action) => {
                 void handleSubmit(action)
               }}

@@ -1,4 +1,5 @@
 const aboutPageService = require('../../services/aboutPageService');
+const { isTransientDatabaseError } = require('../../config/db');
 const { success, error } = require('../../utils/response');
 const { resolvePreviewAccess } = require('../../utils/previewAccess');
 
@@ -22,6 +23,9 @@ const getPublicAboutPage = async (req, res) => {
       return error(res, err.message, 400);
     }
     console.error('Error fetching public about page:', err.message);
+    if (isTransientDatabaseError(err)) {
+      return error(res, 'About page is temporarily unavailable', 503);
+    }
     return error(res, 'Failed to fetch about page', 500);
   }
 };

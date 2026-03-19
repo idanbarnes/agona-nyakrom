@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import Cropper from 'react-easy-crop'
 import { createSlide } from '../../services/api/adminCarouselApi.js'
 import { getAuthToken } from '../../lib/auth.js'
 import { getCroppedImageDataUrl } from '../../lib/cropImage.js'
+import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 import FormActions from '../../components/ui/form-actions.jsx'
 import {
@@ -19,7 +20,9 @@ import {
 } from '../../components/ui/index.jsx'
 
 function AdminCarouselCreatePage() {
+  const location = useLocation()
   const navigate = useNavigate()
+  const cancelTarget = resolveAdminCancelTarget(location.pathname)
   const [formState, setFormState] = useState({
     title: '',
     subtitle: '',
@@ -280,7 +283,7 @@ function AdminCarouselCreatePage() {
           <CardFooter>
             <FormActions
               mode="publish"
-              onCancel={() => navigate('/admin/carousel')}
+              onCancel={() => navigate(cancelTarget)}
               onAction={(nextAction) => {
                 void handleSubmit(nextAction)
               }}

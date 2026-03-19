@@ -21,6 +21,7 @@ import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor
 import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
 import FormActions from '../../components/ui/form-actions.jsx'
+import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 import ClanLeadersManager from './components/ClanLeadersManager.jsx'
 import {
   buildClanLeaderReorderPayload,
@@ -47,6 +48,7 @@ function AdminClansEditPage() {
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
+  const cancelTarget = resolveAdminCancelTarget(location.pathname)
   const [initialState, setInitialState] = useState(null)
   const [formState, setFormState] = useState({
     name: '',
@@ -344,7 +346,7 @@ function AdminClansEditPage() {
           <CardFooter>
             <FormActions
               mode="publish"
-              onCancel={() => navigate('/admin/clans')}
+              onCancel={() => navigate(cancelTarget)}
               onAction={(action) => {
                 void handleSubmit(action)
               }}

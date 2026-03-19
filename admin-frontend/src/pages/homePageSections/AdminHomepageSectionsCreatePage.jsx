@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { createBlock } from '../../services/api/adminHomepageBlocksApi.js'
 import { getAuthToken } from '../../lib/auth.js'
 import FormActions from '../../components/ui/form-actions.jsx'
+import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 import {
   Card,
   CardContent,
@@ -78,7 +79,9 @@ const CONTAINER_WIDTHS = [
 ]
 
 function AdminHomepageSectionsCreatePage() {
+  const location = useLocation()
   const navigate = useNavigate()
+  const cancelTarget = resolveAdminCancelTarget(location.pathname)
   const [formState, setFormState] = useState({
     block_type: '',
     title: '',
@@ -1036,7 +1039,7 @@ function AdminHomepageSectionsCreatePage() {
           <CardFooter>
             <FormActions
               mode="publish"
-              onCancel={() => navigate('/admin/homepage-sections')}
+              onCancel={() => navigate(cancelTarget)}
               onAction={(action) => {
                 void handleSubmit(action)
               }}

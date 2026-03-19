@@ -7,6 +7,7 @@ import {
 } from '../../services/api/adminCarouselApi.js'
 import { getAuthToken } from '../../lib/auth.js'
 import { getCroppedImageDataUrl } from '../../lib/cropImage.js'
+import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
 import FormActions from '../../components/ui/form-actions.jsx'
@@ -26,6 +27,7 @@ function AdminCarouselEditPage() {
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
+  const cancelTarget = resolveAdminCancelTarget(location.pathname)
   const [initialState, setInitialState] = useState(null)
   const [formState, setFormState] = useState({
     title: '',
@@ -384,7 +386,7 @@ function AdminCarouselEditPage() {
           <CardFooter>
             <FormActions
               mode="publish"
-              onCancel={() => navigate('/admin/carousel')}
+              onCancel={() => navigate(cancelTarget)}
               onAction={(nextAction) => {
                 void handleSubmit(nextAction)
               }}
