@@ -34,14 +34,19 @@ const setMeta = (selector, value, attr = 'content') => {
 export default function AboutRichPage() {
   const { slug } = useParams()
   const [page, setPage] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     let cancelled = false
+    setLoading(true)
+    setError(null)
 
     if (!titles[slug]) {
       Promise.resolve().then(() => {
         if (!cancelled) {
           setPage(null)
+          setLoading(false)
         }
       })
       return () => {
@@ -53,11 +58,14 @@ export default function AboutRichPage() {
       .then((res) => {
         if (!cancelled) {
           setPage(res.data || res)
+          setLoading(false)
         }
       })
-      .catch(() => {
+      .catch((fetchError) => {
         if (!cancelled) {
           setPage(null)
+          setError(fetchError)
+          setLoading(false)
         }
       })
 
@@ -87,11 +95,29 @@ export default function AboutRichPage() {
     setMeta('meta[name="twitter:image"]', shareImage)
   }, [page, pageTitle])
 
-  if (!page) {
+  if (loading) {
+    return (
+      <section className="container py-10 sm:py-12 lg:py-16">
+        <h1 className="text-3xl font-semibold md:text-4xl">{pageTitle}</h1>
+        <p className="mt-3 text-muted-foreground">Loading content...</p>
+      </section>
+    )
+  }
+
+  if (error?.status === 404 || !page) {
     return (
       <section className="container py-10 sm:py-12 lg:py-16">
         <h1 className="text-3xl font-semibold md:text-4xl">{pageTitle}</h1>
         <p className="mt-3 text-muted-foreground">Content not available.</p>
+      </section>
+    )
+  }
+
+  if (error) {
+    return (
+      <section className="container py-10 sm:py-12 lg:py-16">
+        <h1 className="text-3xl font-semibold md:text-4xl">{pageTitle}</h1>
+        <p className="mt-3 text-muted-foreground">Unable to load content.</p>
       </section>
     )
   }
