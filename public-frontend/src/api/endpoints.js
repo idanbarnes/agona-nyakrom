@@ -1,6 +1,9 @@
 import { request } from './http.js'
 import { appendPreviewToken } from '../lib/preview.js'
 
+const LONG_LIVED_PUBLIC_CACHE_TTL_MS = 5 * 60 * 1000
+const STANDARD_PUBLIC_CACHE_TTL_MS = 60 * 1000
+
 // Build a query string for pagination when values are provided.
 function withPagination(path, { page, limit } = {}) {
   const params = new URLSearchParams()
@@ -17,14 +20,25 @@ function withPagination(path, { page, limit } = {}) {
   return query ? `${path}?${query}` : path
 }
 
+function requestSharedPublicData(path, cacheTtlMs = STANDARD_PUBLIC_CACHE_TTL_MS) {
+  return request(path, {
+    useSharedCache: true,
+    cacheTtlMs,
+  })
+}
+
 // Public content endpoints.
 export const getGlobalSettings = () =>
-  request('/api/public/global-settings')
-export const getContactInfo = () => request('/api/public/contact')
-export const getContactFaqs = () => request('/api/public/faqs')
-export const getContactSections = () => request('/api/public/contact/sections')
+  requestSharedPublicData(
+    '/api/public/global-settings',
+    LONG_LIVED_PUBLIC_CACHE_TTL_MS,
+  )
+export const getContactInfo = () => requestSharedPublicData('/api/public/contact')
+export const getContactFaqs = () => requestSharedPublicData('/api/public/faqs')
+export const getContactSections = () =>
+  requestSharedPublicData('/api/public/contact/sections')
 
-export const getHomepage = () => request('/api/public/homepage')
+export const getHomepage = () => requestSharedPublicData('/api/public/homepage')
 
 // News endpoints.
 export const getNews = (pagination) =>
@@ -56,13 +70,14 @@ export const getClanDetail = (slug) =>
 
 // Asafo entries endpoints.
 export const getAsafoCompanies = () =>
-  request('/api/public/asafo')
+  requestSharedPublicData('/api/public/asafo')
 
 export const getAsafoDetail = (slug) =>
   request(appendPreviewToken(`/api/public/asafo/${slug}`))
 
 // Hall of Fame endpoints.
-export const getHallOfFame = () => request('/api/public/hall-of-fame')
+export const getHallOfFame = () =>
+  requestSharedPublicData('/api/public/hall-of-fame')
 
 export const getHallOfFameDetail = (slug) =>
   request(appendPreviewToken(`/api/public/hall-of-fame/${slug}`))
@@ -75,13 +90,14 @@ export const getLandmarkDetail = (slug) =>
   request(appendPreviewToken(`/api/public/landmarks/${slug}`))
 
 // Carousel endpoints.
-export const getCarousel = () => request(appendPreviewToken('/api/public/carousel'))
+export const getCarousel = () =>
+  requestSharedPublicData(appendPreviewToken('/api/public/carousel'))
 
 // History endpoints.
-export const getHistory = () => request('/api/public/history')
+export const getHistory = () => requestSharedPublicData('/api/public/history')
 export const getAboutPageBySlug = (slug) =>
-  request(appendPreviewToken(`/api/public/about/${slug}`))
-export const getPublicLeaders = () => request('/api/public/leaders')
+  requestSharedPublicData(appendPreviewToken(`/api/public/about/${slug}`))
+export const getPublicLeaders = () => requestSharedPublicData('/api/public/leaders')
 export const getPublicLeaderBySlug = (slug) =>
   request(appendPreviewToken(`/api/public/leaders/${slug}`))
 

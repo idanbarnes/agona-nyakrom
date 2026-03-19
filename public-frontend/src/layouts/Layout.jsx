@@ -76,6 +76,10 @@ import { Outlet, useLocation } from 'react-router-dom'
 import Navbar from '../layout/Navbar.jsx'
 import Footer from '../layout/Footer.jsx'
 import { getGlobalSettings } from '../api/endpoints.js'
+import {
+  getCachedPublicSettings,
+  setCachedPublicSettings,
+} from '../lib/publicSettingsCache.js'
 import { PublicSettingsContext } from './publicSettingsContext.js'
 
 function Layout() {
@@ -86,9 +90,23 @@ function Layout() {
 
   useEffect(() => {
     let isMounted = true
+    const { settings: cachedSettings, isFresh } = getCachedPublicSettings()
+
+    if (cachedSettings) {
+      setSettings(cachedSettings)
+      setLoading(false)
+    }
+
+    if (cachedSettings && isFresh) {
+      return () => {
+        isMounted = false
+      }
+    }
 
     const loadSettings = async () => {
-      setLoading(true)
+      if (!cachedSettings) {
+        setLoading(true)
+      }
       setError(null)
 
       try {
@@ -97,7 +115,9 @@ function Layout() {
           return
         }
 
-        setSettings(response?.data || response)
+        const resolvedSettings = response?.data || response
+        setSettings(resolvedSettings)
+        setCachedPublicSettings(resolvedSettings)
       } catch (err) {
         if (isMounted) {
           setError(err)
