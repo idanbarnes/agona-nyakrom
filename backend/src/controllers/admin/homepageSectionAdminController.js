@@ -62,6 +62,9 @@ const createHomepageSection = async (req, res) => {
     if (err.code === '23505') {
       return error(res, 'section_key already exists. Please choose a different key.', 400);
     }
+    if (err.message.startsWith('Hosted ')) {
+      return error(res, err.message, 500);
+    }
     return error(res, 'Failed to create homepage section', 500);
   }
 };
@@ -113,6 +116,9 @@ const updateHomepageSection = async (req, res) => {
     }
     if (err.message === 'No fields provided to update.') {
       return error(res, err.message, 400);
+    }
+    if (err.message.startsWith('Hosted ')) {
+      return error(res, err.message, 500);
     }
     return error(res, 'Failed to update homepage section', 500);
   }

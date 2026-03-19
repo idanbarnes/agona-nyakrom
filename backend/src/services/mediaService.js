@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const sharp = require('sharp');
 const { uploadsRoot } = require('../config/storage');
+const { allowHostedLocalUploads, getMediaStorageMode, isHostedRuntime } = require('../config/env');
 const {
   buildCloudinaryFolder,
   deleteCloudinaryImage,
@@ -42,6 +43,20 @@ const carouselVariants = [
   { key: 'mobile', width: 768, height: 320 },
 ];
 const managedVariantKeys = variants.map((variant) => variant.key);
+
+const assertPersistentImageStorage = (section) => {
+  if (!isHostedRuntime() || allowHostedLocalUploads()) {
+    return;
+  }
+
+  if (getMediaStorageMode() === 'cloudinary') {
+    return;
+  }
+
+  throw new Error(
+    `Hosted ${section} image uploads require persistent Cloudinary storage. Set MEDIA_STORAGE=cloudinary before uploading images on Render.`
+  );
+};
 
 const ensureDir = async (dir) => {
   await fs.mkdir(dir, { recursive: true });
@@ -302,6 +317,7 @@ const getCarouselCropRect = ({ crop, width, height, uniqueId }) => {
 
 const processCarouselImage = async (file, uniqueId, crop) => {
   validateInput(file, 'carousel', uniqueId);
+  assertPersistentImageStorage('carousel');
 
   try {
     const buffer = await getFileBuffer(file);
@@ -364,6 +380,7 @@ const processCarouselImage = async (file, uniqueId, crop) => {
  */
 const processImage = async (file, section, uniqueId) => {
   validateInput(file, section, uniqueId);
+  assertPersistentImageStorage(section);
 
   try {
     const buffer = await getFileBuffer(file);

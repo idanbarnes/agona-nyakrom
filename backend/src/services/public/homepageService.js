@@ -1,6 +1,8 @@
 // Public homepage payload served by GET /api/public/homepage; admin controls blocks via /admin/homepage-sections.
 const { pool } = require('../../config/db');
 const { resolveCloudinaryDeliveryUrl } = require('../cloudinaryService');
+const isCloudinaryStorageEnabled =
+  String(process.env.MEDIA_STORAGE || 'local').trim().toLowerCase() === 'cloudinary';
 
 const mapImages = (row) => ({
   original: row?.original_image_path || null,
@@ -25,6 +27,12 @@ const parseArrayField = (value) => {
     return [];
   }
 };
+
+const hasLegacyLocalAssetReference = (value = '') =>
+  typeof value === 'string' &&
+  /(?:https?:\/\/(?:localhost|127(?:\.\d{1,3}){3})(?::\d+)?\/uploads\/|(?:^|["'\s(])\/?uploads\/)/i.test(
+    value
+  );
 
 const normalizeWhoWeAreGallery = (value, context = '') => {
   const gallery = parseArrayField(value).map((item) => {
@@ -211,15 +219,34 @@ const getPublishedBlocks = async () => {
      ORDER BY display_order ASC NULLS LAST, created_at DESC`
   );
 
-  return rows.map((row) => ({
-    ...row,
-    media_image_id: resolveCloudinaryDeliveryUrl(row.media_image_id),
-    background_image_id: resolveCloudinaryDeliveryUrl(row.background_image_id),
-    who_we_are_stats: parseArrayField(row.who_we_are_stats),
-    who_we_are_gallery: normalizeWhoWeAreGallery(row.who_we_are_gallery, `homepage block ${row.id}`),
-    hof_manual_item_ids: parseArrayField(row.hof_manual_item_ids),
-    gateway_items: parseArrayField(row.gateway_items),
-  }));
+  return rows.map((row) => {
+    const mediaImageId = resolveCloudinaryDeliveryUrl(row.media_image_id);
+    const backgroundImageId = resolveCloudinaryDeliveryUrl(row.background_image_id);
+    const whoWeAreGallery = normalizeWhoWeAreGallery(row.who_we_are_gallery, `homepage block ${row.id}`);
+
+    if (
+      isCloudinaryStorageEnabled &&
+      (
+        hasLegacyLocalAssetReference(mediaImageId) ||
+        hasLegacyLocalAssetReference(backgroundImageId) ||
+        whoWeAreGallery.some((item) => hasLegacyLocalAssetReference(item?.image_id))
+      )
+    ) {
+      console.warn(
+        `Published homepage block "${row.id}" still contains legacy local asset references. Consider migrating uploads to Cloudinary.`
+      );
+    }
+
+    return {
+      ...row,
+      media_image_id: mediaImageId,
+      background_image_id: backgroundImageId,
+      who_we_are_stats: parseArrayField(row.who_we_are_stats),
+      who_we_are_gallery: whoWeAreGallery,
+      hof_manual_item_ids: parseArrayField(row.hof_manual_item_ids),
+      gateway_items: parseArrayField(row.gateway_items),
+    };
+  });
 };
 
 const shuffleArray = (items) => {

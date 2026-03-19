@@ -728,7 +728,10 @@ const createHomepageBlock = async (req, res) => {
     if (err.message === 'No fields provided to create.') {
       return error(res, err.message, 400);
     }
-    if (err.message.startsWith('Uploaded ')) {
+    if (
+      err.message.startsWith('Uploaded ') ||
+      err.message.startsWith('Hosted ')
+    ) {
       return error(res, err.message, 500);
     }
     if (err.message.toLowerCase().includes('json')) {
@@ -795,7 +798,10 @@ const updateHomepageBlock = async (req, res) => {
     if (err.message === 'No fields provided to update.') {
       return error(res, err.message, 400);
     }
-    if (err.message.startsWith('Uploaded ')) {
+    if (
+      err.message.startsWith('Uploaded ') ||
+      err.message.startsWith('Hosted ')
+    ) {
       return error(res, err.message, 500);
     }
     if (err.message.toLowerCase().includes('json')) {

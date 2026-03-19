@@ -22,6 +22,14 @@ const isPlaceholderSecret = (value = '') => {
 const getDbSslConfig = () =>
   isTruthy(process.env.DB_SSL) ? { rejectUnauthorized: false } : false;
 
+const getMediaStorageMode = () =>
+  normalize(process.env.MEDIA_STORAGE || 'local').toLowerCase() || 'local';
+
+const isHostedRuntime = () => Boolean(normalize(process.env.RENDER));
+
+const allowHostedLocalUploads = () =>
+  isTruthy(process.env.ALLOW_RENDER_LOCAL_UPLOADS);
+
 const validateDatabaseEnv = () => {
   const hasDatabaseUrl = Boolean(normalize(process.env.DATABASE_URL));
   const missing = hasDatabaseUrl
@@ -82,7 +90,7 @@ const getPreviewTokenSecret = () => {
 };
 
 const validateCloudinaryEnv = () => {
-  const mediaStorage = normalize(process.env.MEDIA_STORAGE || 'local').toLowerCase();
+  const mediaStorage = getMediaStorageMode();
   if (mediaStorage !== 'cloudinary') {
     return;
   }
@@ -103,21 +111,38 @@ const validateCloudinaryEnv = () => {
   }
 };
 
+const validateMediaStorageEnv = () => {
+  if (!isHostedRuntime() || allowHostedLocalUploads()) {
+    return;
+  }
+
+  if (getMediaStorageMode() !== 'cloudinary') {
+    throw new Error(
+      'Hosted uploads on Render must use Cloudinary-backed storage. Set MEDIA_STORAGE=cloudinary or explicitly opt out with ALLOW_RENDER_LOCAL_UPLOADS=true if you accept ephemeral local uploads.'
+    );
+  }
+};
+
 const validateRuntimeEnv = () => {
   validateDatabaseEnv();
   getJwtSecret();
   getPreviewTokenSecret();
+  validateMediaStorageEnv();
   validateCloudinaryEnv();
 };
 
 module.exports = {
+  allowHostedLocalUploads,
   buildDatabaseConnectionConfig,
+  getMediaStorageMode,
   getDbSslConfig,
   getJwtSecret,
   getPreviewTokenSecret,
+  isHostedRuntime,
   isTruthy,
   normalize,
   validateCloudinaryEnv,
   validateDatabaseEnv,
+  validateMediaStorageEnv,
   validateRuntimeEnv,
 };
