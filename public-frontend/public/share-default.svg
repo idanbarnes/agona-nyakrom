@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Agona Nyakrom share image</title>
+  <desc id="desc">Default social preview image for the Agona Nyakrom public website.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1f2937" />
+      <stop offset="50%" stop-color="#7c2d12" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <circle cx="960" cy="150" r="150" fill="#fbbf24" fill-opacity="0.18" />
+  <circle cx="220" cy="520" r="180" fill="#fde68a" fill-opacity="0.14" />
+  <rect x="88" y="84" width="1024" height="462" rx="28" fill="#111827" fill-opacity="0.3" stroke="#fcd34d" stroke-opacity="0.28" />
+  <text x="120" y="220" fill="#fde68a" font-family="Georgia, 'Times New Roman', serif" font-size="44" letter-spacing="8">AGONA NYAKROM</text>
+  <text x="120" y="320" fill="#ffffff" font-family="Georgia, 'Times New Roman', serif" font-size="84" font-weight="700">Community stories</text>
+  <text x="120" y="410" fill="#ffffff" font-family="Georgia, 'Times New Roman', serif" font-size="84" font-weight="700">history and updates</text>
+  <text x="120" y="500" fill="#fef3c7" font-family="Arial, Helvetica, sans-serif" font-size="34">News, announcements, events, landmarks, clans, and memorial pages.</text>
+</svg>

@@ -66,6 +66,7 @@ Set these on the Render public static site:
 
 ```env
 VITE_API_BASE_URL=https://agonanyakrom-api.onrender.com
+VITE_PUBLIC_SITE_URL=https://agonanyakrom.onrender.com
 ```
 
 This value is prepared in [public-frontend/.env.production.example](/C:/agona-nyakrom/public-frontend/.env.production.example).
