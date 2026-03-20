@@ -5,7 +5,7 @@ const SITE_NAME = 'Agona Nyakrom'
 const DIST_DIR = path.resolve(process.cwd(), 'dist')
 const DIST_INDEX_PATH = path.join(DIST_DIR, 'index.html')
 const HOME_DESCRIPTION =
-  'Agona Nyakrom community news, history, events, announcements, landmarks, clans, and memorial pages.'
+  'Official public website for Agona Nyakrom, featuring community news, history, events, announcements, landmarks, and memorials.'
 const SOCIAL_BLOCK_PATTERN =
   /<!-- social-meta:start -->[\s\S]*?<!-- social-meta:end -->/
 const IS_RENDER_BUILD = String(process.env.RENDER || '')
@@ -87,6 +87,7 @@ const API_BASE_URL = resolveRequiredOrigin(
   'http://localhost:5000',
 )
 const DEFAULT_SHARE_IMAGE = `${DEFAULT_SITE_URL}/share-default.svg`
+const HOME_SHARE_IMAGE = `${DEFAULT_SITE_URL}/share-home.png`
 
 function escapeHtml(value = '') {
   return String(value)
@@ -194,11 +195,11 @@ function buildNewsCanonicalUrl(slug) {
 
 function buildHomeMeta() {
   return {
-    title: SITE_NAME,
+    title: `${SITE_NAME} | Official Public Website`,
     description: HOME_DESCRIPTION,
     url: `${DEFAULT_SITE_URL}/`,
-    image: DEFAULT_SHARE_IMAGE,
-    imageAlt: SITE_NAME,
+    image: HOME_SHARE_IMAGE,
+    imageAlt: `${SITE_NAME} public website preview`,
     type: 'website',
   }
 }
