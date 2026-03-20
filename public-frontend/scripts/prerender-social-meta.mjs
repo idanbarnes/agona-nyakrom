@@ -176,6 +176,10 @@ function buildCanonicalUrl(slug) {
   return `${DEFAULT_SITE_URL}/hall-of-fame/${encodeURIComponent(slug)}/`
 }
 
+function buildObituaryCanonicalUrl(slug) {
+  return `${DEFAULT_SITE_URL}/obituaries/${encodeURIComponent(slug)}/`
+}
+
 function buildHomeMeta() {
   return {
     title: SITE_NAME,
@@ -254,6 +258,76 @@ function buildHallOfFameMeta(entry) {
   }
 }
 
+function buildObituaryDescription(entry) {
+  const name = String(entry?.full_name || entry?.name || '').trim()
+  const summaryCandidate = pickLeadParagraph(
+    entry.summary || entry.biography || entry.description || '',
+  )
+  const normalizedSummary = summaryCandidate.toLowerCase()
+  const nameParts = name
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((part) => part.length >= 3)
+
+  if (
+    summaryCandidate &&
+    (!nameParts.length || nameParts.some((part) => normalizedSummary.includes(part)))
+  ) {
+    return truncate(summaryCandidate, 190)
+  }
+
+  const birthYear = entry?.date_of_birth ? new Date(entry.date_of_birth).getFullYear() : null
+  const deathYear = entry?.date_of_death ? new Date(entry.date_of_death).getFullYear() : null
+  const lifespan =
+    birthYear && deathYear && Number.isFinite(birthYear) && Number.isFinite(deathYear)
+      ? ` (${birthYear} - ${deathYear})`
+      : ''
+  const respectfulName = name || 'This loved one'
+
+  return truncate(
+    `Remembering ${respectfulName}${lifespan}. View obituary and service details shared by the ${SITE_NAME} community.`,
+    190,
+  )
+}
+
+function buildObituaryImage(entry) {
+  const candidates = [
+    entry.deceased_photo_url,
+    entry.deceasedPhotoUrl,
+    entry.poster_image_url,
+    entry.posterImageUrl,
+    entry?.images?.medium,
+    entry?.images?.large,
+    entry?.images?.original,
+    entry?.images?.thumbnail,
+    '/share-default.svg',
+  ]
+
+  for (const candidate of candidates) {
+    const absolute = resolveAbsoluteUrl(candidate, {
+      preferSite: candidate === '/share-default.svg',
+    })
+    if (absolute) {
+      return absolute
+    }
+  }
+
+  return DEFAULT_SHARE_IMAGE
+}
+
+function buildObituaryMeta(entry) {
+  const name = String(entry?.full_name || entry?.name || '').trim() || 'Obituary'
+  return {
+    slug: entry.slug,
+    title: `${name} | Obituaries | ${SITE_NAME}`,
+    description: buildObituaryDescription(entry),
+    url: buildObituaryCanonicalUrl(entry.slug),
+    image: buildObituaryImage(entry),
+    imageAlt: name,
+    type: 'article',
+  }
+}
+
 async function fetchJson(relativeUrl) {
   const response = await fetch(`${API_BASE_URL}${relativeUrl}`)
   if (!response.ok) {
@@ -269,6 +343,36 @@ async function loadHallOfFameEntries() {
   return Array.isArray(entries) ? entries.filter((entry) => entry?.slug) : []
 }
 
+async function loadObituaryEntries() {
+  const firstPage = await fetchJson('/api/public/obituaries?page=1&limit=100')
+  const initialItems = Array.isArray(firstPage?.items)
+    ? firstPage.items.filter((entry) => entry?.slug)
+    : []
+  const total = Number(firstPage?.total) || initialItems.length
+  const limit = Number(firstPage?.limit) || 100
+  const totalPages = Math.max(1, Math.ceil(total / limit))
+
+  if (totalPages === 1) {
+    return initialItems
+  }
+
+  const items = [...initialItems]
+  for (let page = 2; page <= totalPages; page += 1) {
+    const payload = await fetchJson(`/api/public/obituaries?page=${page}&limit=${limit}`)
+    const pageItems = Array.isArray(payload?.items) ? payload.items.filter((entry) => entry?.slug) : []
+    items.push(...pageItems)
+  }
+
+  const seen = new Set()
+  return items.filter((entry) => {
+    if (seen.has(entry.slug)) {
+      return false
+    }
+    seen.add(entry.slug)
+    return true
+  })
+}
+
 async function writeHallOfFameRoute(template, meta) {
   const html = injectMeta(template, meta)
   const outputDir = path.join(DIST_DIR, 'hall-of-fame', meta.slug)
@@ -276,17 +380,35 @@ async function writeHallOfFameRoute(template, meta) {
   await fs.writeFile(path.join(outputDir, 'index.html'), html, 'utf8')
 }
 
+async function writeObituaryRoute(template, meta) {
+  const html = injectMeta(template, meta)
+  const outputDirs = [
+    path.join(DIST_DIR, 'obituaries', meta.slug),
+    path.join(DIST_DIR, 'obituary', meta.slug),
+  ]
+
+  for (const outputDir of outputDirs) {
+    await fs.mkdir(outputDir, { recursive: true })
+    await fs.writeFile(path.join(outputDir, 'index.html'), html, 'utf8')
+  }
+}
+
 async function main() {
   const template = await fs.readFile(DIST_INDEX_PATH, 'utf8')
   await fs.writeFile(DIST_INDEX_PATH, injectMeta(template, buildHomeMeta()), 'utf8')
   const hallOfFameEntries = await loadHallOfFameEntries()
+  const obituaryEntries = await loadObituaryEntries()
 
   for (const entry of hallOfFameEntries) {
     await writeHallOfFameRoute(template, buildHallOfFameMeta(entry))
   }
 
+  for (const entry of obituaryEntries) {
+    await writeObituaryRoute(template, buildObituaryMeta(entry))
+  }
+
   console.log(
-    `[social-meta] generated ${hallOfFameEntries.length} Hall of Fame metadata route${hallOfFameEntries.length === 1 ? '' : 's'}.`,
+    `[social-meta] generated ${hallOfFameEntries.length} Hall of Fame metadata route${hallOfFameEntries.length === 1 ? '' : 's'} and ${obituaryEntries.length} obituary metadata route${obituaryEntries.length === 1 ? '' : 's'}.`,
   )
 }
 

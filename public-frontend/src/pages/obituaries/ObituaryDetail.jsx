@@ -9,6 +9,7 @@ import {
 } from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
 import useCmsPreviewRefresh from '../../lib/useCmsPreviewRefresh.js'
+import { buildObituaryDetailPath } from './paths.js'
 
 const FALLBACK_IMAGE = '/share-default.svg'
 
@@ -415,6 +416,7 @@ function normalizeObituary(rawItem) {
 
   return {
     id: rawItem?.id,
+    slug: rawItem?.slug || '',
     fullName: buildFullName(rawItem),
     biography: rawItem?.biography || rawItem?.description || rawItem?.summary || '',
     dateOfBirth: rawItem?.date_of_birth || rawItem?.birth_date || rawItem?.dateOfBirth,
@@ -559,6 +561,10 @@ function ObituaryDetail() {
   useCmsPreviewRefresh(loadObituary)
 
   const normalizedItem = useMemo(() => normalizeObituary(item), [item])
+  const sharePath = useMemo(() => {
+    const detailSlug = normalizedItem?.slug || slug || ''
+    return buildObituaryDetailPath(detailSlug)
+  }, [normalizedItem?.slug, slug])
 
   const birthLabel = formatLongDate(normalizedItem?.dateOfBirth)
   const deathLabel = formatLongDate(normalizedItem?.dateOfDeath)
@@ -575,12 +581,23 @@ function ObituaryDetail() {
     ? `${birthLabel || 'Unknown'} - ${deathLabel || 'Present'}`
     : null
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || !sharePath || window.location.pathname === sharePath) {
+      return
+    }
+
+    const nextUrl = `${sharePath}${window.location.search}${window.location.hash}`
+    window.history.replaceState(window.history.state, '', nextUrl)
+  }, [sharePath])
+
   const handleShare = useCallback(async () => {
     if (typeof window === 'undefined') {
       return
     }
 
-    const shareUrl = window.location.href
+    const shareUrl = sharePath
+      ? new URL(sharePath, window.location.origin).toString()
+      : window.location.href
     const sharePayload = {
       title: normalizedItem?.fullName || 'Obituary',
       text: `In memory of ${normalizedItem?.fullName || 'our loved one'}`,
@@ -605,7 +622,7 @@ function ObituaryDetail() {
     }
 
     window.setTimeout(() => setShareMessage(''), 2000)
-  }, [normalizedItem?.fullName])
+  }, [normalizedItem?.fullName, sharePath])
 
   return (
     <section className="bg-background py-8 sm:py-10 md:py-12">

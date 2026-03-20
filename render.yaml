@@ -7,6 +7,15 @@ services:
     staticPublishPath: dist
     routes:
       - type: redirect
+        source: /obituary/:slug/
+        destination: /obituaries/:slug/
+      - type: redirect
+        source: /obituary/:slug
+        destination: /obituaries/:slug/
+      - type: redirect
+        source: /obituaries/:slug
+        destination: /obituaries/:slug/
+      - type: redirect
         source: /hall-of-fame/:slug
         destination: /hall-of-fame/:slug/
       - type: rewrite

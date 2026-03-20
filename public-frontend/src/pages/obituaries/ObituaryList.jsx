@@ -13,6 +13,7 @@ import {
   Pagination,
   StateGate,
 } from '../../components/ui/index.jsx'
+import { buildObituaryDetailPath } from './paths.js'
 
 const ITEMS_PER_PAGE = 20
 const API_PAGE_SIZE = 100
@@ -400,7 +401,7 @@ function ObituaryCard({ item }) {
   const ageLabel = age !== null ? String(age) : null
 
   const canViewDetails = Boolean(item?.slug)
-  const detailsPath = canViewDetails ? `/obituary/${item.slug}` : '/obituaries'
+  const detailsPath = canViewDetails ? buildObituaryDetailPath(item.slug) : '/obituaries'
   const shareUrl = new URL(detailsPath, window.location.origin).toString()
   const sharePayload = buildSharePayload(item, shareUrl)
 
