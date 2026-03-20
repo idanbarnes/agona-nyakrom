@@ -15,6 +15,7 @@ import {
   Input,
   StateGate,
 } from '../../components/ui/index.jsx'
+import { buildHallOfFameDetailPath } from './paths.js'
 
 // Extract list data across possible payload shapes.
 function extractItems(payload) {
@@ -374,7 +375,7 @@ function HallOfFameList() {
 
                         <div className="mt-4 flex justify-end">
                           <DetailPageCTA
-                            to={routeKey ? `/hall-of-fame/${routeKey}` : undefined}
+                            to={routeKey ? buildHallOfFameDetailPath(routeKey) : undefined}
                             label="Read more"
                             size="md"
                             className="mt-auto rounded-full px-4 py-2 text-sm font-medium [&>span]:gap-0 [&>span>span:first-child]:hidden"

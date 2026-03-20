@@ -11,6 +11,7 @@ import {
 } from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
 import useCmsPreviewRefresh from '../../lib/useCmsPreviewRefresh.js'
+import { buildHallOfFameDetailPath } from './paths.js'
 
 function Share2Icon({ className = 'h-5 w-5' }) {
   return (
@@ -93,6 +94,7 @@ function HallOfFameDetail() {
   const name = item?.name || item?.full_name || 'Hall of Fame'
   const role = item?.title || item?.position || item?.role || ''
   const body = item?.body || item?.bio || item?.description || item?.content || ''
+  const sharePath = useMemo(() => buildHallOfFameDetailPath(slug), [slug])
 
   const imagePath =
     item?.imageUrl ||
@@ -104,12 +106,21 @@ function HallOfFameDetail() {
 
   const imageUrl = useMemo(() => (imagePath ? resolveAssetUrl(imagePath) : ''), [imagePath])
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || !slug || window.location.pathname === sharePath) {
+      return
+    }
+
+    const nextUrl = `${sharePath}${window.location.search}${window.location.hash}`
+    window.history.replaceState(window.history.state, '', nextUrl)
+  }, [sharePath, slug])
+
   const handleShare = async () => {
     if (typeof window === 'undefined') {
       return
     }
 
-    const shareUrl = window.location.href
+    const shareUrl = new URL(sharePath, window.location.origin).toString()
     const sharePayload = {
       title: name,
       text: `Share the profile of ${name}`,
