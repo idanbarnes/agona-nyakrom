@@ -10,6 +10,7 @@ import {
   StateGate,
 } from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import { buildNewsDetailPath } from './paths.js'
 
 function formatDate(value) {
   if (!value) {
@@ -312,15 +313,32 @@ function NewsDetail() {
   const dateLabel = useMemo(() => formatDate(publishedAt), [publishedAt])
   const imagePath = selectImage(item?.images, item?.image)
   const imageUrl = imagePath ? resolveAssetUrl(imagePath) : null
+  const canonicalPath = useMemo(
+    () => buildNewsDetailPath(item?.slug || slug),
+    [item?.slug, slug],
+  )
   const shareUrl = useMemo(() => {
-    const detailsPath = slug ? `/news/${slug}` : '/news'
+    const detailsPath = canonicalPath || '/news'
     if (typeof window === 'undefined' || !window.location?.origin) {
       return detailsPath
     }
 
     return new URL(detailsPath, window.location.origin).toString()
-  }, [slug])
+  }, [canonicalPath])
   const sharePayload = buildSharePayload(item, shareUrl)
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !canonicalPath) {
+      return
+    }
+
+    if (window.location.pathname === canonicalPath) {
+      return
+    }
+
+    const nextUrl = `${canonicalPath}${window.location.search}${window.location.hash}`
+    window.history.replaceState(window.history.state, '', nextUrl)
+  }, [canonicalPath])
 
   useEffect(() => {
     if (!shareOpen) {

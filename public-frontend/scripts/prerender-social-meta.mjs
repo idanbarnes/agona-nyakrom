@@ -188,6 +188,10 @@ function buildEventCanonicalUrl(slug) {
   return `${DEFAULT_SITE_URL}/events/${encodeURIComponent(slug)}/`
 }
 
+function buildNewsCanonicalUrl(slug) {
+  return `${DEFAULT_SITE_URL}/news/${encodeURIComponent(slug)}/`
+}
+
 function buildHomeMeta() {
   return {
     title: SITE_NAME,
@@ -415,6 +419,52 @@ function buildEventMeta(entry) {
   }
 }
 
+function buildNewsDescription(entry) {
+  const summaryCandidate = buildContentSummary(entry)
+  if (summaryCandidate) {
+    return truncate(summaryCandidate, 190)
+  }
+
+  const title = String(entry?.title || '').trim() || 'News update'
+  return truncate(`${title}. Read the full story on ${SITE_NAME}.`, 190)
+}
+
+function buildNewsImage(entry) {
+  const candidates = [
+    entry?.images?.medium,
+    entry?.images?.large,
+    entry?.images?.original,
+    entry?.images?.thumbnail,
+    entry.image,
+    entry.imageUrl,
+    '/share-default.svg',
+  ]
+
+  for (const candidate of candidates) {
+    const absolute = resolveAbsoluteUrl(candidate, {
+      preferSite: candidate === '/share-default.svg',
+    })
+    if (absolute) {
+      return absolute
+    }
+  }
+
+  return DEFAULT_SHARE_IMAGE
+}
+
+function buildNewsMeta(entry) {
+  const title = String(entry?.title || '').trim() || 'News'
+  return {
+    slug: entry.slug,
+    title: `${title} | News | ${SITE_NAME}`,
+    description: buildNewsDescription(entry),
+    url: buildNewsCanonicalUrl(entry.slug),
+    image: buildNewsImage(entry),
+    imageAlt: title,
+    type: 'article',
+  }
+}
+
 async function fetchJson(relativeUrl) {
   const response = await fetch(`${API_BASE_URL}${relativeUrl}`)
   if (!response.ok) {
@@ -524,6 +574,38 @@ async function loadEventEntries() {
   })
 }
 
+async function loadNewsEntries() {
+  const firstPage = await fetchJson('/api/public/news?page=1&limit=100')
+  const initialItems = Array.isArray(firstPage?.items)
+    ? firstPage.items.filter((entry) => entry?.slug)
+    : []
+  const total = Number(firstPage?.total) || initialItems.length
+  const limit = Number(firstPage?.limit) || 100
+  const totalPages = Math.max(1, Math.ceil(total / limit))
+
+  if (totalPages === 1) {
+    return initialItems
+  }
+
+  const items = [...initialItems]
+  for (let page = 2; page <= totalPages; page += 1) {
+    const payload = await fetchJson(`/api/public/news?page=${page}&limit=${limit}`)
+    const pageItems = Array.isArray(payload?.items)
+      ? payload.items.filter((entry) => entry?.slug)
+      : []
+    items.push(...pageItems)
+  }
+
+  const seen = new Set()
+  return items.filter((entry) => {
+    if (seen.has(entry.slug)) {
+      return false
+    }
+    seen.add(entry.slug)
+    return true
+  })
+}
+
 async function writeHallOfFameRoute(template, meta) {
   const html = injectMeta(template, meta)
   const outputDir = path.join(DIST_DIR, 'hall-of-fame', meta.slug)
@@ -558,6 +640,13 @@ async function writeEventRoute(template, meta) {
   await fs.writeFile(path.join(outputDir, 'index.html'), html, 'utf8')
 }
 
+async function writeNewsRoute(template, meta) {
+  const html = injectMeta(template, meta)
+  const outputDir = path.join(DIST_DIR, 'news', meta.slug)
+  await fs.mkdir(outputDir, { recursive: true })
+  await fs.writeFile(path.join(outputDir, 'index.html'), html, 'utf8')
+}
+
 async function main() {
   const template = await fs.readFile(DIST_INDEX_PATH, 'utf8')
   await fs.writeFile(DIST_INDEX_PATH, injectMeta(template, buildHomeMeta()), 'utf8')
@@ -565,6 +654,7 @@ async function main() {
   const obituaryEntries = await loadObituaryEntries()
   const announcementEntries = await loadAnnouncementEntries()
   const eventEntries = await loadEventEntries()
+  const newsEntries = await loadNewsEntries()
 
   for (const entry of hallOfFameEntries) {
     await writeHallOfFameRoute(template, buildHallOfFameMeta(entry))
@@ -582,8 +672,12 @@ async function main() {
     await writeEventRoute(template, buildEventMeta(entry))
   }
 
+  for (const entry of newsEntries) {
+    await writeNewsRoute(template, buildNewsMeta(entry))
+  }
+
   console.log(
-    `[social-meta] generated ${hallOfFameEntries.length} Hall of Fame metadata route${hallOfFameEntries.length === 1 ? '' : 's'}, ${obituaryEntries.length} obituary metadata route${obituaryEntries.length === 1 ? '' : 's'}, ${announcementEntries.length} announcement metadata route${announcementEntries.length === 1 ? '' : 's'}, and ${eventEntries.length} event metadata route${eventEntries.length === 1 ? '' : 's'}.`,
+    `[social-meta] generated ${hallOfFameEntries.length} Hall of Fame metadata route${hallOfFameEntries.length === 1 ? '' : 's'}, ${obituaryEntries.length} obituary metadata route${obituaryEntries.length === 1 ? '' : 's'}, ${announcementEntries.length} announcement metadata route${announcementEntries.length === 1 ? '' : 's'}, ${eventEntries.length} event metadata route${eventEntries.length === 1 ? '' : 's'}, and ${newsEntries.length} news metadata route${newsEntries.length === 1 ? '' : 's'}.`,
   )
 }
 

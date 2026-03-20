@@ -12,6 +12,7 @@ import {
   Pagination,
   StateGate,
 } from '../../components/ui/index.jsx'
+import { buildNewsDetailPath } from './paths.js'
 
 function formatDate(value) {
   if (!value) {
@@ -232,7 +233,7 @@ function NewsCard({ item }) {
   const shareRef = useRef(null)
   const slug = item?.slug
   const canViewDetails = Boolean(slug)
-  const detailsPath = canViewDetails ? `/news/${slug}` : '/news'
+  const detailsPath = canViewDetails ? buildNewsDetailPath(slug) : '/news'
   const publishedAt = item?.published_at || item?.publishedAt || item?.createdAt
   const dateLabel = formatDate(publishedAt)
   const authorLabel = resolveAuthor(item)
