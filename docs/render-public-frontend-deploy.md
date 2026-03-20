@@ -21,6 +21,10 @@ VITE_API_BASE_URL=https://agonanyakrom-api.onrender.com
 VITE_PUBLIC_SITE_URL=https://agonanyakrom.onrender.com
 ```
 
+These are build-time values for prerendered Hall of Fame share metadata. If either is
+missing or still points to `localhost`, the public frontend build now fails on Render
+instead of emitting broken canonical or social image URLs.
+
 ## Manual Render Settings
 
 If you create the service manually in the Render dashboard, use:

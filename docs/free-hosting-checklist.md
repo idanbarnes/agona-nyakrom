@@ -71,6 +71,10 @@ VITE_PUBLIC_SITE_URL=https://agonanyakrom.onrender.com
 
 This value is prepared in [public-frontend/.env.production.example](/C:/agona-nyakrom/public-frontend/.env.production.example).
 
+These public-frontend env vars are consumed at build time for Hall of Fame prerender
+metadata. If they are missing or set to `localhost` on Render, the build should fail
+so broken share URLs are not deployed.
+
 ## Admin Frontend Environment Variables
 
 Set these on the Render admin static site:
