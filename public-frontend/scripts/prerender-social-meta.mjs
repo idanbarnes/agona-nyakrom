@@ -46,12 +46,20 @@ function parseOrigin(label, value) {
 }
 
 function resolveRequiredOrigin(label, envKey, localDefault) {
-  const configured = parseOrigin(label, process.env[envKey] || '')
+  const configured =
+    parseOrigin(label, process.env[envKey] || '') ||
+    (IS_RENDER_BUILD && envKey === 'VITE_PUBLIC_SITE_URL'
+      ? parseOrigin(label, process.env.RENDER_EXTERNAL_URL || '')
+      : null)
 
   if (!configured) {
     if (IS_RENDER_BUILD) {
+      const fallbackHint =
+        envKey === 'VITE_PUBLIC_SITE_URL'
+          ? ' or ensure Render provides RENDER_EXTERNAL_URL'
+          : ''
       throw new Error(
-        `[social-meta] Missing required ${envKey} during Render build. Set it on the public static site and rebuild.`,
+        `[social-meta] Missing required ${envKey} during Render build. Set it on the public static site${fallbackHint}, then rebuild.`,
       )
     }
 
