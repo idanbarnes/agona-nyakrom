@@ -26,6 +26,7 @@ import {
   getAdminUsers,
   updateAdminUser,
 } from '../../services/api/adminUsersApi.js'
+import { EyeIcon, EyeOffIcon } from '../../components/admin/icons.jsx'
 import { isMasterAdmin } from '../../lib/auth.js'
 
 const INITIAL_FORM_STATE = {
@@ -82,6 +83,7 @@ function AdminUsersPage() {
   const [isDeleting, setIsDeleting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const [isEditPasswordVisible, setIsEditPasswordVisible] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -146,6 +148,7 @@ function AdminUsersPage() {
   const openEditModal = (admin) => {
     setErrorMessage('')
     setSuccessMessage('')
+    setIsEditPasswordVisible(false)
     setEditFormState({
       id: admin.id,
       name: admin.name || '',
@@ -159,6 +162,7 @@ function AdminUsersPage() {
 
   const closeEditModal = () => {
     setIsEditModalOpen(false)
+    setIsEditPasswordVisible(false)
     setEditFormState(INITIAL_EDIT_FORM_STATE)
   }
 
@@ -607,14 +611,30 @@ function AdminUsersPage() {
             >
               New password
             </label>
-            <Input
-              id="edit-admin-password"
-              type="password"
-              value={editFormState.password}
-              onChange={(event) => handleEditChange('password', event.target.value)}
-              placeholder="Leave blank to keep the current password"
-              autoComplete="new-password"
-            />
+            <div className="relative">
+              <Input
+                id="edit-admin-password"
+                type={isEditPasswordVisible ? 'text' : 'password'}
+                value={editFormState.password}
+                onChange={(event) => handleEditChange('password', event.target.value)}
+                placeholder="Leave blank to keep the current password"
+                autoComplete="new-password"
+                className="pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setIsEditPasswordVisible((current) => !current)}
+                className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-slate-500 transition-colors hover:text-slate-900 focus-visible:text-slate-900"
+                aria-label={isEditPasswordVisible ? 'Hide password' : 'Show password'}
+                aria-pressed={isEditPasswordVisible}
+              >
+                {isEditPasswordVisible ? (
+                  <EyeOffIcon className="h-4 w-4" />
+                ) : (
+                  <EyeIcon className="h-4 w-4" />
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </Modal>

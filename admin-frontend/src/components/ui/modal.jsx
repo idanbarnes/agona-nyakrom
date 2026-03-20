@@ -19,6 +19,11 @@ export function Modal({
 }) {
   const panelRef = useRef(null)
   const lastActiveRef = useRef(null)
+  const onCloseRef = useRef(onClose)
+
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     if (!open) {
@@ -32,7 +37,7 @@ export function Modal({
 
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
-        onClose?.()
+        onCloseRef.current?.()
       }
     }
 
@@ -45,7 +50,7 @@ export function Modal({
         lastActiveRef.current.focus()
       }
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) {
     return null
@@ -55,7 +60,7 @@ export function Modal({
     <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
       <div
         className="absolute inset-0 bg-black/50"
-        onClick={closeOnOverlayClick ? onClose : undefined}
+        onClick={closeOnOverlayClick ? () => onCloseRef.current?.() : undefined}
       />
       <div
         ref={panelRef}

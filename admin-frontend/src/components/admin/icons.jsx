@@ -193,3 +193,14 @@ export function EyeIcon({ className }) {
     </IconBase>
   )
 }
+
+export function EyeOffIcon({ className }) {
+  return (
+    <IconBase className={className}>
+      <path d="M3 3 21 21" />
+      <path d="M10.6 10.7a2 2 0 0 0 2.7 2.7" />
+      <path d="M9.9 5.7A10.6 10.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17.7 17.7 0 0 1-3.3 4.1" />
+      <path d="M6.2 6.2A17.8 17.8 0 0 0 2.5 12S6 18.5 12 18.5c1.6 0 3-.4 4.3-1" />
+    </IconBase>
+  )
+}
