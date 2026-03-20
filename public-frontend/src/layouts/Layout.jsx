@@ -80,6 +80,8 @@ import {
   getCachedPublicSettings,
   setCachedPublicSettings,
 } from '../lib/publicSettingsCache.js'
+import { setDocumentTitle } from '../lib/pageTitle.js'
+import { getPublicRouteTitle } from '../routes/routeLoaders.js'
 import { PublicSettingsContext } from './publicSettingsContext.js'
 
 function Layout() {
@@ -176,6 +178,10 @@ function Layout() {
       return true
     }
   }, [previewContext.previewToken])
+
+  useEffect(() => {
+    setDocumentTitle(getPublicRouteTitle(location.pathname))
+  }, [location.pathname])
 
   useEffect(() => {
     if (!isEmbeddedPreview || !previewContext.cmsOrigin) {

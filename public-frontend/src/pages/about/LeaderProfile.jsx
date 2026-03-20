@@ -9,6 +9,7 @@ import {
   StateGate,
 } from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import { useDocumentTitle } from '../../lib/pageTitle.js'
 import { getPublicLeaderBySlug } from '../../api/endpoints.js'
 
 function hasHtmlMarkup(value = '') {
@@ -120,6 +121,7 @@ export default function LeaderProfile() {
   }, [slug])
 
   const name = leader?.name || 'Leadership profile'
+  useDocumentTitle(name)
   const roleTitle = leader?.role_title || ''
   const body = toRichTextHtml(leader?.full_bio || leader?.short_bio_snippet || '')
   const imageUrl = leader?.photo ? resolveAssetUrl(leader.photo) : ''

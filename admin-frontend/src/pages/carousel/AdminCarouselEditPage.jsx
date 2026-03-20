@@ -9,6 +9,7 @@ import { getAuthToken } from '../../lib/auth.js'
 import { getCroppedImageDataUrl } from '../../lib/cropImage.js'
 import { resolveAdminCancelTarget } from '../../lib/adminCancelTarget.js'
 import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
+import WhoWeAreGalleryImagePreview from '../homePageSections/WhoWeAreGalleryImagePreview.jsx'
 import AdminInlinePreviewLayout from '../../components/preview/AdminInlinePreviewLayout.jsx'
 import FormActions from '../../components/ui/form-actions.jsx'
 import {
@@ -374,12 +375,15 @@ function AdminCarouselEditPage() {
                   acceptedFileTypes="image/*"
                   onChange={handleFileChange}
                   instructions="Recommended image size: 1920 x 800 (wide banner). You will crop the image before saving."
-                  existingAssetUrl={formState.existingImageUrl}
-                  previewSrc={cropPreview}
-                  previewAlt="Cropped preview"
-                  previewContainerClassName="mt-1 max-w-xs"
-                  previewClassName="h-24 w-full rounded-md object-cover"
-                />
+                >
+                  {cropPreview || formState.existingImageUrl ? (
+                    <WhoWeAreGalleryImagePreview
+                      imageUrl={cropPreview || formState.existingImageUrl}
+                      altText={formState.title || 'Carousel slide image preview'}
+                      label={cropPreview ? 'Cropped preview' : 'Current image'}
+                    />
+                  ) : null}
+                </PhotoUploadField>
               </div>
             </FormField>
           </CardContent>

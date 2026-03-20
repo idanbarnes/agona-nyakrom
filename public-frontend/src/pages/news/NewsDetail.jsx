@@ -10,6 +10,7 @@ import {
   StateGate,
 } from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import { useDocumentTitle } from '../../lib/pageTitle.js'
 import { buildNewsDetailPath } from './paths.js'
 
 function formatDate(value) {
@@ -313,6 +314,7 @@ function NewsDetail() {
   const dateLabel = useMemo(() => formatDate(publishedAt), [publishedAt])
   const imagePath = selectImage(item?.images, item?.image)
   const imageUrl = imagePath ? resolveAssetUrl(imagePath) : null
+  useDocumentTitle(item?.title || 'News')
   const canonicalPath = useMemo(
     () => buildNewsDetailPath(item?.slug || slug),
     [item?.slug, slug],

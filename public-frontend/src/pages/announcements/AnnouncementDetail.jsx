@@ -5,6 +5,7 @@ import {
   getPublicAnnouncements,
 } from '../../api/endpoints.js'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import { useDocumentTitle } from '../../lib/pageTitle.js'
 import useCmsPreviewRefresh from '../../lib/useCmsPreviewRefresh.js'
 import {
   Badge,
@@ -276,6 +277,7 @@ function AnnouncementDetail() {
   const dateLabel = useMemo(() => formatDate(publishedAt), [publishedAt])
   const hasFlyer = Boolean(item?.flyer_image_path)
   const flyerUrl = hasFlyer ? resolveAssetUrl(item.flyer_image_path) : ''
+  useDocumentTitle(item?.title || 'Announcement')
   const canonicalPath = useMemo(
     () => buildAnnouncementDetailPath(item?.slug || slug),
     [item?.slug, slug],

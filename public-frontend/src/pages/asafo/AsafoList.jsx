@@ -7,6 +7,7 @@ import {
   PUBLIC_UI_LABELS,
 } from '../../constants/publicChrome.js'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import { formatDocumentTitle } from '../../lib/pageTitle.js'
 
 const DEFAULT_SHARE_IMAGE = '/share-default.svg'
 
@@ -114,7 +115,7 @@ export default function AsafoList() {
     const fallbackBodyImage = extractFirstImageSrc(intro?.body || '')
     const shareImage = resolveAssetUrl(intro?.seo_share_image || fallbackBodyImage || DEFAULT_SHARE_IMAGE)
 
-    document.title = seoTitle
+    document.title = formatDocumentTitle(seoTitle)
     setMeta('meta[name="description"]', seoDescription)
     setMeta('meta[property="og:title"]', seoTitle)
     setMeta('meta[property="og:description"]', seoDescription)

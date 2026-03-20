@@ -1276,9 +1276,10 @@ function Home() {
                     }`}
                   >
                     <div className="flex-1 space-y-6">
-                      <span className="inline-flex items-center gap-2 rounded-full bg-[#E7DAB2] px-4 py-2 text-sm font-medium text-[#B45309]">
-                        <span aria-hidden="true">&quot;&quot;</span>
-                        {messageLabel}
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#E7DAB2] px-4 py-2 text-sm font-medium text-[#B45309]">
+                        <span aria-hidden="true">&quot;</span>
+                        <span>{messageLabel}</span>
+                        <span aria-hidden="true">&quot;</span>
                       </span>
                       <h2 className="text-3xl font-semibold leading-tight break-words text-foreground md:text-5xl">
                         {messageTitle}

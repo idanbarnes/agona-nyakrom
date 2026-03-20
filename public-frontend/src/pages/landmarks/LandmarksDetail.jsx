@@ -10,6 +10,7 @@ import {
   StateGate,
 } from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import { useDocumentTitle } from '../../lib/pageTitle.js'
 import useCmsPreviewRefresh from '../../lib/useCmsPreviewRefresh.js'
 
 // Prefer medium image, then fall back to any available image field.
@@ -69,6 +70,7 @@ function LandmarksDetail() {
   useCmsPreviewRefresh(loadLandmark)
 
   const name = item?.name || 'Landmark'
+  useDocumentTitle(name)
   const imagePath = selectImage(item?.images, item?.image)
   const body = item?.description || ''
   const imageUrl = useMemo(() => (imagePath ? resolveAssetUrl(imagePath) : ''), [imagePath])

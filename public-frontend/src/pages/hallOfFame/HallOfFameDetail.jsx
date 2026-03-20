@@ -10,6 +10,7 @@ import {
   StateGate,
 } from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import { useDocumentTitle } from '../../lib/pageTitle.js'
 import useCmsPreviewRefresh from '../../lib/useCmsPreviewRefresh.js'
 import { buildHallOfFameDetailPath } from './paths.js'
 
@@ -92,6 +93,7 @@ function HallOfFameDetail() {
   useCmsPreviewRefresh(loadEntry)
 
   const name = item?.name || item?.full_name || 'Hall of Fame'
+  useDocumentTitle(name)
   const role = item?.title || item?.position || item?.role || ''
   const body = item?.body || item?.bio || item?.description || item?.content || ''
   const sharePath = useMemo(() => buildHallOfFameDetailPath(slug), [slug])

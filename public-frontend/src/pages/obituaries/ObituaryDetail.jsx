@@ -8,6 +8,7 @@ import {
   ImageWithFallback,
 } from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import { useDocumentTitle } from '../../lib/pageTitle.js'
 import useCmsPreviewRefresh from '../../lib/useCmsPreviewRefresh.js'
 import { buildObituaryDetailPath } from './paths.js'
 
@@ -561,6 +562,7 @@ function ObituaryDetail() {
   useCmsPreviewRefresh(loadObituary)
 
   const normalizedItem = useMemo(() => normalizeObituary(item), [item])
+  useDocumentTitle(normalizedItem?.fullName || 'Obituary')
   const sharePath = useMemo(() => {
     const detailSlug = normalizedItem?.slug || slug || ''
     return buildObituaryDetailPath(detailSlug)

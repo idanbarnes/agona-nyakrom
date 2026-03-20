@@ -30,119 +30,155 @@ export const loadAnnouncementDetailPage = () =>
 export const loadNotFoundPage = () => import('../pages/NotFound.jsx')
 
 export const publicRouteDefinitions = [
-  { key: 'home', index: true, fullPath: '/', loader: loadHomePage },
-  { key: 'news-list', path: 'news', fullPath: '/news', loader: loadNewsListPage },
-  { key: 'updates-list', path: 'updates', fullPath: '/updates', loader: loadNewsListPage },
+  { key: 'home', index: true, fullPath: '/', loader: loadHomePage, title: 'Home' },
+  {
+    key: 'news-list',
+    path: 'news',
+    fullPath: '/news',
+    loader: loadNewsListPage,
+    title: 'News',
+  },
+  {
+    key: 'updates-list',
+    path: 'updates',
+    fullPath: '/updates',
+    loader: loadNewsListPage,
+    title: 'Updates',
+  },
   {
     key: 'news-detail',
     path: 'news/:slug',
     fullPath: '/news/:slug',
     loader: loadNewsDetailPage,
+    title: 'News',
   },
   {
     key: 'obituary-list',
     path: 'obituaries',
     fullPath: '/obituaries',
     loader: loadObituaryListPage,
+    title: 'Obituaries',
   },
   {
     key: 'obituary-id-detail',
     path: 'obituary/:id',
     fullPath: '/obituary/:id',
     loader: loadObituaryDetailPage,
+    title: 'Obituary',
   },
   {
     key: 'obituary-slug-detail',
     path: 'obituaries/:slug',
     fullPath: '/obituaries/:slug',
     loader: loadObituaryDetailPage,
+    title: 'Obituary',
   },
-  { key: 'clan-list', path: 'clans', fullPath: '/clans', loader: loadClanListPage },
+  {
+    key: 'clan-list',
+    path: 'clans',
+    fullPath: '/clans',
+    loader: loadClanListPage,
+    title: 'Clans',
+  },
   {
     key: 'clan-detail',
     path: 'clans/:slug',
     fullPath: '/clans/:slug',
     loader: loadClanDetailPage,
+    title: 'Clan',
   },
   {
     key: 'asafo-list',
     path: 'asafo-companies',
     fullPath: '/asafo-companies',
     loader: loadAsafoListPage,
+    title: 'Asafo Companies',
   },
   {
     key: 'asafo-detail',
     path: 'asafo-companies/:slug',
     fullPath: '/asafo-companies/:slug',
     loader: loadAsafoDetailPage,
+    title: 'Asafo Companies',
   },
   {
     key: 'hall-of-fame-list',
     path: 'hall-of-fame',
     fullPath: '/hall-of-fame',
     loader: loadHallOfFameListPage,
+    title: 'Hall of Fame',
   },
   {
     key: 'hall-of-fame-detail',
     path: 'hall-of-fame/:slug',
     fullPath: '/hall-of-fame/:slug',
     loader: loadHallOfFameDetailPage,
+    title: 'Hall of Fame',
   },
   {
     key: 'landmarks-list',
     path: 'landmarks',
     fullPath: '/landmarks',
     loader: loadLandmarksListPage,
+    title: 'Landmarks',
   },
   {
     key: 'landmarks-detail',
     path: 'landmarks/:slug',
     fullPath: '/landmarks/:slug',
     loader: loadLandmarksDetailPage,
+    title: 'Landmark',
   },
   {
     key: 'about-leadership',
     path: 'about/leadership-governance',
     fullPath: '/about/leadership-governance',
     loader: loadLeadershipGovernancePage,
+    title: 'Leadership & Governance',
   },
   {
     key: 'about-leader-profile',
     path: 'about/leadership-governance/:slug',
     fullPath: '/about/leadership-governance/:slug',
     loader: loadLeaderProfilePage,
+    title: 'Leadership Profile',
   },
   {
     key: 'about-rich-page',
     path: 'about/:slug',
     fullPath: '/about/:slug',
     loader: loadAboutRichPage,
+    title: 'About Nyakrom',
   },
   {
     key: 'announcements-events',
     path: 'announcements-events',
     fullPath: '/announcements-events',
     loader: loadAnnouncementsEventsPage,
+    title: 'Announcements & Events',
   },
   {
     key: 'event-detail',
     path: 'events/:slug',
     fullPath: '/events/:slug',
     loader: loadEventDetailPage,
+    title: 'Event',
   },
   {
     key: 'announcement-detail',
     path: 'announcements/:slug',
     fullPath: '/announcements/:slug',
     loader: loadAnnouncementDetailPage,
+    title: 'Announcement',
   },
   {
     key: 'contact',
     path: 'contact',
     fullPath: '/contact',
     loader: loadContactPage,
+    title: 'Contact Us',
   },
-  { key: 'not-found', path: '*', fullPath: '*', loader: loadNotFoundPage },
+  { key: 'not-found', path: '*', fullPath: '*', loader: loadNotFoundPage, title: 'Page Not Found' },
 ]
 
 function getRequestIdleCallback() {
@@ -212,6 +248,17 @@ function findMatchingRoute(pathname) {
       ),
     )
   })
+}
+
+export function getPublicRouteTitle(pathname) {
+  const matchedRoute = findMatchingRoute(pathname)
+  if (matchedRoute?.title) {
+    return matchedRoute.title
+  }
+
+  return (
+    publicRouteDefinitions.find((definition) => definition.key === 'not-found')?.title || ''
+  )
 }
 
 export function preloadPublicRoute(href) {

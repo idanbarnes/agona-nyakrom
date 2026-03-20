@@ -20,6 +20,7 @@ import {
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
 import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 import GatewayCardsManager from './GatewayCardsManager.jsx'
+import WhoWeAreGalleryImagePreview from './WhoWeAreGalleryImagePreview.jsx'
 import {
   buildPayload,
   getWhoWeAreDefaultGallery,
@@ -170,6 +171,9 @@ function AdminHomepageSectionsEditPage() {
   const isTextContentBlock = TEXT_CONTENT_BLOCK_TYPES.includes(formState.block_type)
   const isWhoWeAreBlock = formState.block_type === 'who_we_are'
   const isWelcomeBlock = formState.block_type === 'welcome'
+  const usesHomepageImagePreviewModal =
+    formState.block_type === 'welcome' ||
+    formState.block_type === 'editorial_feature'
 
   useEffect(() => {
     if (!getAuthToken()) {
@@ -716,17 +720,21 @@ function AdminHomepageSectionsEditPage() {
                                 event.target.files?.[0] || null
                               )
                             }
-                            existingAssetUrl={
-                              item?.image_id ||
-                              item?.imageId ||
-                              item?.image_url ||
-                              item?.imageUrl ||
-                              item?.url ||
-                              item?.src ||
-                              ''
-                            }
-                            existingAssetLabel="Current image"
-                          />
+                          >
+                            <WhoWeAreGalleryImagePreview
+                              file={formState.who_we_are_gallery_files?.[index] || null}
+                              imageUrl={
+                                item?.image_id ||
+                                item?.imageId ||
+                                item?.image_url ||
+                                item?.imageUrl ||
+                                item?.url ||
+                                item?.src ||
+                                ''
+                              }
+                              altText={item?.alt_text || `Who We Are gallery image ${index + 1}`}
+                            />
+                          </PhotoUploadField>
                         </div>
                       </FormField>
 
@@ -825,21 +833,36 @@ function AdminHomepageSectionsEditPage() {
                       : null
                   }
                 >
-                  <div className="rounded-xl border border-border bg-background/60">
-                    <PhotoUploadField
-                      label=""
-                      value={formState.media_image_file?.name || ''}
+	                  <div className="rounded-xl border border-border bg-background/60">
+	                    <PhotoUploadField
+	                      label=""
+	                      value={formState.media_image_file?.name || ''}
                       valueType="text"
                       valueId="media_image_file"
                       fileId="media_image_file_input"
-                      fileName="media_image_file"
-                      valuePlaceholder="Select image"
-                      acceptedFileTypes="image/*"
-                      onChange={handleFileChange}
-                      existingAssetUrl={formState.media_image_id || ''}
-                    />
-                  </div>
-                </FormField>
+	                      fileName="media_image_file"
+	                      valuePlaceholder="Select image"
+	                      acceptedFileTypes="image/*"
+	                      onChange={handleFileChange}
+	                      existingAssetUrl={
+	                        usesHomepageImagePreviewModal ? '' : formState.media_image_id || ''
+	                      }
+	                    >
+	                      {usesHomepageImagePreviewModal ? (
+	                        <WhoWeAreGalleryImagePreview
+	                          file={formState.media_image_file || null}
+	                          imageUrl={formState.media_image_id || ''}
+	                          altText={
+	                            formState.media_alt_text ||
+	                            `${
+	                              isWelcomeBlock ? 'Welcome' : 'Editorial Feature'
+	                            } block image preview`
+	                          }
+	                        />
+	                      ) : null}
+	                    </PhotoUploadField>
+	                  </div>
+	                </FormField>
               </div>
             )}
 

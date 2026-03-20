@@ -15,6 +15,7 @@ import {
   StateGate,
 } from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import { useDocumentTitle } from '../../lib/pageTitle.js'
 import useCmsPreviewRefresh from '../../lib/useCmsPreviewRefresh.js'
 
 const EMPTY_LEADERS = { current: [], past: [] }
@@ -157,6 +158,7 @@ function ClanDetail() {
   const pastLeaders = item?.leaders?.past || EMPTY_LEADERS.past
 
   const clanName = item?.name || 'Clan'
+  useDocumentTitle(clanName)
   const caption = (item?.caption || item?.intro || '').trim()
   const body = item?.body || item?.history || ''
   const imagePath =

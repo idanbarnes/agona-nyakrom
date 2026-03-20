@@ -11,12 +11,14 @@ import {
   ABOUT_SECTION_LABEL,
   PUBLIC_UI_LABELS,
 } from '../../constants/publicChrome.js'
+import { useDocumentTitle } from '../../lib/pageTitle.js'
 
 export default function AsafoDetail() {
   const { slug } = useParams()
   const [item, setItem] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  useDocumentTitle(item?.title || item?.name || 'Asafo Companies')
 
   useEffect(() => {
     let cancelled = false

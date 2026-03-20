@@ -332,8 +332,8 @@ function AdminLayout() {
   )
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-foreground">
-      <aside className="hidden h-screen w-72 shrink-0 border-r border-slate-200 lg:block">
+    <div className="min-h-screen bg-slate-50 text-foreground lg:h-screen lg:overflow-hidden">
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-72 border-r border-slate-200 bg-white lg:block">
         {sidebar(() => {})}
       </aside>
 
@@ -351,7 +351,7 @@ function AdminLayout() {
         </div>
       ) : null}
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col lg:ml-72 lg:h-screen lg:overflow-y-auto">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 md:px-6">
           <div className="flex items-center gap-3">
             <button

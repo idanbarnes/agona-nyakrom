@@ -5,6 +5,7 @@ import {
   getPublicEvents,
 } from '../../api/endpoints.js'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import { useDocumentTitle } from '../../lib/pageTitle.js'
 import useCmsPreviewRefresh from '../../lib/useCmsPreviewRefresh.js'
 import {
   Badge,
@@ -329,6 +330,7 @@ function EventDetail() {
   const showCalendar = state !== 'PAST' && hasCalendarDate(item?.event_date)
   const hasFlyer = Boolean(item?.flyer_image_path)
   const flyerUrl = hasFlyer ? resolveAssetUrl(item.flyer_image_path) : ''
+  useDocumentTitle(item?.title || 'Event')
   const canonicalPath = useMemo(
     () => buildEventDetailPath(item?.slug || slug),
     [item?.slug, slug],
