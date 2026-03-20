@@ -24,6 +24,7 @@ import StaggerGridReveal from '../../components/motion/StaggerGridReveal.jsx'
 import { buildIcsEvent, downloadIcs, hasCalendarDate } from '../../utils/calendar.js'
 import ImageLightbox from '../../components/ImageLightbox.jsx'
 import { downloadRemoteFile, openFileFallback } from '../../utils/download.js'
+import { buildEventDetailPath } from '../announcementsEventsPaths.js'
 
 const RELATED_COUNT = 3
 const backArrow = String.fromCharCode(8592)
@@ -246,10 +247,6 @@ function EventDetail() {
   const [previewImage, setPreviewImage] = useState(null)
   const [flyerDownloading, setFlyerDownloading] = useState(false)
 
-  useEffect(() => {
-    setShareUrl(window.location.href)
-  }, [])
-
   const loadEvent = useCallback(async () => {
     if (!slug) {
       setItem(null)
@@ -332,6 +329,27 @@ function EventDetail() {
   const showCalendar = state !== 'PAST' && hasCalendarDate(item?.event_date)
   const hasFlyer = Boolean(item?.flyer_image_path)
   const flyerUrl = hasFlyer ? resolveAssetUrl(item.flyer_image_path) : ''
+  const canonicalPath = useMemo(
+    () => buildEventDetailPath(item?.slug || slug),
+    [item?.slug, slug],
+  )
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !canonicalPath) {
+      return
+    }
+
+    const nextShareUrl = new URL(canonicalPath, window.location.origin).toString()
+    setShareUrl(nextShareUrl)
+
+    if (window.location.pathname === canonicalPath) {
+      return
+    }
+
+    const nextUrl = `${canonicalPath}${window.location.search}${window.location.hash}`
+    window.history.replaceState(window.history.state, '', nextUrl)
+  }, [canonicalPath])
+
   const sharePayload = useMemo(
     () => buildSharePayload(item, shareUrl),
     [item, shareUrl],
@@ -344,7 +362,7 @@ function EventDetail() {
     if (typeof window !== 'undefined') {
       const slugValue = item?.slug || slug
       if (slugValue) {
-        return `${window.location.origin}/events/${slugValue}`
+        return new URL(buildEventDetailPath(slugValue), window.location.origin).toString()
       }
     }
 
@@ -725,7 +743,7 @@ function EventDetail() {
                       </CardContent>
                       <CardFooter className="justify-start px-5 pb-5 pt-0">
                         <DetailPageCTA
-                          to={`/events/${event.slug}`}
+                          to={buildEventDetailPath(event.slug)}
                           label="View Details"
                         />
                       </CardFooter>

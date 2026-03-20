@@ -7,6 +7,12 @@ services:
     staticPublishPath: dist
     routes:
       - type: redirect
+        source: /announcements/:slug
+        destination: /announcements/:slug/
+      - type: redirect
+        source: /events/:slug
+        destination: /events/:slug/
+      - type: redirect
         source: /obituary/:slug/
         destination: /obituaries/:slug/
       - type: redirect

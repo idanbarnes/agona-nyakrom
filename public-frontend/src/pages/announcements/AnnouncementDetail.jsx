@@ -23,6 +23,7 @@ import RevealItem from '../../components/motion/RevealItem.jsx'
 import StaggerGridReveal from '../../components/motion/StaggerGridReveal.jsx'
 import ImageLightbox from '../../components/ImageLightbox.jsx'
 import { downloadRemoteFile, openFileFallback } from '../../utils/download.js'
+import { buildAnnouncementDetailPath } from '../announcementsEventsPaths.js'
 
 const MORE_COUNT = 5
 const backArrow = String.fromCharCode(8592)
@@ -204,10 +205,6 @@ function AnnouncementDetail() {
   const [previewImage, setPreviewImage] = useState(null)
   const [flyerDownloading, setFlyerDownloading] = useState(false)
 
-  useEffect(() => {
-    setShareUrl(window.location.href)
-  }, [])
-
   const loadAnnouncement = useCallback(async () => {
     if (!slug) {
       setItem(null)
@@ -279,6 +276,27 @@ function AnnouncementDetail() {
   const dateLabel = useMemo(() => formatDate(publishedAt), [publishedAt])
   const hasFlyer = Boolean(item?.flyer_image_path)
   const flyerUrl = hasFlyer ? resolveAssetUrl(item.flyer_image_path) : ''
+  const canonicalPath = useMemo(
+    () => buildAnnouncementDetailPath(item?.slug || slug),
+    [item?.slug, slug],
+  )
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !canonicalPath) {
+      return
+    }
+
+    const nextShareUrl = new URL(canonicalPath, window.location.origin).toString()
+    setShareUrl(nextShareUrl)
+
+    if (window.location.pathname === canonicalPath) {
+      return
+    }
+
+    const nextUrl = `${canonicalPath}${window.location.search}${window.location.hash}`
+    window.history.replaceState(window.history.state, '', nextUrl)
+  }, [canonicalPath])
+
   const sharePayload = useMemo(
     () => buildSharePayload(item, shareUrl),
     [item, shareUrl],
@@ -589,7 +607,7 @@ function AnnouncementDetail() {
                       </CardContent>
                       <CardFooter className="justify-start px-5 pb-5 pt-0">
                         <DetailPageCTA
-                          to={`/announcements/${announcement.slug}`}
+                          to={buildAnnouncementDetailPath(announcement.slug)}
                           label="View Details"
                         />
                       </CardFooter>

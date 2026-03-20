@@ -10,6 +10,10 @@ import RevealItem from '../components/motion/RevealItem.jsx'
 import StaggerGridReveal from '../components/motion/StaggerGridReveal.jsx'
 import { resolveAssetUrl } from '../lib/apiBase.js'
 import {
+  buildAnnouncementDetailPath,
+  buildEventDetailPath,
+} from './announcementsEventsPaths.js'
+import {
   Badge,
   Button,
   Card,
@@ -209,7 +213,9 @@ function EventCard({
     }
 
     const eventUrl =
-      typeof window !== 'undefined' ? `${window.location.origin}/events/${slug}` : ''
+      typeof window !== 'undefined'
+        ? new URL(buildEventDetailPath(slug), window.location.origin).toString()
+        : ''
     const ics = buildIcsEvent({
       title: event?.title || 'Community Event',
       description: event?.excerpt || event?.body || '',
@@ -311,7 +317,7 @@ function EventCard({
             Download Flyer
           </Button>
         ) : null}
-        <DetailPageCTA to={`/events/${slug}`} label="View Details" />
+        <DetailPageCTA to={buildEventDetailPath(slug)} label="View Details" />
       </CardFooter>
     </Card>
   )
@@ -388,7 +394,7 @@ function AnnouncementCard({ item, onPreviewImage }) {
         ) : null}
       </CardContent>
       <CardFooter className="justify-start">
-        <DetailPageCTA to={`/announcements/${slug}`} label="View Details" />
+        <DetailPageCTA to={buildAnnouncementDetailPath(slug)} label="View Details" />
       </CardFooter>
     </Card>
   )

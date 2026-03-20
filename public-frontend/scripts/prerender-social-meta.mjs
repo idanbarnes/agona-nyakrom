@@ -180,6 +180,14 @@ function buildObituaryCanonicalUrl(slug) {
   return `${DEFAULT_SITE_URL}/obituaries/${encodeURIComponent(slug)}/`
 }
 
+function buildAnnouncementCanonicalUrl(slug) {
+  return `${DEFAULT_SITE_URL}/announcements/${encodeURIComponent(slug)}/`
+}
+
+function buildEventCanonicalUrl(slug) {
+  return `${DEFAULT_SITE_URL}/events/${encodeURIComponent(slug)}/`
+}
+
 function buildHomeMeta() {
   return {
     title: SITE_NAME,
@@ -328,6 +336,85 @@ function buildObituaryMeta(entry) {
   }
 }
 
+function buildContentSummary(entry) {
+  return pickLeadParagraph(entry.excerpt || entry.body || entry.description || entry.summary || '')
+}
+
+function buildAnnouncementDescription(entry) {
+  const summaryCandidate = buildContentSummary(entry)
+  if (summaryCandidate) {
+    return truncate(summaryCandidate, 190)
+  }
+
+  const title = String(entry?.title || '').trim() || 'Announcement'
+  return truncate(`${title}. Read the full announcement from ${SITE_NAME}.`, 190)
+}
+
+function buildEventDescription(entry) {
+  const summaryCandidate = buildContentSummary(entry)
+  if (summaryCandidate) {
+    return truncate(summaryCandidate, 190)
+  }
+
+  const title = String(entry?.title || '').trim() || 'Event'
+  const dateLabel = entry?.event_date ? stripHtml(new Date(entry.event_date).toDateString()) : ''
+  const tagLabel = stripHtml(entry?.event_tag || '')
+  const suffix = [tagLabel, dateLabel].filter(Boolean).join(' · ')
+  return truncate(
+    suffix
+      ? `${title}. ${suffix}. View the full event details on ${SITE_NAME}.`
+      : `${title}. View the full event details on ${SITE_NAME}.`,
+    190,
+  )
+}
+
+function buildFlyerImage(entry) {
+  const candidates = [
+    entry.flyer_image_path,
+    entry.flyerImagePath,
+    entry.imageUrl,
+    entry.image_url,
+    '/share-default.svg',
+  ]
+
+  for (const candidate of candidates) {
+    const absolute = resolveAbsoluteUrl(candidate, {
+      preferSite: candidate === '/share-default.svg',
+    })
+    if (absolute) {
+      return absolute
+    }
+  }
+
+  return DEFAULT_SHARE_IMAGE
+}
+
+function buildAnnouncementMeta(entry) {
+  const title = String(entry?.title || '').trim() || 'Announcement'
+  return {
+    slug: entry.slug,
+    title: `${title} | Announcements | ${SITE_NAME}`,
+    description: buildAnnouncementDescription(entry),
+    url: buildAnnouncementCanonicalUrl(entry.slug),
+    image: buildFlyerImage(entry),
+    imageAlt: entry?.flyer_alt_text || title,
+    type: 'article',
+  }
+}
+
+function buildEventMeta(entry) {
+  const title = String(entry?.title || '').trim() || 'Event'
+  return {
+    slug: entry.slug,
+    title: `${title} | Events | ${SITE_NAME}`,
+    description: buildEventDescription(entry),
+    url: buildEventCanonicalUrl(entry.slug),
+    image: buildFlyerImage(entry),
+    imageAlt: entry?.flyer_alt_text || title,
+    type: 'article',
+  }
+}
+
 async function fetchJson(relativeUrl) {
   const response = await fetch(`${API_BASE_URL}${relativeUrl}`)
   if (!response.ok) {
@@ -373,6 +460,70 @@ async function loadObituaryEntries() {
   })
 }
 
+async function loadAnnouncementEntries() {
+  const firstPage = await fetchJson('/api/public/announcements?page=1&limit=100')
+  const initialItems = Array.isArray(firstPage?.items)
+    ? firstPage.items.filter((entry) => entry?.slug)
+    : []
+  const total = Number(firstPage?.total) || initialItems.length
+  const limit = Number(firstPage?.limit) || 100
+  const totalPages = Math.max(1, Math.ceil(total / limit))
+
+  if (totalPages === 1) {
+    return initialItems
+  }
+
+  const items = [...initialItems]
+  for (let page = 2; page <= totalPages; page += 1) {
+    const payload = await fetchJson(`/api/public/announcements?page=${page}&limit=${limit}`)
+    const pageItems = Array.isArray(payload?.items)
+      ? payload.items.filter((entry) => entry?.slug)
+      : []
+    items.push(...pageItems)
+  }
+
+  const seen = new Set()
+  return items.filter((entry) => {
+    if (seen.has(entry.slug)) {
+      return false
+    }
+    seen.add(entry.slug)
+    return true
+  })
+}
+
+async function loadEventEntries() {
+  const firstPage = await fetchJson('/api/public/events?state=all&page=1&limit=100')
+  const initialItems = Array.isArray(firstPage?.items)
+    ? firstPage.items.filter((entry) => entry?.slug)
+    : []
+  const total = Number(firstPage?.total) || initialItems.length
+  const limit = Number(firstPage?.limit) || 100
+  const totalPages = Math.max(1, Math.ceil(total / limit))
+
+  if (totalPages === 1) {
+    return initialItems
+  }
+
+  const items = [...initialItems]
+  for (let page = 2; page <= totalPages; page += 1) {
+    const payload = await fetchJson(`/api/public/events?state=all&page=${page}&limit=${limit}`)
+    const pageItems = Array.isArray(payload?.items)
+      ? payload.items.filter((entry) => entry?.slug)
+      : []
+    items.push(...pageItems)
+  }
+
+  const seen = new Set()
+  return items.filter((entry) => {
+    if (seen.has(entry.slug)) {
+      return false
+    }
+    seen.add(entry.slug)
+    return true
+  })
+}
+
 async function writeHallOfFameRoute(template, meta) {
   const html = injectMeta(template, meta)
   const outputDir = path.join(DIST_DIR, 'hall-of-fame', meta.slug)
@@ -393,11 +544,27 @@ async function writeObituaryRoute(template, meta) {
   }
 }
 
+async function writeAnnouncementRoute(template, meta) {
+  const html = injectMeta(template, meta)
+  const outputDir = path.join(DIST_DIR, 'announcements', meta.slug)
+  await fs.mkdir(outputDir, { recursive: true })
+  await fs.writeFile(path.join(outputDir, 'index.html'), html, 'utf8')
+}
+
+async function writeEventRoute(template, meta) {
+  const html = injectMeta(template, meta)
+  const outputDir = path.join(DIST_DIR, 'events', meta.slug)
+  await fs.mkdir(outputDir, { recursive: true })
+  await fs.writeFile(path.join(outputDir, 'index.html'), html, 'utf8')
+}
+
 async function main() {
   const template = await fs.readFile(DIST_INDEX_PATH, 'utf8')
   await fs.writeFile(DIST_INDEX_PATH, injectMeta(template, buildHomeMeta()), 'utf8')
   const hallOfFameEntries = await loadHallOfFameEntries()
   const obituaryEntries = await loadObituaryEntries()
+  const announcementEntries = await loadAnnouncementEntries()
+  const eventEntries = await loadEventEntries()
 
   for (const entry of hallOfFameEntries) {
     await writeHallOfFameRoute(template, buildHallOfFameMeta(entry))
@@ -407,8 +574,16 @@ async function main() {
     await writeObituaryRoute(template, buildObituaryMeta(entry))
   }
 
+  for (const entry of announcementEntries) {
+    await writeAnnouncementRoute(template, buildAnnouncementMeta(entry))
+  }
+
+  for (const entry of eventEntries) {
+    await writeEventRoute(template, buildEventMeta(entry))
+  }
+
   console.log(
-    `[social-meta] generated ${hallOfFameEntries.length} Hall of Fame metadata route${hallOfFameEntries.length === 1 ? '' : 's'} and ${obituaryEntries.length} obituary metadata route${obituaryEntries.length === 1 ? '' : 's'}.`,
+    `[social-meta] generated ${hallOfFameEntries.length} Hall of Fame metadata route${hallOfFameEntries.length === 1 ? '' : 's'}, ${obituaryEntries.length} obituary metadata route${obituaryEntries.length === 1 ? '' : 's'}, ${announcementEntries.length} announcement metadata route${announcementEntries.length === 1 ? '' : 's'}, and ${eventEntries.length} event metadata route${eventEntries.length === 1 ? '' : 's'}.`,
   )
 }
 
