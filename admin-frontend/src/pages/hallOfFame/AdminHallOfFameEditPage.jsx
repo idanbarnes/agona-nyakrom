@@ -21,6 +21,7 @@ function AdminHallOfFameEditPage() {
     name: '',
     title: '',
     body: '',
+    is_featured: false,
     published: false,
     image: null,
     existingImageUrl: '',
@@ -52,6 +53,7 @@ function AdminHallOfFameEditPage() {
           name: entry?.name || entry?.full_name || '',
           title: entry?.title || entry?.position || entry?.role || '',
           body: normalizedBody,
+          is_featured: Boolean(entry?.is_featured),
           published:
             typeof entry?.published === 'boolean'
               ? entry.published
@@ -86,6 +88,7 @@ function AdminHallOfFameEditPage() {
       formState.name !== initialState.name ||
       formState.title !== initialState.title ||
       formState.body !== initialState.body ||
+      formState.is_featured !== initialState.is_featured ||
       Boolean(formState.image)
     )
   }, [formState, initialState])
@@ -114,6 +117,7 @@ function AdminHallOfFameEditPage() {
     formData.append('name', formState.name.trim())
     formData.append('title', formState.title.trim())
     formData.append('body', formState.body)
+    formData.append('is_featured', String(Boolean(formState.is_featured)))
     formData.append('published', String(action === 'publish'))
     if (formState.image) {
       formData.append('image', formState.image)

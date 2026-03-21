@@ -4,6 +4,7 @@ import { deleteClan, getAllClans, updateClan } from '../../services/api/adminCla
 import { getAuthToken } from '../../lib/auth.js'
 import { buildApiUrl } from '../../lib/apiClient.js'
 import {
+  Badge,
   Button,
   ConfirmDialog,
   EmptyState,
@@ -253,6 +254,7 @@ function AdminClansListPage() {
         id,
         name: item.name || 'Untitled',
         slug: item.slug || '-',
+        isFeatured: Boolean(item.is_featured),
         published,
         updatedAt: item.updatedAt || item.updated_at,
         imageUrl: getClanImageUrl(item),
@@ -520,6 +522,9 @@ function AdminClansListPage() {
                 Slug
               </th>
               <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
+                Featured
+              </th>
+              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
                 Status
               </th>
               <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
@@ -546,6 +551,11 @@ function AdminClansListPage() {
                 </TableCell>
                 <TableCell className="max-w-xs break-words">
                   {item.slug}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={item.isFeatured ? 'success' : 'muted'}>
+                    {item.isFeatured ? 'Featured' : 'Standard'}
+                  </Badge>
                 </TableCell>
                 <TableCell>
                   <PublishStatus published={item.published} />

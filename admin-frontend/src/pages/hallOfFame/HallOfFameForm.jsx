@@ -3,9 +3,11 @@ import {
   Card,
   CardContent,
   CardFooter,
+  Checkbox,
   FormField,
   Input,
   InlineError,
+  Label,
 } from '../../components/ui/index.jsx'
 import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
@@ -147,6 +149,30 @@ export default function HallOfFameForm({
                 onChange={(event) => update('title', event.target.value)}
               />
             </FormField>
+
+            <div className="space-y-2">
+              <Label htmlFor="is_featured">Featured</Label>
+              <label
+                htmlFor="is_featured"
+                className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-background/60 px-4 py-3"
+              >
+                <Checkbox
+                  id="is_featured"
+                  name="is_featured"
+                  checked={Boolean(value?.is_featured)}
+                  onCheckedChange={(checked) => update('is_featured', Boolean(checked))}
+                  className="mt-0.5"
+                />
+                <span className="space-y-1">
+                  <span className="block text-sm font-medium text-foreground">
+                    Mark this Hall of Fame entry as featured
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    Featured entries can be prioritized by the Hall of Fame CMS and API.
+                  </span>
+                </span>
+              </label>
+            </div>
 
             <FormField
               label="Body"

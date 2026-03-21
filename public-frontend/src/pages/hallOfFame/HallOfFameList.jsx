@@ -60,7 +60,7 @@ function stripHtml(value) {
 }
 
 function buildFeaturedProfiles(items) {
-  const featured = items.slice(0, 3).map((item, index) => {
+  return items.slice(0, 3).map((item, index) => {
     const imagePath =
       item?.images?.large ||
       item?.images?.medium ||
@@ -83,36 +83,11 @@ function buildFeaturedProfiles(items) {
       summary,
     }
   })
-
-  const fallbackProfiles = [
-    {
-      id: 'legacy',
-      imagePath: '',
-      name: 'Legacy Preserved',
-      role: 'Community memory',
-      summary: 'Profiles that document the people whose work shaped Nyakrom across generations.',
-    },
-    {
-      id: 'leadership',
-      imagePath: '',
-      name: 'Leadership Remembered',
-      role: 'Historical record',
-      summary: 'A growing archive of achievers, leaders, and cultural figures.',
-    },
-    {
-      id: 'inspiration',
-      imagePath: '',
-      name: 'Inspiration Shared',
-      role: 'Public archive',
-      summary: 'Search the collection by name and open each story in full detail.',
-    },
-  ]
-
-  return [...featured, ...fallbackProfiles].slice(0, 3)
 }
 
 function HallOfFameList() {
   const [items, setItems] = useState([])
+  const [featuredItems, setFeaturedItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -125,7 +100,27 @@ function HallOfFameList() {
       setError(null)
 
       try {
-        const response = await getHallOfFame()
+        const [listResult, featuredResult] = await Promise.allSettled([
+          getHallOfFame(),
+          getHallOfFame({ featured: true }),
+        ])
+
+        if (!isMounted) {
+          return
+        }
+
+        if (featuredResult.status === 'fulfilled') {
+          const featuredPayload = featuredResult.value?.data || featuredResult.value
+          setFeaturedItems(extractItems(featuredPayload))
+        } else {
+          setFeaturedItems([])
+        }
+
+        if (listResult.status !== 'fulfilled') {
+          throw listResult.reason
+        }
+
+        const response = listResult.value
         if (!isMounted) {
           return
         }
@@ -152,7 +147,10 @@ function HallOfFameList() {
 
   const deferredSearchTerm = useDeferredValue(searchTerm)
   const normalizedSearch = deferredSearchTerm.trim().toLowerCase()
-  const featuredProfiles = useMemo(() => buildFeaturedProfiles(items), [items])
+  const featuredProfiles = useMemo(
+    () => buildFeaturedProfiles(featuredItems),
+    [featuredItems],
+  )
   const filteredItems = useMemo(() => {
     if (!normalizedSearch) {
       return items
@@ -262,50 +260,52 @@ function HallOfFameList() {
               </div>
             }
             visual={
-              <div className="relative">
-                <div className="pointer-events-none absolute -left-6 top-4 h-24 w-24 rounded-full bg-amber-200/45 blur-3xl" />
-                <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-stone-300/35 blur-2xl" />
-                <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  <article className="group relative row-span-2 overflow-hidden rounded-[1.75rem] border border-white/80 bg-stone-200 shadow-[0_18px_40px_rgba(120,53,15,0.18)]">
-                    <CmsCardImage
-                      src={featuredProfiles[0]?.imagePath}
-                      alt={featuredProfiles[0]?.name}
-                      ratio="4/5"
-                      className="h-full rounded-none bg-[linear-gradient(180deg,_#f6ead7_0%,_#ead7bc_100%)]"
-                      imgClassName="transition-transform duration-300 ease-out group-hover:scale-[1.04]"
-                      sizes="(min-width: 1024px) 26vw, 100vw"
-                    />
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-stone-950/80 via-stone-950/25 to-transparent p-5 text-white">
-                      <p className="text-xl font-semibold leading-tight">
-                        {featuredProfiles[0]?.name}
-                      </p>
-                      <p className="mt-1 text-sm text-white/80">{featuredProfiles[0]?.role}</p>
-                    </div>
-                  </article>
-
-                  {featuredProfiles.slice(1).map((profile, index) => (
-                    <article
-                      key={profile.id || index}
-                      className="group relative overflow-hidden rounded-[1.5rem] border border-white/80 bg-stone-200 shadow-[0_16px_34px_rgba(120,53,15,0.15)]"
-                    >
+              featuredProfiles.length > 0 ? (
+                <div className="relative">
+                  <div className="pointer-events-none absolute -left-6 top-4 h-24 w-24 rounded-full bg-amber-200/45 blur-3xl" />
+                  <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-stone-300/35 blur-2xl" />
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <article className="group relative row-span-2 overflow-hidden rounded-[1.75rem] border border-white/80 bg-stone-200 shadow-[0_18px_40px_rgba(120,53,15,0.18)]">
                       <CmsCardImage
-                        src={profile.imagePath}
-                        alt={profile.name}
-                        ratio="5/4"
-                        className="h-full rounded-none bg-[linear-gradient(180deg,_#faf4ea_0%,_#eadfce_100%)]"
+                        src={featuredProfiles[0]?.imagePath}
+                        alt={featuredProfiles[0]?.name}
+                        ratio="4/5"
+                        className="h-full rounded-none bg-[linear-gradient(180deg,_#f6ead7_0%,_#ead7bc_100%)]"
                         imgClassName="transition-transform duration-300 ease-out group-hover:scale-[1.04]"
-                        sizes="(min-width: 1024px) 18vw, 50vw"
+                        sizes="(min-width: 1024px) 26vw, 100vw"
                       />
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-stone-950/85 via-stone-950/30 to-transparent p-4 text-white">
-                        <p className="text-base font-semibold leading-tight">{profile.name}</p>
-                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-white/80">
-                          {profile.role}
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-stone-950/80 via-stone-950/25 to-transparent p-5 text-white">
+                        <p className="text-xl font-semibold leading-tight">
+                          {featuredProfiles[0]?.name}
                         </p>
+                        <p className="mt-1 text-sm text-white/80">{featuredProfiles[0]?.role}</p>
                       </div>
                     </article>
-                  ))}
+
+                    {featuredProfiles.slice(1).map((profile, index) => (
+                      <article
+                        key={profile.id || index}
+                        className="group relative overflow-hidden rounded-[1.5rem] border border-white/80 bg-stone-200 shadow-[0_16px_34px_rgba(120,53,15,0.15)]"
+                      >
+                        <CmsCardImage
+                          src={profile.imagePath}
+                          alt={profile.name}
+                          ratio="5/4"
+                          className="h-full rounded-none bg-[linear-gradient(180deg,_#faf4ea_0%,_#eadfce_100%)]"
+                          imgClassName="transition-transform duration-300 ease-out group-hover:scale-[1.04]"
+                          sizes="(min-width: 1024px) 18vw, 50vw"
+                        />
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-stone-950/85 via-stone-950/30 to-transparent p-4 text-white">
+                          <p className="text-base font-semibold leading-tight">{profile.name}</p>
+                          <p className="mt-1 line-clamp-2 text-xs leading-5 text-white/80">
+                            {profile.role}
+                          </p>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : null
             }
           />
         </div>

@@ -7,6 +7,8 @@ const { generateSlug } = require('../../utils/slugify');
 const { success, error } = require('../../utils/response');
 const { invalidatePublicClans } = require('../../utils/publicCacheInvalidation');
 
+const parseBoolean = (value) => value === true || value === 'true';
+
 const processImageIfPresent = async (file, uniqueId) => {
   if (!file) return {};
   return mediaService.processImage(file, 'clans', uniqueId);
@@ -47,7 +49,15 @@ const groupLeaders = (leaders = []) => {
 // POST /create
 const createClan = async (req, res) => {
   try {
-    const { name, intro, history, key_contributions, published } = req.body || {};
+    const { name, intro, history, key_contributions } = req.body || {};
+    const published =
+      req.body?.published !== undefined ? parseBoolean(req.body.published) : undefined;
+    const is_featured =
+      req.body?.is_featured !== undefined
+        ? parseBoolean(req.body.is_featured)
+        : req.body?.isFeatured !== undefined
+        ? parseBoolean(req.body.isFeatured)
+        : undefined;
 
     const { valid, missing } = requireFields(req.body || {}, ['name', 'intro', 'history']);
     if (!valid) {
@@ -67,6 +77,7 @@ const createClan = async (req, res) => {
       key_contributions,
       images,
       published,
+      is_featured,
     });
     invalidatePublicClans(created);
 
@@ -84,9 +95,25 @@ const createClan = async (req, res) => {
 const updateClan = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, intro, history, key_contributions, published } = req.body || {};
+    const { name, intro, history, key_contributions } = req.body || {};
+    const published =
+      req.body?.published !== undefined ? parseBoolean(req.body.published) : undefined;
+    const is_featured =
+      req.body?.is_featured !== undefined
+        ? parseBoolean(req.body.is_featured)
+        : req.body?.isFeatured !== undefined
+        ? parseBoolean(req.body.isFeatured)
+        : undefined;
 
-    const updatableFields = ['name', 'intro', 'history', 'key_contributions', 'published'];
+    const updatableFields = [
+      'name',
+      'intro',
+      'history',
+      'key_contributions',
+      'published',
+      'is_featured',
+      'isFeatured',
+    ];
     const hasFieldUpdate = updatableFields.some((field) => req.body && req.body[field] !== undefined);
     const hasImageUpdate = Boolean(req.file || typeof req.body?.image === 'string');
     if (!hasFieldUpdate && !hasImageUpdate) {
@@ -114,6 +141,7 @@ const updateClan = async (req, res) => {
       key_contributions,
       images,
       published,
+      is_featured,
     });
     invalidatePublicClans({ ...existing, ...updated });
 

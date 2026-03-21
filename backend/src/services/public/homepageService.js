@@ -294,7 +294,7 @@ const getHallOfFameItems = async (block, cache) => {
         thumbnail_image_path
        FROM hall_of_fame
        WHERE published = true
-       ORDER BY is_featured DESC, display_order ASC NULLS LAST, created_at DESC`
+       ORDER BY is_featured DESC, created_at DESC`
     );
     cache.hallOfFame = rows;
   }

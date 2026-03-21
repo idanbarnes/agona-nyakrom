@@ -9,7 +9,6 @@ const baseSelect = `
   bio,
   achievements,
   is_featured,
-  display_order,
   original_image_path,
   large_image_path,
   medium_image_path,
@@ -31,7 +30,6 @@ const mapHallOfFame = (row) => {
     bio,
     achievements,
     is_featured,
-    display_order,
     original_image_path,
     large_image_path,
     medium_image_path,
@@ -57,7 +55,6 @@ const mapHallOfFame = (row) => {
     imageUrl,
     isPublished: Boolean(published),
     is_featured,
-    display_order,
     images: {
       original: original_image_path,
       large: large_image_path,
@@ -81,7 +78,6 @@ const create = async (data) => {
     bio = null,
     achievements = null,
     is_featured = false,
-    display_order = null,
     images = {},
     published = false,
   } = data;
@@ -91,11 +87,11 @@ const create = async (data) => {
 
   const query = `
     INSERT INTO hall_of_fame
-      (name, slug, title, body, bio, achievements, is_featured, display_order,
+      (name, slug, title, body, bio, achievements, is_featured,
        original_image_path, large_image_path, medium_image_path, thumbnail_image_path,
        published, created_at, updated_at)
     VALUES
-      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
     RETURNING ${baseSelect}
   `;
 
@@ -107,7 +103,6 @@ const create = async (data) => {
     bio || resolvedBody,
     achievements,
     is_featured,
-    display_order,
     original || null,
     large || null,
     medium || null,
@@ -144,7 +139,6 @@ const update = async (id, data) => {
   if (data.bio !== undefined) setField('bio', data.bio);
   if (data.achievements !== undefined) setField('achievements', data.achievements);
   if (data.is_featured !== undefined) setField('is_featured', data.is_featured);
-  if (data.display_order !== undefined) setField('display_order', data.display_order);
   if (data.published !== undefined) setField('published', Boolean(data.published));
 
   if (data.images) {

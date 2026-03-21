@@ -7,6 +7,7 @@ const baseSelect = `
   intro,
   history,
   key_contributions,
+  is_featured,
   original_image_path,
   large_image_path,
   medium_image_path,
@@ -26,6 +27,7 @@ const mapClan = (row) => {
     intro,
     history,
     key_contributions,
+    is_featured,
     original_image_path,
     large_image_path,
     medium_image_path,
@@ -42,6 +44,7 @@ const mapClan = (row) => {
     intro,
     history,
     key_contributions,
+    is_featured,
     images: {
       original: original_image_path,
       large: large_image_path,
@@ -61,6 +64,7 @@ const create = async (data) => {
     intro = null,
     history = null,
     key_contributions = null,
+    is_featured = false,
     images = {},
     published = false,
   } = data;
@@ -69,11 +73,11 @@ const create = async (data) => {
 
   const query = `
     INSERT INTO family_clans
-      (name, slug, intro, history, key_contributions,
+      (name, slug, intro, history, key_contributions, is_featured,
        original_image_path, large_image_path, medium_image_path, thumbnail_image_path,
        published, created_at, updated_at)
     VALUES
-      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
     RETURNING ${baseSelect}
   `;
 
@@ -83,6 +87,7 @@ const create = async (data) => {
     intro,
     history,
     key_contributions,
+    is_featured,
     original || null,
     large || null,
     medium || null,
@@ -110,6 +115,7 @@ const update = async (id, data) => {
   if (data.intro !== undefined) setField('intro', data.intro);
   if (data.history !== undefined) setField('history', data.history);
   if (data.key_contributions !== undefined) setField('key_contributions', data.key_contributions);
+  if (data.is_featured !== undefined) setField('is_featured', data.is_featured);
   if (data.published !== undefined) setField('published', data.published);
 
   if (data.images) {

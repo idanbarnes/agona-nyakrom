@@ -7,9 +7,14 @@ const { rememberPublicData } = require('../../utils/publicDataCache');
 // GET /api/public/hall-of-fame
 const getAllPublishedHallOfFame = async (req, res) => {
   try {
+    const featured = req.query?.featured === 'true';
+    const cacheKey = featured
+      ? 'public:hall-of-fame:list:featured'
+      : 'public:hall-of-fame:list';
+
     const { value: items, cacheStatus } = await rememberPublicData(
-      'public:hall-of-fame:list',
-      () => hallOfFameService.findAllPublished(),
+      cacheKey,
+      () => hallOfFameService.findAllPublished({ featured }),
       { ttlMs: 30 * 1000 }
     );
     setPublicCacheHeaders(res);

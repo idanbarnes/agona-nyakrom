@@ -42,9 +42,6 @@ const normalizePayload = (body = {}) => {
   const normalizedBody = normalizeText(body.body ?? body.bio ?? body.description ?? body.content);
   const normalizedTitle = normalizeText(body.title ?? body.position ?? body.role);
   const normalizedName = normalizeText(body.name ?? body.full_name);
-  const displayOrderRaw = body.display_order;
-  const parsedDisplayOrder =
-    displayOrderRaw !== undefined && displayOrderRaw !== '' ? Number(displayOrderRaw) : undefined;
 
   return {
     name: normalizedName,
@@ -58,8 +55,6 @@ const normalizePayload = (body = {}) => {
         : body.isFeatured !== undefined
         ? parseBoolean(body.isFeatured)
         : undefined,
-    display_order:
-      Number.isFinite(parsedDisplayOrder) ? parsedDisplayOrder : undefined,
     published:
       body.published !== undefined
         ? parseBoolean(body.published)

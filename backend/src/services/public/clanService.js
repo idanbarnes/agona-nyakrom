@@ -8,6 +8,7 @@ const baseSelect = `
   intro,
   history,
   key_contributions,
+  is_featured,
   original_image_path,
   large_image_path,
   medium_image_path,
@@ -27,6 +28,7 @@ const mapClan = (row) => {
     intro,
     history,
     key_contributions,
+    is_featured,
     original_image_path,
     large_image_path,
     medium_image_path,
@@ -42,6 +44,7 @@ const mapClan = (row) => {
     intro,
     history,
     key_contributions,
+    is_featured,
     images: {
       original: original_image_path,
       large: large_image_path,
@@ -53,11 +56,17 @@ const mapClan = (row) => {
   };
 };
 
-const findAllPublished = async () => {
+const findAllPublished = async ({ featured = false } = {}) => {
+  const where = ['published = true'];
+
+  if (featured) {
+    where.push('is_featured = true');
+  }
+
   const { rows } = await pool.query(
     `SELECT ${baseSelect}
      FROM family_clans
-     WHERE published = true
+     WHERE ${where.join(' AND ')}
      ORDER BY name ASC`
   );
   return rows.map(mapClan);

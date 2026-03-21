@@ -10,9 +10,11 @@ import {
   Card,
   CardContent,
   CardFooter,
+  Checkbox,
   FormField,
   InlineError,
   Input,
+  Label,
   Textarea,
 } from '../../components/ui/index.jsx'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
@@ -48,6 +50,7 @@ function AdminClansCreatePage() {
     name: '',
     caption: '',
     body: '',
+    is_featured: false,
     image: null,
   })
   const [leaders, setLeaders] = useState([])
@@ -128,6 +131,7 @@ function AdminClansCreatePage() {
     formData.append('name', formState.name)
     formData.append('intro', formState.caption)
     formData.append('history', formState.body)
+    formData.append('is_featured', String(Boolean(formState.is_featured)))
     formData.append('published', String(action === 'publish'))
     if (formState.image) {
       formData.append('image', formState.image)
@@ -265,6 +269,35 @@ function AdminClansCreatePage() {
                     textareaId="clan-create-rich-text"
                   />
                 </FormField>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="is_featured">Featured</Label>
+                <label
+                  htmlFor="is_featured"
+                  className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-background/60 px-4 py-3"
+                >
+                  <Checkbox
+                    id="is_featured"
+                    name="is_featured"
+                    checked={Boolean(formState.is_featured)}
+                    onCheckedChange={(checked) =>
+                      setFormState((current) => ({
+                        ...current,
+                        is_featured: Boolean(checked),
+                      }))
+                    }
+                    className="mt-0.5"
+                  />
+                  <span className="space-y-1">
+                    <span className="block text-sm font-medium text-foreground">
+                      Mark this clan as featured
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      Featured clans can appear in the public Clans visual spotlight.
+                    </span>
+                  </span>
+                </label>
               </div>
             </div>
 

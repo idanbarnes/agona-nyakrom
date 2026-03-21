@@ -63,7 +63,15 @@ export const getObituaryDetail = (slug) =>
   request(appendPreviewToken(`/api/public/obituaries/${slug}`))
 
 // Clans endpoints.
-export const getClans = () => request('/api/public/clans')
+export const getClans = (params = {}) => {
+  const query = new URLSearchParams()
+  if (params.featured === true) {
+    query.set('featured', 'true')
+  }
+
+  const queryString = query.toString()
+  return request(`/api/public/clans${queryString ? `?${queryString}` : ''}`)
+}
 
 export const getClanDetail = (slug) =>
   request(appendPreviewToken(`/api/public/clans/${slug}`))

@@ -9,7 +9,6 @@ const baseSelect = `
   bio,
   achievements,
   is_featured,
-  display_order,
   original_image_path,
   large_image_path,
   medium_image_path,
@@ -31,7 +30,6 @@ const mapEntry = (row) => {
     bio,
     achievements,
     is_featured,
-    display_order,
     original_image_path,
     large_image_path,
     medium_image_path,
@@ -57,7 +55,6 @@ const mapEntry = (row) => {
     imageUrl,
     isPublished: Boolean(published),
     is_featured,
-    display_order,
     images: {
       original: original_image_path,
       large: large_image_path,
@@ -71,12 +68,18 @@ const mapEntry = (row) => {
   };
 };
 
-const findAllPublished = async () => {
+const findAllPublished = async ({ featured = false } = {}) => {
+  const where = ['published = true'];
+
+  if (featured) {
+    where.push('is_featured = true');
+  }
+
   const { rows } = await pool.query(
     `SELECT ${baseSelect}
      FROM hall_of_fame
-     WHERE published = true
-     ORDER BY is_featured DESC, display_order ASC NULLS LAST, created_at DESC`
+     WHERE ${where.join(' AND ')}
+     ORDER BY is_featured DESC, created_at DESC`
   );
   return rows.map(mapEntry);
 };

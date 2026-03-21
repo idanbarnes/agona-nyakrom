@@ -110,7 +110,7 @@ function invalidatePublicCarousel() {
 }
 
 function invalidatePublicClans(entry = {}) {
-  clearMany(['public:clans:list']);
+  clearManyByPrefix(['public:clans:list']);
 
   const detailKeys = new Set([entry?.slug, entry?.id]);
   const exactKeys = [];

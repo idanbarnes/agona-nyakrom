@@ -68,7 +68,7 @@ const findAll = async ({ limit, offset, featured }) => {
     `SELECT *
      FROM hall_of_fame
      WHERE ${where.join(' AND ')}
-     ORDER BY is_featured DESC, display_order ASC NULLS LAST, created_at DESC
+     ORDER BY is_featured DESC, created_at DESC
      LIMIT $${limitIndex} OFFSET $${offsetIndex}`,
     params
   );

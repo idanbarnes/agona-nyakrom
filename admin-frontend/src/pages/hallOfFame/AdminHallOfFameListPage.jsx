@@ -8,6 +8,7 @@ import {
 import { getAuthToken } from '../../lib/auth.js'
 import { buildApiUrl } from '../../lib/apiClient.js'
 import {
+  Badge,
   Button,
   ConfirmDialog,
   EmptyState,
@@ -267,7 +268,6 @@ function AdminHallOfFameListPage() {
         name: item.name || 'Untitled',
         title: item.title || '-',
         isFeatured: Boolean(item.is_featured),
-        displayOrder: item.display_order ?? item.displayOrder ?? '-',
         published,
         updatedAt: item.updatedAt || item.updated_at,
         photoUrl: getPhotoUrl(item),
@@ -529,9 +529,6 @@ function AdminHallOfFameListPage() {
                 Featured
               </th>
               <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
-                Display Order
-              </th>
-              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
                 Status
               </th>
               <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
@@ -564,8 +561,11 @@ function AdminHallOfFameListPage() {
                 <TableCell className="max-w-xs break-words">
                   {item.title}
                 </TableCell>
-                <TableCell>{item.isFeatured ? 'Yes' : 'No'}</TableCell>
-                <TableCell>{item.displayOrder}</TableCell>
+                <TableCell>
+                  <Badge variant={item.isFeatured ? 'success' : 'muted'}>
+                    {item.isFeatured ? 'Featured' : 'Standard'}
+                  </Badge>
+                </TableCell>
                 <TableCell>
                   <PublishStatus published={item.published} />
                 </TableCell>

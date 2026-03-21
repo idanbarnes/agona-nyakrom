@@ -16,6 +16,7 @@ function AdminHallOfFameCreatePage() {
     name: '',
     title: '',
     body: '',
+    is_featured: false,
     image: null,
     existingImageUrl: '',
   })
@@ -45,6 +46,7 @@ function AdminHallOfFameCreatePage() {
     formData.append('name', formState.name.trim())
     formData.append('title', formState.title.trim())
     formData.append('body', formState.body)
+    formData.append('is_featured', String(Boolean(formState.is_featured)))
     formData.append('published', String(action === 'publish'))
     if (formState.image) {
       formData.append('image', formState.image)

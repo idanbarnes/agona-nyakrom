@@ -3,6 +3,7 @@ import { getClans } from '../../api/endpoints.js'
 import AnimatedHeroIntro from '../../components/motion/AnimatedHeroIntro.jsx'
 import RevealItem from '../../components/motion/RevealItem.jsx'
 import StaggerGridReveal from '../../components/motion/StaggerGridReveal.jsx'
+import CmsCardImage from '../../components/media/CmsCardImage.jsx'
 import {
   Button,
   Card,
@@ -28,50 +29,26 @@ function extractItems(payload) {
 }
 
 function buildFeaturedClanPanels(items) {
-  const featured = items
-    .slice(0, 3)
-    .map((item, index) => {
-      const imagePath =
-        item?.images?.large ||
-        item?.images?.medium ||
-        item?.images?.thumbnail ||
-        item?.thumbnail ||
-        item?.image
+  return items.slice(0, 3).map((item, index) => {
+    const imagePath =
+      item?.images?.large ||
+      item?.images?.medium ||
+      item?.images?.thumbnail ||
+      item?.thumbnail ||
+      item?.image
 
-      return {
-        id: item?.id || item?.slug || `clan-${index}`,
-        name: item?.name || 'Clan profile',
-        caption: (item?.caption || item?.intro || '').trim(),
-        imageUrl: imagePath ? resolveAssetUrl(imagePath) : '',
-      }
-    })
-
-  const fallbackPanels = [
-    {
-      id: 'heritage',
-      name: 'Ancestral Identity',
-      caption: 'Stories, emblems, and lineage preserved across generations.',
-      imageUrl: '',
-    },
-    {
-      id: 'leadership',
-      name: 'Leadership Lineage',
-      caption: 'Profiles of leaders who continue to shape community life.',
-      imageUrl: '',
-    },
-    {
-      id: 'community',
-      name: 'Community Memory',
-      caption: 'A living archive of clan heritage and belonging.',
-      imageUrl: '',
-    },
-  ]
-
-  return [...featured, ...fallbackPanels].slice(0, 3)
+    return {
+      id: item?.id || item?.slug || `clan-${index}`,
+      name: item?.name || 'Clan profile',
+      caption: (item?.caption || item?.intro || '').trim(),
+      imagePath,
+    }
+  })
 }
 
 function ClanList() {
   const [items, setItems] = useState([])
+  const [featuredItems, setFeaturedItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -83,7 +60,27 @@ function ClanList() {
       setError(null)
 
       try {
-        const response = await getClans()
+        const [listResult, featuredResult] = await Promise.allSettled([
+          getClans(),
+          getClans({ featured: true }),
+        ])
+
+        if (!isMounted) {
+          return
+        }
+
+        if (featuredResult.status === 'fulfilled') {
+          const featuredPayload = featuredResult.value?.data || featuredResult.value
+          setFeaturedItems(extractItems(featuredPayload))
+        } else {
+          setFeaturedItems([])
+        }
+
+        if (listResult.status !== 'fulfilled') {
+          throw listResult.reason
+        }
+
+        const response = listResult.value
         if (!isMounted) {
           return
         }
@@ -108,7 +105,7 @@ function ClanList() {
     }
   }, [])
 
-  const featuredPanels = useMemo(() => buildFeaturedClanPanels(items), [items])
+  const featuredPanels = useMemo(() => buildFeaturedClanPanels(featuredItems), [featuredItems])
   const totalClansLabel = loading ? 'Loading clans' : `${items.length} clans documented`
 
   return (
@@ -170,72 +167,60 @@ function ClanList() {
               </div>
             }
             visual={
-              <div className="relative">
-                <div className="pointer-events-none absolute -left-5 top-6 h-24 w-24 rounded-full bg-amber-200/40 blur-3xl" />
-                <div className="pointer-events-none absolute right-0 top-0 h-20 w-20 rounded-full bg-stone-300/30 blur-2xl" />
-                <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  <article className="group relative row-span-2 overflow-hidden rounded-[1.75rem] border border-white/70 bg-stone-200 shadow-[0_18px_40px_rgba(28,25,23,0.16)]">
-                    <div className="aspect-[4/5]">
-                      {featuredPanels[0]?.imageUrl ? (
-                        <img
-                          src={featuredPanels[0].imageUrl}
-                          alt={featuredPanels[0].name}
-                          className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.04]"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-end bg-[linear-gradient(180deg,_#f5ede1_0%,_#ead9bd_100%)] p-5">
-                          <p className="max-w-[11rem] text-lg font-semibold leading-tight text-stone-900">
-                            {featuredPanels[0]?.name}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-stone-950/75 via-stone-950/20 to-transparent p-5 text-white">
-                      <p className="text-xl font-semibold leading-tight">
-                        {featuredPanels[0]?.name}
-                      </p>
-                      {featuredPanels[0]?.caption ? (
-                        <p className="mt-1 line-clamp-2 text-sm leading-6 text-white/80">
-                          {featuredPanels[0].caption}
+              featuredPanels.length > 0 ? (
+                <div className="relative">
+                  <div className="pointer-events-none absolute -left-6 top-4 h-24 w-24 rounded-full bg-amber-200/45 blur-3xl" />
+                  <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-stone-300/35 blur-2xl" />
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <article className="group relative row-span-2 overflow-hidden rounded-[1.75rem] border border-white/80 bg-stone-200 shadow-[0_18px_40px_rgba(120,53,15,0.18)]">
+                      <CmsCardImage
+                        src={featuredPanels[0]?.imagePath}
+                        alt={featuredPanels[0]?.name}
+                        ratio="4/5"
+                        className="h-full rounded-none bg-[linear-gradient(180deg,_#f6ead7_0%,_#ead7bc_100%)]"
+                        imgClassName="transition-transform duration-300 ease-out group-hover:scale-[1.04]"
+                        sizes="(min-width: 1024px) 26vw, 100vw"
+                      />
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-stone-950/80 via-stone-950/25 to-transparent p-5 text-white">
+                        <p className="text-xl font-semibold leading-tight">
+                          {featuredPanels[0]?.name}
                         </p>
-                      ) : null}
-                    </div>
-                  </article>
-
-                  {featuredPanels.slice(1).map((panel, index) => (
-                    <article
-                      key={panel.id || index}
-                      className="group relative overflow-hidden rounded-[1.5rem] border border-white/70 bg-stone-200 shadow-[0_16px_34px_rgba(28,25,23,0.12)]"
-                    >
-                      <div className="aspect-[5/4]">
-                        {panel.imageUrl ? (
-                          <img
-                            src={panel.imageUrl}
-                            alt={panel.name}
-                            className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.04]"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-end bg-[linear-gradient(180deg,_#f8f5ef_0%,_#e8ddcd_100%)] p-4">
-                            <p className="max-w-[10rem] text-base font-semibold leading-tight text-stone-900">
-                              {panel.name}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-stone-950/80 via-stone-950/25 to-transparent p-4 text-white">
-                        <p className="text-base font-semibold leading-tight">
-                          {panel.name}
-                        </p>
-                        {panel.caption ? (
-                          <p className="mt-1 line-clamp-2 text-xs leading-5 text-white/80">
-                            {panel.caption}
+                        {featuredPanels[0]?.caption ? (
+                          <p className="mt-1 text-sm text-white/80">
+                            {featuredPanels[0].caption}
                           </p>
                         ) : null}
                       </div>
                     </article>
-                  ))}
+
+                    {featuredPanels.slice(1).map((panel, index) => (
+                      <article
+                        key={panel.id || index}
+                        className="group relative overflow-hidden rounded-[1.5rem] border border-white/80 bg-stone-200 shadow-[0_16px_34px_rgba(120,53,15,0.15)]"
+                      >
+                        <CmsCardImage
+                          src={panel.imagePath}
+                          alt={panel.name}
+                          ratio="5/4"
+                          className="h-full rounded-none bg-[linear-gradient(180deg,_#faf4ea_0%,_#eadfce_100%)]"
+                          imgClassName="transition-transform duration-300 ease-out group-hover:scale-[1.04]"
+                          sizes="(min-width: 1024px) 18vw, 50vw"
+                        />
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-stone-950/85 via-stone-950/30 to-transparent p-4 text-white">
+                          <p className="text-base font-semibold leading-tight">
+                            {panel.name}
+                          </p>
+                          {panel.caption ? (
+                            <p className="mt-1 line-clamp-2 text-xs leading-5 text-white/80">
+                              {panel.caption}
+                            </p>
+                          ) : null}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : null
             }
           />
         </div>

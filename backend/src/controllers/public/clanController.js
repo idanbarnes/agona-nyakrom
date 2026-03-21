@@ -7,9 +7,12 @@ const { rememberPublicData } = require('../../utils/publicDataCache');
 // GET /api/public/clans
 const getAllPublishedClans = async (req, res) => {
   try {
+    const featured = req.query?.featured === 'true';
+    const cacheKey = featured ? 'public:clans:list:featured' : 'public:clans:list';
+
     const { value: items, cacheStatus } = await rememberPublicData(
-      'public:clans:list',
-      () => clanService.findAllPublished(),
+      cacheKey,
+      () => clanService.findAllPublished({ featured }),
       { ttlMs: 30 * 1000 }
     );
     setPublicCacheHeaders(res);
