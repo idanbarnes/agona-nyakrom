@@ -59,6 +59,17 @@ function stripHtml(value) {
   return value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
+function shuffleItems(items) {
+  const nextItems = [...items]
+
+  for (let index = nextItems.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    ;[nextItems[index], nextItems[swapIndex]] = [nextItems[swapIndex], nextItems[index]]
+  }
+
+  return nextItems
+}
+
 function buildFeaturedProfiles(items) {
   return items.slice(0, 3).map((item, index) => {
     const imagePath =
@@ -111,7 +122,7 @@ function HallOfFameList() {
 
         if (featuredResult.status === 'fulfilled') {
           const featuredPayload = featuredResult.value?.data || featuredResult.value
-          setFeaturedItems(extractItems(featuredPayload))
+          setFeaturedItems(shuffleItems(extractItems(featuredPayload)))
         } else {
           setFeaturedItems([])
         }
@@ -126,7 +137,7 @@ function HallOfFameList() {
         }
 
         const payload = response?.data || response
-        setItems(extractItems(payload))
+        setItems(shuffleItems(extractItems(payload)))
       } catch (err) {
         if (isMounted) {
           setError(err)
