@@ -1,10 +1,6 @@
 import { getAuthToken } from '../../lib/auth.js'
+import { buildApiUrl } from '../../lib/apiBase.js'
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? 'http://localhost:5000' : '')
-
-const buildUrl = (path) => `${API_BASE_URL}${path}`
 const authHeaders = () => {
   const token = getAuthToken()
   return token ? { Authorization: `Bearer ${token}` } : {}
@@ -21,21 +17,21 @@ const parse = async (response) => {
 }
 
 export const getAllAsafoCompanies = async () => {
-  const response = await fetch(buildUrl('/api/admin/asafo'), {
+  const response = await fetch(buildApiUrl('/api/admin/asafo'), {
     headers: { Accept: 'application/json', ...authHeaders() },
   })
   return parse(response)
 }
 
 export const getSingleAsafoCompany = async (id) => {
-  const response = await fetch(buildUrl(`/api/admin/asafo/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/asafo/${id}`), {
     headers: { Accept: 'application/json', ...authHeaders() },
   })
   return parse(response)
 }
 
 export const createAsafoCompany = async (formData) => {
-  const response = await fetch(buildUrl('/api/admin/asafo'), {
+  const response = await fetch(buildApiUrl('/api/admin/asafo'), {
     method: 'POST',
     headers: { Accept: 'application/json', ...authHeaders() },
     body: formData,
@@ -44,7 +40,7 @@ export const createAsafoCompany = async (formData) => {
 }
 
 export const updateAsafoCompany = async (id, formData) => {
-  const response = await fetch(buildUrl(`/api/admin/asafo/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/asafo/${id}`), {
     method: 'PUT',
     headers: { Accept: 'application/json', ...authHeaders() },
     body: formData,
@@ -53,7 +49,7 @@ export const updateAsafoCompany = async (id, formData) => {
 }
 
 export const deleteAsafoCompany = async (id) => {
-  const response = await fetch(buildUrl(`/api/admin/asafo/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/asafo/${id}`), {
     method: 'DELETE',
     headers: { Accept: 'application/json', ...authHeaders() },
   })
@@ -63,7 +59,7 @@ export const deleteAsafoCompany = async (id) => {
 export const uploadAsafoInlineImage = async (file) => {
   const formData = new FormData()
   formData.append('image', file)
-  const response = await fetch(buildUrl('/api/admin/asafo/upload-image'), {
+  const response = await fetch(buildApiUrl('/api/admin/asafo/upload-image'), {
     method: 'POST',
     headers: { Accept: 'application/json', ...authHeaders() },
     body: formData,

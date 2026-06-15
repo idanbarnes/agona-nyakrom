@@ -38,7 +38,7 @@ export default function AdminAboutPageEditor() {
   const cancelTarget = resolveAdminCancelTarget(location.pathname)
 
   useEffect(() => {
-    if (!getAuthToken()) return navigate('/login', { replace: true })
+    if (!getAuthToken()) return navigate('/admin/login', { replace: true })
     getAboutPage(slug)
       .then((res) => setState({ ...initialState, ...(res.data || res) }))
       .catch((err) => {

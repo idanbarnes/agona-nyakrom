@@ -22,7 +22,7 @@ function AdminHistoryPage() {
 
   useEffect(() => {
     if (!getAuthToken()) {
-      navigate('/login', { replace: true })
+      navigate('/admin/login', { replace: true })
       return
     }
 
@@ -80,7 +80,7 @@ function AdminHistoryPage() {
     setSuccessMessage('')
 
     if (!getAuthToken()) {
-      navigate('/login', { replace: true })
+      navigate('/admin/login', { replace: true })
       return
     }
 

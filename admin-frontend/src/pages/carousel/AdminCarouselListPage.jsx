@@ -266,7 +266,7 @@ function AdminCarouselListPage() {
   useEffect(() => {
     if (!getAuthToken()) {
       // Prevent unauthenticated access to admin resources.
-      navigate('/login', { replace: true })
+      navigate('/admin/login', { replace: true })
       return
     }
 

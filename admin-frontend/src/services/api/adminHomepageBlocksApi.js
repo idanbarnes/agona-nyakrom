@@ -1,21 +1,6 @@
 import { getAuthToken } from '../../lib/auth.js'
+import { buildApiUrl } from '../../lib/apiBase.js'
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? 'http://localhost:5000' : '')
-
-function buildUrl(path) {
-  if (!API_BASE_URL) {
-    return path
-  }
-
-  const base = API_BASE_URL.endsWith('/')
-    ? API_BASE_URL.slice(0, -1)
-    : API_BASE_URL
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-
-  return `${base}${normalizedPath}`
-}
 
 function buildAuthHeaders() {
   const token = getAuthToken()
@@ -48,7 +33,7 @@ function isFormDataPayload(payloadOrFormData) {
 }
 
 export async function getAllBlocks() {
-  const response = await fetch(buildUrl('/api/admin/homepage-blocks'), {
+  const response = await fetch(buildApiUrl('/api/admin/homepage-blocks'), {
     method: 'GET',
     headers: {
       Accept: 'application/json',
@@ -60,7 +45,7 @@ export async function getAllBlocks() {
 }
 
 export async function getSingleBlock(id) {
-  const response = await fetch(buildUrl(`/api/admin/homepage-blocks/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/homepage-blocks/${id}`), {
     method: 'GET',
     headers: {
       Accept: 'application/json',
@@ -73,7 +58,7 @@ export async function getSingleBlock(id) {
 
 export async function createBlock(payload) {
   const isFormData = isFormDataPayload(payload)
-  const response = await fetch(buildUrl('/api/admin/homepage-blocks'), {
+  const response = await fetch(buildApiUrl('/api/admin/homepage-blocks'), {
     method: 'POST',
     headers: {
       Accept: 'application/json',
@@ -88,7 +73,7 @@ export async function createBlock(payload) {
 
 export async function updateBlock(id, payload) {
   const isFormData = isFormDataPayload(payload)
-  const response = await fetch(buildUrl(`/api/admin/homepage-blocks/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/homepage-blocks/${id}`), {
     method: 'PUT',
     headers: {
       Accept: 'application/json',
@@ -102,7 +87,7 @@ export async function updateBlock(id, payload) {
 }
 
 export async function deleteBlock(id) {
-  const response = await fetch(buildUrl(`/api/admin/homepage-blocks/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/homepage-blocks/${id}`), {
     method: 'DELETE',
     headers: {
       Accept: 'application/json',

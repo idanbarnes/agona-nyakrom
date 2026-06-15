@@ -1,21 +1,6 @@
 import { getAuthToken } from '../../lib/auth.js'
+import { buildApiUrl } from '../../lib/apiBase.js'
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? 'http://localhost:5000' : '')
-
-function buildUrl(path) {
-  if (!API_BASE_URL) {
-    return path
-  }
-
-  const base = API_BASE_URL.endsWith('/')
-    ? API_BASE_URL.slice(0, -1)
-    : API_BASE_URL
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-
-  return `${base}${normalizedPath}`
-}
 
 function buildAuthHeaders() {
   const token = getAuthToken()
@@ -53,7 +38,7 @@ export async function getAllHallOfFame(params = {}) {
   }
 
   const query = searchParams.toString()
-  const url = buildUrl(`/api/admin/hall-of-fame/all${query ? `?${query}` : ''}`)
+  const url = buildApiUrl(`/api/admin/hall-of-fame/all${query ? `?${query}` : ''}`)
   const response = await fetch(url, {
     method: 'GET',
     headers: {
@@ -66,7 +51,7 @@ export async function getAllHallOfFame(params = {}) {
 }
 
 export async function getSingleHallOfFame(id) {
-  const response = await fetch(buildUrl(`/api/admin/hall-of-fame/single/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/hall-of-fame/single/${id}`), {
     method: 'GET',
     headers: {
       Accept: 'application/json',
@@ -78,7 +63,7 @@ export async function getSingleHallOfFame(id) {
 }
 
 export async function createHallOfFame(formData) {
-  const response = await fetch(buildUrl('/api/admin/hall-of-fame/create'), {
+  const response = await fetch(buildApiUrl('/api/admin/hall-of-fame/create'), {
     method: 'POST',
     headers: {
       Accept: 'application/json',
@@ -91,7 +76,7 @@ export async function createHallOfFame(formData) {
 }
 
 export async function updateHallOfFame(id, formData) {
-  const response = await fetch(buildUrl(`/api/admin/hall-of-fame/update/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/hall-of-fame/update/${id}`), {
     method: 'PUT',
     headers: {
       Accept: 'application/json',
@@ -104,7 +89,7 @@ export async function updateHallOfFame(id, formData) {
 }
 
 export async function deleteHallOfFame(id) {
-  const response = await fetch(buildUrl(`/api/admin/hall-of-fame/delete/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/hall-of-fame/delete/${id}`), {
     method: 'DELETE',
     headers: {
       Accept: 'application/json',
@@ -119,7 +104,7 @@ export async function uploadHallOfFameInlineImage(file) {
   const formData = new FormData()
   formData.append('image', file)
 
-  const response = await fetch(buildUrl('/api/admin/hall-of-fame/upload-image'), {
+  const response = await fetch(buildApiUrl('/api/admin/hall-of-fame/upload-image'), {
     method: 'POST',
     headers: {
       Accept: 'application/json',

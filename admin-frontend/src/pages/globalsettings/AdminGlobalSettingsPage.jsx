@@ -263,7 +263,7 @@ function AdminGlobalSettingsPage() {
     let isMounted = true
 
     if (!getAuthToken()) {
-      navigate('/login', { replace: true })
+      navigate('/admin/login', { replace: true })
       return () => {
         isMounted = false
       }
@@ -365,7 +365,7 @@ function AdminGlobalSettingsPage() {
 
   const submitSettings = async (action = 'publish') => {
     if (!getAuthToken()) {
-      navigate('/login', { replace: true })
+      navigate('/admin/login', { replace: true })
       return
     }
 

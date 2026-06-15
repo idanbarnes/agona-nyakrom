@@ -1,21 +1,6 @@
 import { getAuthToken } from '../../lib/auth.js'
+import { buildApiUrl } from '../../lib/apiBase.js'
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? 'http://localhost:5000' : '')
-
-function buildUrl(path) {
-  if (!API_BASE_URL) {
-    return path
-  }
-
-  const base = API_BASE_URL.endsWith('/')
-    ? API_BASE_URL.slice(0, -1)
-    : API_BASE_URL
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-
-  return `${base}${normalizedPath}`
-}
 
 function buildAuthHeaders() {
   const token = getAuthToken()
@@ -53,7 +38,7 @@ export async function getAllLandmarks(params = {}) {
   }
 
   const query = searchParams.toString()
-  const url = buildUrl(`/api/admin/landmarks${query ? `?${query}` : ''}`)
+  const url = buildApiUrl(`/api/admin/landmarks${query ? `?${query}` : ''}`)
   const response = await fetch(url, {
     method: 'GET',
     headers: {
@@ -66,7 +51,7 @@ export async function getAllLandmarks(params = {}) {
 }
 
 export async function getSingleLandmark(id) {
-  const response = await fetch(buildUrl(`/api/admin/landmarks/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/landmarks/${id}`), {
     method: 'GET',
     headers: {
       Accept: 'application/json',
@@ -78,7 +63,7 @@ export async function getSingleLandmark(id) {
 }
 
 export async function createLandmark(formData) {
-  const response = await fetch(buildUrl('/api/admin/landmarks'), {
+  const response = await fetch(buildApiUrl('/api/admin/landmarks'), {
     method: 'POST',
     headers: {
       Accept: 'application/json',
@@ -91,7 +76,7 @@ export async function createLandmark(formData) {
 }
 
 export async function updateLandmark(id, formData) {
-  const response = await fetch(buildUrl(`/api/admin/landmarks/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/landmarks/${id}`), {
     method: 'PUT',
     headers: {
       Accept: 'application/json',
@@ -104,7 +89,7 @@ export async function updateLandmark(id, formData) {
 }
 
 export async function deleteLandmark(id) {
-  const response = await fetch(buildUrl(`/api/admin/landmarks/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/landmarks/${id}`), {
     method: 'DELETE',
     headers: {
       Accept: 'application/json',

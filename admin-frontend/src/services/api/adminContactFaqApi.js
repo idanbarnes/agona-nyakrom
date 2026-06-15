@@ -1,21 +1,6 @@
 import { getAuthToken } from '../../lib/auth.js'
+import { buildApiUrl } from '../../lib/apiBase.js'
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? 'http://localhost:5000' : '')
-
-function buildUrl(path) {
-  if (!API_BASE_URL) {
-    return path
-  }
-
-  const base = API_BASE_URL.endsWith('/')
-    ? API_BASE_URL.slice(0, -1)
-    : API_BASE_URL
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-
-  return `${base}${normalizedPath}`
-}
 
 function buildAuthHeaders() {
   const token = getAuthToken()
@@ -59,7 +44,7 @@ async function requestJson(path, { method = 'GET', body } = {}) {
     headers['Content-Type'] = 'application/json'
   }
 
-  const response = await fetch(buildUrl(path), {
+  const response = await fetch(buildApiUrl(path), {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,

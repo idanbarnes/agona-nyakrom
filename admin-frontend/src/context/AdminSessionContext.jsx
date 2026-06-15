@@ -16,6 +16,7 @@ import {
   setLoginReason,
   setPostLoginRedirect,
 } from '../lib/auth.js'
+import { ADMIN_LOGIN_PATH } from '../lib/adminPaths.js'
 import {
   installApiFetchInterceptor,
   onApiUnauthorized,
@@ -199,7 +200,7 @@ export function AdminSessionProvider({ children }) {
       const reasonMessage = reasonMessageFromCode(reason)
       if (preserveRoute) {
         const nextRoute = `${location.pathname}${location.search}${location.hash}`
-        if (nextRoute && nextRoute !== '/login') {
+        if (nextRoute && nextRoute !== ADMIN_LOGIN_PATH) {
           setPostLoginRedirect(nextRoute)
         }
       }
@@ -218,7 +219,7 @@ export function AdminSessionProvider({ children }) {
       }
 
       if (redirect) {
-        navigate('/login', {
+        navigate(ADMIN_LOGIN_PATH, {
           replace: true,
           state: {
             reasonMessage,

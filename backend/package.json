@@ -9,12 +9,12 @@
     "start": "node server.js",
     "start:render": "npm run start:prod",
     "start:prod": "npm run migrate && node server.js",
+    "test": "node --test ./test/**/*.test.js",
     "migrate": "node ./node_modules/knex/bin/cli.js --knexfile knexfile.js migrate:latest",
     "migrate:local-to-neon": "node src/scripts/migrateLocalDbToNeon.js",
     "migrate:uploads-to-cloudinary": "node src/scripts/migrateLocalUploadsToCloudinary.js",
     "admin:create": "node src/scripts/createAdmin.js",
-    "seed:admin": "node src/scripts/seedAdmin.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "seed:admin": "node src/scripts/seedAdmin.js"
   },
   "keywords": [],
   "author": "",

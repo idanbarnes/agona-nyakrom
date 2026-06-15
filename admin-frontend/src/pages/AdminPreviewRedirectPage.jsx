@@ -55,7 +55,7 @@ function AdminPreviewRedirectPage() {
       <section className="space-y-4">
         <h1 className="text-xl font-semibold text-foreground">Preview unavailable</h1>
         <p className="text-sm text-muted-foreground">{errorMessage}</p>
-        <Button as={Link} to="/dashboard" variant="secondary">
+        <Button as={Link} to="/admin/dashboard" variant="secondary">
           Back to dashboard
         </Button>
       </section>

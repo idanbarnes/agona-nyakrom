@@ -1,0 +1,10 @@
+{
+  "name": "agona-nyakrom-workspace",
+  "private": true,
+  "scripts": {
+    "install:workspaces": "node ./scripts/install-workspaces.mjs",
+    "build:unified": "node ./scripts/build-unified-runtime.mjs",
+    "start:unified": "npm --prefix backend run start:prod",
+    "unified": "npm run install:workspaces && npm run build:unified && npm run start:unified"
+  }
+}

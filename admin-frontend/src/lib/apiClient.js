@@ -1,28 +1,12 @@
 import { getAuthToken } from './auth.js'
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? 'http://localhost:5000' : '')
+import { buildApiUrl as resolveApiUrl } from './apiBase.js'
 
 const unauthorizedListeners = new Set()
 let isFetchInterceptorInstalled = false
 let originalFetch = null
 
-function buildUrl(path) {
-  if (!API_BASE_URL) {
-    return path
-  }
-
-  const base = API_BASE_URL.endsWith('/')
-    ? API_BASE_URL.slice(0, -1)
-    : API_BASE_URL
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-
-  return `${base}${normalizedPath}`
-}
-
 export function buildApiUrl(path) {
-  return buildUrl(path)
+  return resolveApiUrl(path)
 }
 
 function isSessionManagedRequest(input, init = {}) {
@@ -128,7 +112,7 @@ export async function apiRequest(path, options = {}) {
 
   let response
   try {
-    response = await fetch(buildUrl(path), {
+    response = await fetch(resolveApiUrl(path), {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -172,7 +156,7 @@ export async function apiRequestFormData(path, formData, options = {}) {
 
   let response
   try {
-    response = await fetch(buildUrl(path), {
+    response = await fetch(resolveApiUrl(path), {
       method,
       headers,
       body: formData,

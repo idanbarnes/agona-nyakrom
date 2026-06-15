@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import AdminLayout from './layouts/AdminLayout.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import { AdminSessionProvider } from './context/AdminSessionContext.jsx'
+import { ADMIN_DASHBOARD_PATH, ADMIN_LOGIN_PATH } from './lib/adminPaths.js'
 import {
   adminRouteDefinitions,
 } from './routes/routeLoaders.js'
@@ -44,7 +45,7 @@ function App() {
   return (
     <AdminSessionProvider>
       <Routes>
-        <Route path="/login" element={buildAdminRouteElement(loginDefinition)} />
+        <Route path={ADMIN_LOGIN_PATH} element={buildAdminRouteElement(loginDefinition)} />
 
         <Route element={<ProtectedRoute />}>
           <Route element={<AdminLayout />}>
@@ -58,7 +59,10 @@ function App() {
           </Route>
         </Route>
 
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Navigate to={ADMIN_DASHBOARD_PATH} replace />} />
+        <Route path="/admin" element={<Navigate to={ADMIN_DASHBOARD_PATH} replace />} />
+        <Route path="/login" element={<Navigate to={ADMIN_LOGIN_PATH} replace />} />
+        <Route path="/dashboard" element={<Navigate to={ADMIN_DASHBOARD_PATH} replace />} />
         <Route path="*" element={buildAdminRouteElement(notFoundDefinition)} />
       </Routes>
     </AdminSessionProvider>

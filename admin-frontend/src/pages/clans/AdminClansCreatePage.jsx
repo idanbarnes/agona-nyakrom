@@ -107,7 +107,7 @@ function AdminClansCreatePage() {
     setSubmitAction(action)
 
     if (!getAuthToken()) {
-      navigate('/login', { replace: true })
+      navigate('/admin/login', { replace: true })
       return
     }
 

@@ -1,21 +1,6 @@
 import { getAuthToken } from '../../lib/auth.js'
+import { buildApiUrl } from '../../lib/apiBase.js'
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? 'http://localhost:5000' : '')
-
-function buildUrl(path) {
-  if (!API_BASE_URL) {
-    return path
-  }
-
-  const base = API_BASE_URL.endsWith('/')
-    ? API_BASE_URL.slice(0, -1)
-    : API_BASE_URL
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-
-  return `${base}${normalizedPath}`
-}
 
 function buildAuthHeaders() {
   const token = getAuthToken()
@@ -44,7 +29,7 @@ async function parseJsonResponse(response) {
 }
 
 export async function getHistory() {
-  const response = await fetch(buildUrl('/api/admin/history'), {
+  const response = await fetch(buildApiUrl('/api/admin/history'), {
     method: 'GET',
     headers: {
       Accept: 'application/json',
@@ -56,7 +41,7 @@ export async function getHistory() {
 }
 
 export async function saveHistory(formData) {
-  const response = await fetch(buildUrl('/api/admin/history'), {
+  const response = await fetch(buildApiUrl('/api/admin/history'), {
     method: 'PUT',
     headers: {
       Accept: 'application/json',

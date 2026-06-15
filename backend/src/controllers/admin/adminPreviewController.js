@@ -7,12 +7,13 @@ const carouselAdminService = require('../../services/admin/carouselAdminService'
 const { issuePreviewToken } = require('../../services/admin/adminPreviewTokenService');
 const { success, error } = require('../../utils/response');
 
+const UNIFIED_SITE_URL = process.env.UNIFIED_SITE_URL || '';
 const PUBLIC_SITE_URL = process.env.PUBLIC_SITE_URL || '';
 const isCarouselResource = (value) => value === 'carousel' || value === 'carousels';
 
 const buildPublicUrl = (publicPathWithQuery) => {
   const path = String(publicPathWithQuery || '').trim();
-  const base = String(PUBLIC_SITE_URL || '').trim().replace(/\/$/, '');
+  const base = String(UNIFIED_SITE_URL || PUBLIC_SITE_URL || '').trim().replace(/\/$/, '');
 
   if (!path) {
     return '';

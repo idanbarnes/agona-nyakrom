@@ -1,6 +1,7 @@
 import { matchPath } from 'react-router-dom'
+import { ADMIN_DASHBOARD_PATH } from './adminPaths.js'
 
-const DASHBOARD_PATH = '/dashboard'
+const DASHBOARD_PATH = ADMIN_DASHBOARD_PATH
 
 const LIST_BACKED_CANCEL_ROUTES = [
   { pattern: '/admin/news/create', target: '/admin/news' },

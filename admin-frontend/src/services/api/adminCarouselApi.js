@@ -1,21 +1,6 @@
 import { getAuthToken } from '../../lib/auth.js'
+import { buildApiUrl } from '../../lib/apiBase.js'
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? 'http://localhost:5000' : '')
-
-function buildUrl(path) {
-  if (!API_BASE_URL) {
-    return path
-  }
-
-  const base = API_BASE_URL.endsWith('/')
-    ? API_BASE_URL.slice(0, -1)
-    : API_BASE_URL
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-
-  return `${base}${normalizedPath}`
-}
 
 function buildAuthHeaders() {
   const token = getAuthToken()
@@ -57,10 +42,10 @@ export async function getAllSlides(params = {}) {
     Accept: 'application/json',
     ...buildAuthHeaders(),
   }
-  const primaryUrl = buildUrl(
+  const primaryUrl = buildApiUrl(
     `/api/admin/carousel/all${query ? `?${query}` : ''}`
   )
-  const fallbackUrl = buildUrl(
+  const fallbackUrl = buildApiUrl(
     `/api/admin/carousel${query ? `?${query}` : ''}`
   )
 
@@ -86,7 +71,7 @@ export async function getSingleSlide(id) {
     ...buildAuthHeaders(),
   }
   const primaryResponse = await fetch(
-    buildUrl(`/api/admin/carousel/single/${id}`),
+    buildApiUrl(`/api/admin/carousel/single/${id}`),
     {
       method: 'GET',
       headers,
@@ -94,7 +79,7 @@ export async function getSingleSlide(id) {
   )
 
   if (primaryResponse.status === 404) {
-    const fallbackResponse = await fetch(buildUrl(`/api/admin/carousel/${id}`), {
+    const fallbackResponse = await fetch(buildApiUrl(`/api/admin/carousel/${id}`), {
       method: 'GET',
       headers,
     })
@@ -105,7 +90,7 @@ export async function getSingleSlide(id) {
 }
 
 export async function createSlide(formData) {
-  const response = await fetch(buildUrl('/api/admin/carousel/create'), {
+  const response = await fetch(buildApiUrl('/api/admin/carousel/create'), {
     method: 'POST',
     headers: {
       Accept: 'application/json',
@@ -118,7 +103,7 @@ export async function createSlide(formData) {
 }
 
 export async function updateSlide(id, formData) {
-  const response = await fetch(buildUrl(`/api/admin/carousel/update/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/carousel/update/${id}`), {
     method: 'PUT',
     headers: {
       Accept: 'application/json',
@@ -131,7 +116,7 @@ export async function updateSlide(id, formData) {
 }
 
 export async function deleteSlide(id) {
-  const response = await fetch(buildUrl(`/api/admin/carousel/delete/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/carousel/delete/${id}`), {
     method: 'DELETE',
     headers: {
       Accept: 'application/json',

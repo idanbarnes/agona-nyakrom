@@ -93,7 +93,7 @@ export default function AdminAsafoCompaniesSectionPage() {
 
   useEffect(() => {
     if (!getAuthToken()) {
-      navigate('/login', { replace: true })
+      navigate('/admin/login', { replace: true })
       return
     }
     if (!section) {

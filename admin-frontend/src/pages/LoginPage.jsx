@@ -10,6 +10,7 @@ import {
   setAuthAdmin,
   setAuthToken,
 } from '../lib/auth.js'
+import { ADMIN_DASHBOARD_PATH } from '../lib/adminPaths.js'
 import { postJson } from '../lib/apiClient.js'
 
 function resolveRoute(route) {
@@ -121,7 +122,7 @@ function LoginPage() {
     () =>
       resolveRoute(location.state?.from) ||
       consumePostLoginRedirect() ||
-      '/dashboard',
+      ADMIN_DASHBOARD_PATH,
   )
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)

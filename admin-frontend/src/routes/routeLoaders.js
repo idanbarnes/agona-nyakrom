@@ -70,8 +70,8 @@ export const loadAdminPreviewRedirectPage = () =>
   import('../pages/AdminPreviewRedirectPage.jsx')
 
 export const adminRouteDefinitions = [
-  { key: 'login', path: '/login', loader: loadLoginPage },
-  { key: 'dashboard', path: '/dashboard', loader: loadDashboardPage },
+  { key: 'login', path: '/admin/login', loader: loadLoginPage },
+  { key: 'dashboard', path: '/admin/dashboard', loader: loadDashboardPage },
   { key: 'news-list', path: '/admin/news', loader: loadAdminNewsListPage },
   { key: 'news-create', path: '/admin/news/create', loader: loadAdminNewsCreatePage },
   { key: 'news-edit', path: '/admin/news/edit/:id', loader: loadAdminNewsEditPage },

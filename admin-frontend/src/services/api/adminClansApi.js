@@ -1,21 +1,6 @@
 import { getAuthToken } from '../../lib/auth.js'
+import { buildApiUrl } from '../../lib/apiBase.js'
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? 'http://localhost:5000' : '')
-
-function buildUrl(path) {
-  if (!API_BASE_URL) {
-    return path
-  }
-
-  const base = API_BASE_URL.endsWith('/')
-    ? API_BASE_URL.slice(0, -1)
-    : API_BASE_URL
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-
-  return `${base}${normalizedPath}`
-}
 
 function buildAuthHeaders() {
   const token = getAuthToken()
@@ -53,7 +38,7 @@ export async function getAllClans(params = {}) {
   }
 
   const query = searchParams.toString()
-  const url = buildUrl(`/api/admin/clans/all${query ? `?${query}` : ''}`)
+  const url = buildApiUrl(`/api/admin/clans/all${query ? `?${query}` : ''}`)
   const response = await fetch(url, {
     method: 'GET',
     headers: {
@@ -66,7 +51,7 @@ export async function getAllClans(params = {}) {
 }
 
 export async function getSingleClan(id) {
-  const response = await fetch(buildUrl(`/api/admin/clans/single/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/clans/single/${id}`), {
     method: 'GET',
     headers: {
       Accept: 'application/json',
@@ -78,7 +63,7 @@ export async function getSingleClan(id) {
 }
 
 export async function createClan(formData) {
-  const response = await fetch(buildUrl('/api/admin/clans/create'), {
+  const response = await fetch(buildApiUrl('/api/admin/clans/create'), {
     method: 'POST',
     headers: {
       Accept: 'application/json',
@@ -91,7 +76,7 @@ export async function createClan(formData) {
 }
 
 export async function updateClan(id, formData) {
-  const response = await fetch(buildUrl(`/api/admin/clans/update/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/clans/update/${id}`), {
     method: 'PUT',
     headers: {
       Accept: 'application/json',
@@ -104,7 +89,7 @@ export async function updateClan(id, formData) {
 }
 
 export async function deleteClan(id) {
-  const response = await fetch(buildUrl(`/api/admin/clans/delete/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/clans/delete/${id}`), {
     method: 'DELETE',
     headers: {
       Accept: 'application/json',
@@ -127,7 +112,7 @@ export async function createClanLeader(clanId, payloadOrFormData) {
     headers['Content-Type'] = 'application/json'
   }
 
-  const response = await fetch(buildUrl(`/api/admin/clans/${clanId}/leaders`), {
+  const response = await fetch(buildApiUrl(`/api/admin/clans/${clanId}/leaders`), {
     method: 'POST',
     headers,
     body: isFormData ? payloadOrFormData : JSON.stringify(payloadOrFormData),
@@ -149,7 +134,7 @@ export async function updateClanLeader(clanId, leaderId, payloadOrFormData) {
   }
 
   const response = await fetch(
-    buildUrl(`/api/admin/clans/${clanId}/leaders/${leaderId}`),
+    buildApiUrl(`/api/admin/clans/${clanId}/leaders/${leaderId}`),
     {
       method: 'PUT',
       headers,
@@ -162,7 +147,7 @@ export async function updateClanLeader(clanId, leaderId, payloadOrFormData) {
 
 export async function deleteClanLeader(clanId, leaderId) {
   const response = await fetch(
-    buildUrl(`/api/admin/clans/${clanId}/leaders/${leaderId}`),
+    buildApiUrl(`/api/admin/clans/${clanId}/leaders/${leaderId}`),
     {
       method: 'DELETE',
       headers: {
@@ -177,7 +162,7 @@ export async function deleteClanLeader(clanId, leaderId) {
 
 export async function reorderClanLeaders(clanId, payload) {
   const response = await fetch(
-    buildUrl(`/api/admin/clans/${clanId}/leaders/reorder`),
+    buildApiUrl(`/api/admin/clans/${clanId}/leaders/reorder`),
     {
       method: 'PATCH',
       headers: {

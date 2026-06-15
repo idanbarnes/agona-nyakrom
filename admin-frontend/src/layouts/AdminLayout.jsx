@@ -4,6 +4,7 @@ import { Badge, Button } from '../components/ui/index.jsx'
 import { useAdminSession } from '../context/AdminSessionContext.jsx'
 import { getAuthAdmin, getAuthToken, isMasterAdmin, setAuthAdmin } from '../lib/auth.js'
 import { apiRequest } from '../lib/apiClient.js'
+import { ADMIN_DASHBOARD_PATH } from '../lib/adminPaths.js'
 import { cn } from '../lib/cn.js'
 import {
   preloadAdminRoute,
@@ -46,7 +47,7 @@ const childNavLinkClass = ({ isActive }) =>
   ].join(' ')
 
 const navItems = [
-  { label: 'Dashboard', to: '/dashboard', icon: HomeIcon },
+  { label: 'Dashboard', to: ADMIN_DASHBOARD_PATH, icon: HomeIcon },
   { label: 'News', to: '/admin/news', icon: NewsIcon },
   { label: 'Events', to: '/admin/events', icon: CalendarIcon },
   { label: 'Announcements', to: '/admin/announcements', icon: MegaphoneIcon },
@@ -121,7 +122,8 @@ function AdminLayout() {
 
   useEffect(() => {
     scheduleAdminRoutePrefetch([
-      '/dashboard',
+      '/admin/dashboard',
+      ADMIN_DASHBOARD_PATH,
       '/admin/news',
       '/admin/events/new',
       '/admin/homepage-sections',
@@ -174,7 +176,7 @@ function AdminLayout() {
     }
 
     const nestedMatch = navItems.find(
-      (item) => item.to !== '/dashboard' && location.pathname.startsWith(`${item.to}/`),
+      (item) => item.to !== ADMIN_DASHBOARD_PATH && location.pathname.startsWith(`${item.to}/`),
     )
     if (nestedMatch) {
       return nestedMatch.label
@@ -228,7 +230,7 @@ function AdminLayout() {
             key={item.to}
             className={navLinkClass}
             to={item.to}
-            end={item.to === '/dashboard'}
+            end={item.to === ADMIN_DASHBOARD_PATH}
             onClick={onNavigate}
             onMouseEnter={() => preloadAdminRoute(item.to)}
             onFocus={() => preloadAdminRoute(item.to)}
@@ -293,7 +295,7 @@ function AdminLayout() {
               key={item.to}
               className={navLinkClass}
               to={item.to}
-              end={item.to === '/dashboard'}
+              end={item.to === ADMIN_DASHBOARD_PATH}
               onClick={onNavigate}
               onMouseEnter={() => preloadAdminRoute(item.to)}
               onFocus={() => preloadAdminRoute(item.to)}

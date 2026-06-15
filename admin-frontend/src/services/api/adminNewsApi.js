@@ -1,21 +1,6 @@
 import { getAuthToken } from '../../lib/auth.js'
+import { buildApiUrl } from '../../lib/apiBase.js'
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? 'http://localhost:5000' : '')
-
-function buildUrl(path) {
-  if (!API_BASE_URL) {
-    return path
-  }
-
-  const base = API_BASE_URL.endsWith('/')
-    ? API_BASE_URL.slice(0, -1)
-    : API_BASE_URL
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-
-  return `${base}${normalizedPath}`
-}
 
 function buildAuthHeaders() {
   const token = getAuthToken()
@@ -59,7 +44,7 @@ export async function getAllNews(params = {}) {
   }
 
   const query = searchParams.toString()
-  const url = buildUrl(`/api/admin/news/all${query ? `?${query}` : ''}`)
+  const url = buildApiUrl(`/api/admin/news/all${query ? `?${query}` : ''}`)
   const response = await fetch(url, {
     method: 'GET',
     headers: {
@@ -72,7 +57,7 @@ export async function getAllNews(params = {}) {
 }
 
 export async function getSingleNews(id) {
-  const response = await fetch(buildUrl(`/api/admin/news/single/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/news/single/${id}`), {
     method: 'GET',
     headers: {
       Accept: 'application/json',
@@ -84,7 +69,7 @@ export async function getSingleNews(id) {
 }
 
 export async function getNewsPreviewUrl(id) {
-  const response = await fetch(buildUrl(`/api/admin/news/${id}/preview`), {
+  const response = await fetch(buildApiUrl(`/api/admin/news/${id}/preview`), {
     method: 'GET',
     headers: {
       Accept: 'application/json',
@@ -96,7 +81,7 @@ export async function getNewsPreviewUrl(id) {
 }
 
 export async function createNews(formData) {
-  const response = await fetch(buildUrl('/api/admin/news/create'), {
+  const response = await fetch(buildApiUrl('/api/admin/news/create'), {
     method: 'POST',
     headers: {
       Accept: 'application/json',
@@ -109,7 +94,7 @@ export async function createNews(formData) {
 }
 
 export async function updateNews(id, formData) {
-  const response = await fetch(buildUrl(`/api/admin/news/update/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/news/update/${id}`), {
     method: 'PUT',
     headers: {
       Accept: 'application/json',
@@ -122,7 +107,7 @@ export async function updateNews(id, formData) {
 }
 
 export async function deleteNews(id) {
-  const response = await fetch(buildUrl(`/api/admin/news/delete/${id}`), {
+  const response = await fetch(buildApiUrl(`/api/admin/news/delete/${id}`), {
     method: 'DELETE',
     headers: {
       Accept: 'application/json',

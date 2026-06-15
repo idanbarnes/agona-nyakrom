@@ -94,7 +94,7 @@ function AdminEventFormPage({ mode = 'create' }) {
 
   useEffect(() => {
     if (!getAuthToken()) {
-      navigate('/login', { replace: true })
+      navigate('/admin/login', { replace: true })
       return
     }
 

@@ -544,12 +544,12 @@ async function runAdminSmoke(session, results) {
   try {
     await record('admin-login-navigation-create-edit-logout', async () => {
       await session.setViewport(1440, 900, false)
-      await session.navigate('http://127.0.0.1:5173/dashboard')
-      await session.waitFor(`location.pathname === '/login'`)
+      await session.navigate('http://127.0.0.1:5173/admin/dashboard')
+      await session.waitFor(`location.pathname === '/admin/login'`)
       await session.setInput('input[name="emailOrUsername"]', email)
       await session.setInput('input[name="password"]', password)
       await session.click('button[type="submit"]')
-      await session.waitFor(`location.pathname === '/dashboard'`, 15000)
+      await session.waitFor(`location.pathname === '/admin/dashboard'`, 15000)
       token = await session.evaluate(`localStorage.getItem('authToken') || ''`)
       if (!token) {
         throw new Error('Missing auth token after login')
@@ -587,7 +587,7 @@ async function runAdminSmoke(session, results) {
         throw new Error('Updated landmark not persisted')
       }
       await session.clickByText('button', 'Logout')
-      await session.waitFor(`location.pathname === '/login'`, 15000)
+      await session.waitFor(`location.pathname === '/admin/login'`, 15000)
       const hasToken = await session.evaluate(`Boolean(localStorage.getItem('authToken'))`)
       if (hasToken) {
         throw new Error('Auth token remained after logout')
