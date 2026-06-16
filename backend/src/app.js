@@ -54,6 +54,10 @@ const publicAnnouncementsRoutes = require('./routes/publicAnnouncementsRoutes');
 const publicAnnouncementsEventsRoutes = require('./routes/publicAnnouncementsEventsRoutes');
 const publicContactRoutes = require('./routes/public/contactRoutes');
 const publicFaqRoutes = require('./routes/public/faqRoutes');
+const { injectSeoIntoHtml } = require('./seo/descriptors');
+const { getSeoConfig } = require('./seo/config');
+const { buildRobotsTxt, buildSitemapXml } = require('./seo/sitemapService');
+const { notFoundDescriptor, resolveSeoForRoute } = require('./seo/routeSeoService');
 
 const BACKEND_ROOT = path.resolve(__dirname, '..');
 const REPO_ROOT = path.resolve(BACKEND_ROOT, '..');
@@ -68,15 +72,6 @@ const collectOrigins = (values = []) =>
 
 const collectLocalUnifiedOrigins = (port) =>
   collectOrigins([`http://localhost:${port}`, `http://127.0.0.1:${port}`]);
-
-const stripHtml = (value = '') => String(value).replace(/<[^>]+>/g, '').trim();
-
-const escapeMeta = (value = '') =>
-  String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 
 const hasFileExtension = (requestPath = '') => {
   try {
@@ -124,72 +119,6 @@ const getRuntimeConfig = () => {
     ]),
     trustProxy: isTruthy(process.env.TRUST_PROXY),
   };
-};
-
-const resolvePublicUrl = (runtimeConfig, urlPath = '') => {
-  if (!urlPath) {
-    return '';
-  }
-
-  if (urlPath.startsWith('http://') || urlPath.startsWith('https://')) {
-    return urlPath;
-  }
-
-  const normalizedPath = urlPath.startsWith('/') ? urlPath : `/${urlPath}`;
-  return `${runtimeConfig.publicAssetBaseUrl}${normalizedPath}`;
-};
-
-const injectMetaTags = (html, { title, description, url, image }) => {
-  const metaTags = [
-    `<meta property="og:title" content="${escapeMeta(title)}" />`,
-    `<meta property="og:description" content="${escapeMeta(description)}" />`,
-    `<meta property="og:url" content="${escapeMeta(url)}" />`,
-    `<meta property="og:image" content="${escapeMeta(image)}" />`,
-    '<meta name="twitter:card" content="summary_large_image" />',
-    `<meta name="twitter:title" content="${escapeMeta(title)}" />`,
-    `<meta name="twitter:description" content="${escapeMeta(description)}" />`,
-    `<meta name="twitter:image" content="${escapeMeta(image)}" />`,
-  ].join('\n');
-
-  const withTitle = html.includes('<title>')
-    ? html.replace(/<title>.*<\/title>/, `<title>${escapeMeta(title)}</title>`)
-    : html.replace('</head>', `<title>${escapeMeta(title)}</title>\n</head>`);
-
-  return withTitle.replace('</head>', `${metaTags}\n</head>`);
-};
-
-const buildMetaPayload = (runtimeConfig, item, urlPath, fallbackTitle) => {
-  const title = item?.title || fallbackTitle;
-  const descriptionSource = item?.excerpt || item?.body || '';
-  const description = stripHtml(descriptionSource).slice(0, 200) || fallbackTitle;
-  const url = `${runtimeConfig.publicSiteUrl}${urlPath}`;
-  const image = item?.flyer_image_path
-    ? resolvePublicUrl(runtimeConfig, item.flyer_image_path)
-    : runtimeConfig.defaultShareImage;
-
-  return { title, description, url, image };
-};
-
-const fetchEventMeta = async (slug) => {
-  const { rows } = await pool.query(
-    `SELECT title, excerpt, body, flyer_image_path
-     FROM events
-     WHERE slug = $1 AND is_published = true
-     LIMIT 1`,
-    [slug]
-  );
-  return rows[0] || null;
-};
-
-const fetchAnnouncementMeta = async (slug) => {
-  const { rows } = await pool.query(
-    `SELECT title, excerpt, body, flyer_image_path
-     FROM announcements
-     WHERE slug = $1 AND is_published = true
-     LIMIT 1`,
-    [slug]
-  );
-  return rows[0] || null;
 };
 
 const buildFrontendPaths = (overrides = {}) => {
@@ -252,6 +181,31 @@ const createHtmlTemplateReader = (htmlPath) => {
 const sendIndexFile = (res, filePath) => {
   res.type('html');
   res.sendFile(filePath);
+};
+
+const sendAdminIndex = (res, filePath) => {
+  const html = fs.readFileSync(filePath, 'utf8');
+  const noindex = '<meta name="robots" content="noindex,nofollow" />';
+  res.type('html').send(
+    html.includes('name="robots"') ? html : html.replace('</head>', `${noindex}\n</head>`)
+  );
+};
+
+const sendSeoHtml = async (req, res, getHtmlTemplate) => {
+  const html = getHtmlTemplate();
+  const config = getSeoConfig();
+  try {
+    const descriptor = await resolveSeoForRoute(req.path, req.query);
+    res.status(descriptor.status || 200).type('html').send(injectSeoIntoHtml(html, descriptor, config));
+  } catch (error) {
+    console.error(`SEO HTML transform failed for ${req.originalUrl}:`, error.message);
+    const descriptor = notFoundDescriptor(req.path);
+    res.type('html').send(injectSeoIntoHtml(html, { ...descriptor, status: 200 }, config));
+  }
+};
+
+const redirectTo = (target, status = 301) => (req, res) => {
+  res.redirect(status, target);
 };
 
 const resolveServerPort = (rawPort = process.env.PORT) => {
@@ -393,40 +347,28 @@ const createApp = (options = {}) => {
     });
   });
 
-  app.get('/events/:slug', async (req, res) => {
+  app.get('/robots.txt', (req, res) => {
     try {
-      const html = getHtmlTemplate();
-      const item = await fetchEventMeta(req.params.slug);
-      const meta = buildMetaPayload(runtimeConfig, item, req.originalUrl, 'Agona Nyakrom Event');
-      res.type('html').send(injectMetaTags(html, meta));
+      res.type('text/plain').send(buildRobotsTxt());
     } catch (error) {
-      const html = getHtmlTemplate();
-      const meta = buildMetaPayload(runtimeConfig, null, req.originalUrl, 'Agona Nyakrom Event');
-      res.type('html').send(injectMetaTags(html, meta));
+      res.status(500).type('text/plain').send('User-agent: *\nDisallow: /\n');
     }
   });
 
-  app.get('/announcements/:slug', async (req, res) => {
+  app.get('/sitemap.xml', async (req, res) => {
     try {
-      const html = getHtmlTemplate();
-      const item = await fetchAnnouncementMeta(req.params.slug);
-      const meta = buildMetaPayload(
-        runtimeConfig,
-        item,
-        req.originalUrl,
-        'Agona Nyakrom Announcement'
-      );
-      res.type('html').send(injectMetaTags(html, meta));
+      res.type('application/xml').send(await buildSitemapXml());
     } catch (error) {
-      const html = getHtmlTemplate();
-      const meta = buildMetaPayload(
-        runtimeConfig,
-        null,
-        req.originalUrl,
-        'Agona Nyakrom Announcement'
-      );
-      res.type('html').send(injectMetaTags(html, meta));
+      console.error('Sitemap generation failed:', error.message);
+      res.status(503).type('application/xml').send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>');
     }
+  });
+
+  app.get('/updates', redirectTo('/news'));
+  app.get('/history', redirectTo('/about/history'));
+  app.get('/about-nyakrom/leadership-governance', redirectTo('/about/leadership-governance'));
+  app.get('/obituary/:slug', (req, res) => {
+    res.redirect(301, `/obituaries/${encodeURIComponent(req.params.slug)}`);
   });
 
   if (hasAdminBuild) {
@@ -443,7 +385,7 @@ const createApp = (options = {}) => {
       return next();
     }
 
-    return sendIndexFile(res, adminIndexPath);
+    return sendAdminIndex(res, adminIndexPath);
   });
 
   if (hasPublicBuild) {
@@ -468,7 +410,7 @@ const createApp = (options = {}) => {
       return next();
     }
 
-    return sendIndexFile(res, publicIndexPath);
+    return sendSeoHtml(req, res, getHtmlTemplate);
   });
 
   app.use((err, req, res, next) => {

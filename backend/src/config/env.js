@@ -111,6 +111,41 @@ const validateCloudinaryEnv = () => {
   }
 };
 
+const validateSeoEnv = () => {
+  const productionLike = normalize(process.env.NODE_ENV).toLowerCase() === 'production' || isHostedRuntime();
+  const rawSiteUrl = normalize(
+    process.env.SITE_URL || process.env.UNIFIED_SITE_URL || process.env.PUBLIC_SITE_URL
+  );
+
+  if (!productionLike) {
+    return;
+  }
+
+  if (!rawSiteUrl) {
+    throw new Error('SITE_URL is required in production and must be the final HTTPS public origin.');
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(rawSiteUrl);
+  } catch {
+    throw new Error(`SITE_URL must be an absolute HTTPS origin. Received "${rawSiteUrl}".`);
+  }
+
+  if (parsed.protocol !== 'https:') {
+    throw new Error(`SITE_URL must use https in production. Received "${rawSiteUrl}".`);
+  }
+
+  const suspendedHosts = new Set([
+    'agonanyakrom.onrender.com',
+    'agonanyakrom-admin.onrender.com',
+    'agonanyakrom-api.onrender.com',
+  ]);
+  if (suspendedHosts.has(parsed.hostname.toLowerCase())) {
+    throw new Error('SITE_URL must not use suspended Render service URLs in production.');
+  }
+};
+
 const validateMediaStorageEnv = () => {
   if (!isHostedRuntime() || allowHostedLocalUploads()) {
     return;
@@ -129,6 +164,7 @@ const validateRuntimeEnv = () => {
   getPreviewTokenSecret();
   validateMediaStorageEnv();
   validateCloudinaryEnv();
+  validateSeoEnv();
 };
 
 module.exports = {
@@ -144,5 +180,6 @@ module.exports = {
   validateCloudinaryEnv,
   validateDatabaseEnv,
   validateMediaStorageEnv,
+  validateSeoEnv,
   validateRuntimeEnv,
 };

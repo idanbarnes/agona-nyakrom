@@ -74,6 +74,8 @@ test.beforeEach(() => {
   process.env.ADMIN_SITE_URL = 'http://localhost:5173';
   process.env.CORS_ALLOWED_ORIGINS = '';
   process.env.UNIFIED_SITE_URL = 'http://localhost:5000';
+  process.env.SITE_URL = 'http://localhost:5000';
+  process.env.SEO_DISABLE_DB_LOOKUPS = 'true';
   delete process.env.PORT;
 });
 
@@ -249,6 +251,7 @@ test('admin entry routes serve the admin application shell', async () => {
 
       assert.equal(response.status, 200, route);
       assert.match(html, /ADMIN_APP_SHELL/, route);
+      assert.match(html, /<meta name="robots" content="noindex,nofollow" \/>/);
       assert.doesNotMatch(html, /PUBLIC_APP_SHELL/, route);
     }
 
@@ -257,6 +260,68 @@ test('admin entry routes serve the admin application shell', async () => {
 
     assert.equal(assetResponse.status, 200);
     assert.match(assetText, /console\.log\("admin"\)/);
+  });
+});
+
+test('public homepage raw HTML includes canonical metadata and structured data', async () => {
+  const fixtures = createFixtureDirs();
+  process.env.UPLOAD_DIR = fixtures.uploadsDir;
+  const { createApp } = loadAppModule();
+  const app = createApp({
+    publicDistDir: fixtures.publicDir,
+    adminDistDir: fixtures.adminDir,
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/`);
+    const html = await response.text();
+
+    assert.equal(response.status, 200);
+    assert.match(html, /<title>Agona Nyakrom \| Official Public Website<\/title>/);
+    assert.match(html, /<link rel="canonical" href="http:\/\/localhost:5000\/" \/>/);
+    assert.match(html, /<meta property="og:locale" content="en_GH" \/>/);
+    assert.match(html, /application\/ld\+json/);
+    assert.match(html, /PUBLIC_APP_SHELL|<main><h1>Agona Nyakrom<\/h1>/);
+  });
+});
+
+test('preview-token public routes return noindex metadata in raw HTML', async () => {
+  const fixtures = createFixtureDirs();
+  process.env.UPLOAD_DIR = fixtures.uploadsDir;
+  const { createApp } = loadAppModule();
+  const app = createApp({
+    publicDistDir: fixtures.publicDir,
+    adminDistDir: fixtures.adminDir,
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/news/some-slug?preview_token=abc123`);
+    const html = await response.text();
+
+    assert.equal(response.status, 200);
+    assert.match(html, /<meta name="robots" content="noindex,nofollow" \/>/);
+    assert.doesNotMatch(html, /<link rel="canonical"/);
+  });
+});
+
+test('robots.txt references the configured sitemap and discourages indexing outside production', async () => {
+  const fixtures = createFixtureDirs();
+  process.env.UPLOAD_DIR = fixtures.uploadsDir;
+  const { createApp } = loadAppModule();
+  const app = createApp({
+    publicDistDir: fixtures.publicDir,
+    adminDistDir: fixtures.adminDir,
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/robots.txt`);
+    const text = await response.text();
+
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get('content-type') || '', /text\/plain/i);
+    assert.match(text, /Disallow: \//);
+    assert.match(text, /Sitemap: http:\/\/localhost:5000\/sitemap.xml/);
+    assert.doesNotMatch(text, /onrender\.com/);
   });
 });
 
