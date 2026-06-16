@@ -30,26 +30,29 @@ export default function WhoWeAreGalleryImagePreview({
   altText = '',
   label = 'Current image',
 }) {
-  const [filePreviewUrl, setFilePreviewUrl] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const closeButtonRef = useRef(null)
   const lastActiveRef = useRef(null)
 
-  useEffect(() => {
+  const filePreviewUrl = useMemo(() => {
     if (!file) {
-      setFilePreviewUrl('')
+      return ''
+    }
+
+    return URL.createObjectURL(file)
+  }, [file])
+
+  useEffect(() => {
+    if (!filePreviewUrl) {
       return undefined
     }
 
-    const objectUrl = URL.createObjectURL(file)
-    setFilePreviewUrl(objectUrl)
-
     return () => {
-      URL.revokeObjectURL(objectUrl)
+      URL.revokeObjectURL(filePreviewUrl)
     }
-  }, [file])
+  }, [filePreviewUrl])
 
   const previewUrl = useMemo(() => {
     if (filePreviewUrl) {
@@ -67,8 +70,6 @@ export default function WhoWeAreGalleryImagePreview({
     }
 
     lastActiveRef.current = document.activeElement
-    setIsLoading(true)
-    setHasError(false)
 
     const timer = window.setTimeout(() => {
       closeButtonRef.current?.focus()
@@ -94,6 +95,12 @@ export default function WhoWeAreGalleryImagePreview({
     return null
   }
 
+  const openPreview = () => {
+    setIsLoading(true)
+    setHasError(false)
+    setIsOpen(true)
+  }
+
   return (
     <>
       <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
@@ -102,7 +109,7 @@ export default function WhoWeAreGalleryImagePreview({
           <button
             type="button"
             className="text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            onClick={() => setIsOpen(true)}
+            onClick={openPreview}
           >
             View
           </button>
@@ -110,7 +117,7 @@ export default function WhoWeAreGalleryImagePreview({
         <button
           type="button"
           className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          onClick={() => setIsOpen(true)}
+          onClick={openPreview}
           aria-label={`Preview ${resolvedAltText}`}
         >
           <ImageWithFallback

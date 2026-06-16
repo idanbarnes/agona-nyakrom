@@ -30,11 +30,18 @@ The existing source trees remain separate:
 
 ## Commands
 
-Local development commands remain unchanged:
+Package-level development commands remain unchanged:
 
 - public frontend: `npm --prefix public-frontend run dev`
 - admin frontend: `npm --prefix admin-frontend run dev`
 - backend API: `npm --prefix backend run dev`
+
+Unified local development command:
+
+- root unified dev: `npm run dev`
+- alias: `npm run dev:unified`
+
+The root command starts all three existing package-level development processes concurrently and stops them together on termination.
 
 Unified production-style local commands:
 
@@ -42,6 +49,18 @@ Unified production-style local commands:
 - unified build: `npm run build:unified`
 - unified production start: `npm run start:unified`
 - install, build, and start in one command: `npm run unified`
+
+Expected terminal behavior for `npm run start:unified`:
+
+- Knex runs pending migrations first
+- the backend connects to the database
+- the server logs `Server is running on http://localhost:5000`
+- the terminal stays occupied until you stop the process manually
+
+To stop the unified production server locally:
+
+- press `Ctrl+C`
+- the runtime handles `SIGINT`/`SIGTERM`, closes the HTTP listener, and then exits cleanly
 
 ## Build Outputs
 
@@ -53,6 +72,13 @@ The unified build copies generated frontend artifacts into backend-served runtim
 - unified admin runtime output: `backend/dist/admin`
 
 Generated build artifacts stay outside the frontend source trees.
+
+Required generated files after `npm run build:unified`:
+
+- `backend/dist/public/index.html`
+- `backend/dist/public/assets/...`
+- `backend/dist/admin/index.html`
+- `backend/dist/admin/assets/...`
 
 ## API Base Behavior
 
@@ -68,15 +94,17 @@ Admin frontend:
 - shared request helpers now resolve API URLs from one place
 - development defaults to `http://localhost:5000`
 - production supports relative same-origin `/api` requests when `VITE_API_BASE_URL` is unset
+- production builds default to `/admin/` as the Vite base path
 
 Vite development still works through the existing proxy arrangement:
 
 - public Vite proxies `/api` and `/uploads`
 - admin Vite proxies `/api` and `/uploads`
+- no frontend development override is required when using the root unified dev command because both frontends already default to the local backend API origin in development
 
 ## Admin Base Path
 
-The admin unified build is produced with `VITE_APP_BASE_PATH=/admin/`.
+The admin production build defaults to `/admin/` and the unified build keeps the same base path.
 
 That makes built admin assets resolve from `/admin/assets/...` while keeping the existing admin source tree and route structure intact.
 
@@ -140,6 +168,47 @@ Variables used by unified local runtime:
 - public frontend optional: `VITE_API_BASE_URL`, `VITE_PUBLIC_SITE_URL`
 - admin frontend optional: `VITE_API_BASE_URL`, `VITE_PUBLIC_SITE_URL`
 
+Recommended local values for the root unified dev command:
+
+- public URL: `PUBLIC_SITE_URL=http://localhost:5174`
+- admin URL: `ADMIN_SITE_URL=http://localhost:5173`
+- API asset base: `PUBLIC_ASSET_BASE_URL=http://localhost:5000`
+
+Required environment variables:
+
+- backend: `DATABASE_URL` or `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
+- backend: `JWT_SECRET`
+- backend: `PREVIEW_TOKEN_SECRET` recommended
+
+Optional environment variables:
+
+- backend: `PORT` defaults to `5000`
+- backend: `UPLOAD_DIR`
+- backend: `CORS_ALLOWED_ORIGINS`
+- backend: `UNIFIED_SITE_URL`
+- public frontend: `VITE_API_BASE_URL`
+- public frontend: `VITE_PUBLIC_SITE_URL`
+- admin frontend: `VITE_API_BASE_URL`
+- admin frontend: `VITE_PUBLIC_SITE_URL`
+
+Local development URLs used by the repository:
+
+- public site: `http://localhost:5174`
+- admin site: `http://localhost:5173`
+- API and uploads origin: `http://localhost:5000`
+
+Unified local production-style URLs after `npm run start:unified`:
+
+- public site: `http://localhost:5000/`
+- admin site: `http://localhost:5000/admin`
+- health check: `http://localhost:5000/api/health`
+
+To run the unified runtime on another port in Windows PowerShell:
+
+- `$env:PORT=5001`
+- `npm run start:unified`
+- `Remove-Item Env:PORT`
+
 ## CORS Transition Notes
 
 Current multi-origin support is preserved.
@@ -194,10 +263,22 @@ This phase intentionally keeps:
 ## Known Limitations
 
 - `npm run build:unified` starts the backend locally because the public prerender script fetches live API data.
-- frontend lint currently fails on pre-existing React hook lint rules outside this change set.
+- `npm --prefix public-frontend run build` also needs the backend API running locally for the prerender step.
 - no repository type-check script currently exists.
 - browser-based smoke flows in the requested checklist were documented, not fully executed here.
 - local unified start still depends on a working local database and backend environment.
+
+## Troubleshooting
+
+- If `npm run start:unified` fails before listening, verify the required backend environment variables are set: `DATABASE_URL` or `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, plus `JWT_SECRET`.
+- If startup fails with `Port 5000 is already in use.`, another local process is already bound to that port.
+- To identify the process in Windows PowerShell, run `netstat -ano | findstr :5000`.
+- To stop a known process after confirming what it is, run `taskkill /PID <PID> /F`.
+- Do not kill a process until you have confirmed it is the correct one.
+- To retry on another port in Windows PowerShell, run `$env:PORT=5001`, then `npm run start:unified`, then `Remove-Item Env:PORT` when finished.
+- If startup reports missing unified build output, rerun `npm run build:unified` from the repository root and confirm `backend/dist/public/index.html` and `backend/dist/admin/index.html` exist.
+- If `http://localhost:5000/` or `http://localhost:5000/admin` renders a blank shell, check that the matching `assets` directories exist under `backend/dist/public/assets` and `backend/dist/admin/assets`.
+- If `/uploads/...` does not resolve, confirm `UPLOAD_DIR` points to the expected local uploads directory or leave it unset to use `backend/uploads`.
 
 ## Rollback
 

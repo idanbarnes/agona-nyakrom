@@ -1,3 +1,5 @@
+import { resolveAssetUrl } from '../../lib/apiBase.js'
+
 export const LEADER_TYPE_OPTIONS = [
   { value: 'current', label: 'Current' },
   { value: 'past', label: 'Past' },
@@ -7,24 +9,6 @@ export const LEADER_FILTER_OPTIONS = [
   { value: 'all', label: 'All statuses' },
   ...LEADER_TYPE_OPTIONS,
 ]
-
-function resolveAssetUrl(path) {
-  if (!path) {
-    return ''
-  }
-
-  if (/^https?:\/\//i.test(path) || path.startsWith('data:')) {
-    return path
-  }
-
-  const base = (
-    import.meta.env.VITE_API_BASE_URL ||
-    (import.meta.env.DEV ? 'http://localhost:5000' : '')
-  ).replace(/\/$/, '')
-
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-  return base ? `${base}${normalizedPath}` : normalizedPath
-}
 
 const TYPE_SORT_ORDER = {
   current: 0,

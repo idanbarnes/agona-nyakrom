@@ -1,26 +1,7 @@
-import API_BASE_URL from '../lib/apiBase.js'
+import { buildApiUrl } from '../lib/apiBase.js'
 
 const sharedResponseCache = new Map()
 const inFlightRequestCache = new Map()
-
-// Base URL can be overridden via Vite env; default uses relative paths for proxy mode.
-
-// Join base and path safely, handling leading/trailing slashes.
-function joinUrl(base, path) {
-  if (!base) {
-    return path
-  }
-
-  if (base.endsWith('/') && path.startsWith('/')) {
-    return `${base}${path.slice(1)}`
-  }
-
-  if (!base.endsWith('/') && !path.startsWith('/')) {
-    return `${base}/${path}`
-  }
-
-  return `${base}${path}`
-}
 
 function normalizeRequestMethod(method) {
   return String(method || 'GET').trim().toUpperCase()
@@ -122,7 +103,7 @@ export async function request(path, options = {}) {
     forceRefresh = false,
     ...fetchOptions
   } = options
-  const url = joinUrl(API_BASE_URL, path)
+  const url = buildApiUrl(path)
   const method = normalizeRequestMethod(fetchOptions.method)
   const canUseSharedCache =
     useSharedCache &&

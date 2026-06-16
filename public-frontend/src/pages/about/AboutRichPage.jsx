@@ -34,20 +34,27 @@ const setMeta = (selector, value, attr = 'content') => {
 
 export default function AboutRichPage() {
   const { slug } = useParams()
-  const [page, setPage] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [state, setState] = useState({
+    slug,
+    page: null,
+    loading: true,
+    error: null,
+  })
+  const { page, error } = state
+  const loading = state.slug !== slug ? true : state.loading
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
-    setError(null)
 
     if (!ABOUT_PAGE_TITLES[slug]) {
       Promise.resolve().then(() => {
         if (!cancelled) {
-          setPage(null)
-          setLoading(false)
+          setState({
+            slug,
+            page: null,
+            loading: false,
+            error: null,
+          })
         }
       })
       return () => {
@@ -58,15 +65,22 @@ export default function AboutRichPage() {
     getAboutPageBySlug(slug)
       .then((res) => {
         if (!cancelled) {
-          setPage(res.data || res)
-          setLoading(false)
+          setState({
+            slug,
+            page: res.data || res,
+            loading: false,
+            error: null,
+          })
         }
       })
       .catch((fetchError) => {
         if (!cancelled) {
-          setPage(null)
-          setError(fetchError)
-          setLoading(false)
+          setState({
+            slug,
+            page: null,
+            loading: false,
+            error: fetchError,
+          })
         }
       })
 

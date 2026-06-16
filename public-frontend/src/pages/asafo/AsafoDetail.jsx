@@ -15,16 +15,18 @@ import { useDocumentTitle } from '../../lib/pageTitle.js'
 
 export default function AsafoDetail() {
   const { slug } = useParams()
-  const [item, setItem] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [state, setState] = useState({
+    slug,
+    item: null,
+    loading: true,
+    error: null,
+  })
+  const { item, error } = state
+  const loading = state.slug !== slug ? true : state.loading
   useDocumentTitle(item?.title || item?.name || 'Asafo Companies')
 
   useEffect(() => {
     let cancelled = false
-
-    setLoading(true)
-    setError(null)
 
     getAsafoDetail(slug)
       .then((res) => {
@@ -32,20 +34,24 @@ export default function AsafoDetail() {
           return
         }
 
-        setItem(res?.data || null)
+        setState({
+          slug,
+          item: res?.data || null,
+          loading: false,
+          error: null,
+        })
       })
       .catch((fetchError) => {
         if (cancelled) {
           return
         }
 
-        setItem(null)
-        setError(fetchError)
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false)
-        }
+        setState({
+          slug,
+          item: null,
+          loading: false,
+          error: fetchError,
+        })
       })
 
     return () => {

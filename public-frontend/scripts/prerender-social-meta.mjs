@@ -81,11 +81,27 @@ const DEFAULT_SITE_URL = resolveRequiredOrigin(
   'VITE_PUBLIC_SITE_URL',
   'http://localhost:5174',
 )
-const API_BASE_URL = resolveRequiredOrigin(
-  'API base URL',
-  'VITE_API_BASE_URL',
-  'http://localhost:5000',
-)
+const API_BASE_URL = (() => {
+  const explicitPrerenderOrigin = parseOrigin(
+    'Prerender API base URL',
+    process.env.PRERENDER_API_BASE_URL || '',
+  )
+
+  if (explicitPrerenderOrigin) {
+    return explicitPrerenderOrigin
+  }
+
+  const configuredRuntimeBase = String(process.env.VITE_API_BASE_URL || '').trim()
+  if (configuredRuntimeBase.startsWith('/')) {
+    return 'http://localhost:5000'
+  }
+
+  return resolveRequiredOrigin(
+    'API base URL',
+    'VITE_API_BASE_URL',
+    'http://localhost:5000',
+  )
+})()
 const DEFAULT_SHARE_IMAGE = `${DEFAULT_SITE_URL}/share-default.svg`
 const HOME_SHARE_IMAGE = `${DEFAULT_SITE_URL}/share-home.png`
 

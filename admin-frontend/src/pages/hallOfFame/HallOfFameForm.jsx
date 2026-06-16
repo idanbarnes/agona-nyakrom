@@ -12,25 +12,11 @@ import {
 import PhotoUploadField from '../../components/forms/PhotoUploadField.jsx'
 import SimpleRichTextEditor from '../../components/richText/SimpleRichTextEditor.jsx'
 import FormActions from '../../components/ui/form-actions.jsx'
+import { resolveAssetUrl } from '../../lib/apiBase.js'
 
 function getPreviewUrl(file) {
   if (!file) return ''
   return URL.createObjectURL(file)
-}
-
-function resolveAssetUrl(path) {
-  if (!path) return ''
-  if (/^https?:\/\//i.test(path) || path.startsWith('data:')) {
-    return path
-  }
-
-  const base = (
-    import.meta.env.VITE_API_BASE_URL ||
-    (import.meta.env.DEV ? 'http://localhost:5000' : '')
-  ).replace(/\/$/, '')
-
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-  return base ? `${base}${normalizedPath}` : normalizedPath
 }
 
 export default function HallOfFameForm({

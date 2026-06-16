@@ -55,10 +55,19 @@ const publicAnnouncementsEventsRoutes = require('./routes/publicAnnouncementsEve
 const publicContactRoutes = require('./routes/public/contactRoutes');
 const publicFaqRoutes = require('./routes/public/faqRoutes');
 
+const BACKEND_ROOT = path.resolve(__dirname, '..');
+const REPO_ROOT = path.resolve(BACKEND_ROOT, '..');
+const DEFAULT_PORT = 5000;
+const MIN_PORT = 1;
+const MAX_PORT = 65535;
+
 const normalizeOrigin = (value = '') => normalize(value).replace(/\/$/, '');
 
 const collectOrigins = (values = []) =>
   [...new Set(values.map((value) => normalizeOrigin(value)).filter(Boolean))];
+
+const collectLocalUnifiedOrigins = (port) =>
+  collectOrigins([`http://localhost:${port}`, `http://127.0.0.1:${port}`]);
 
 const stripHtml = (value = '') => String(value).replace(/<[^>]+>/g, '').trim();
 
@@ -83,6 +92,7 @@ const prefersHtml = (req) => {
 };
 
 const getRuntimeConfig = () => {
+  const runtimePort = resolveServerPort();
   const unifiedSiteUrl = normalizeOrigin(process.env.UNIFIED_SITE_URL || '');
   const publicSiteUrl = normalizeOrigin(
     unifiedSiteUrl || process.env.PUBLIC_SITE_URL || 'http://localhost:5174'
@@ -105,9 +115,13 @@ const getRuntimeConfig = () => {
     adminSiteUrl,
     publicAssetBaseUrl,
     defaultShareImage,
-    allowedOrigins: corsAllowedOrigins.length
-      ? corsAllowedOrigins
-      : collectOrigins([publicSiteUrl, adminSiteUrl, unifiedSiteUrl]),
+    allowedOrigins: collectOrigins([
+      ...corsAllowedOrigins,
+      publicSiteUrl,
+      adminSiteUrl,
+      unifiedSiteUrl,
+      ...collectLocalUnifiedOrigins(runtimePort),
+    ]),
     trustProxy: isTruthy(process.env.TRUST_PROXY),
   };
 };
@@ -179,29 +193,46 @@ const fetchAnnouncementMeta = async (slug) => {
 };
 
 const buildFrontendPaths = (overrides = {}) => {
-  const backendRoot = process.cwd();
-  const repoRoot = path.resolve(backendRoot, '..');
   const publicDistDir =
     overrides.publicDistDir ||
     process.env.PUBLIC_FRONTEND_DIST_DIR ||
-    path.join(backendRoot, 'dist', 'public');
+    path.join(BACKEND_ROOT, 'dist', 'public');
   const adminDistDir =
     overrides.adminDistDir ||
     process.env.ADMIN_FRONTEND_DIST_DIR ||
-    path.join(backendRoot, 'dist', 'admin');
+    path.join(BACKEND_ROOT, 'dist', 'admin');
 
   return {
     publicDistDir,
     adminDistDir,
-    htmlCandidates: [
-      path.join(publicDistDir, 'index.html'),
-      path.join(repoRoot, 'public-frontend', 'dist', 'index.html'),
-      path.join(repoRoot, 'public-frontend', 'index.html'),
-    ],
+    publicIndexPath: path.join(publicDistDir, 'index.html'),
+    publicAssetsDir: path.join(publicDistDir, 'assets'),
+    adminIndexPath: path.join(adminDistDir, 'index.html'),
+    adminAssetsDir: path.join(adminDistDir, 'assets'),
+    repoRoot: REPO_ROOT,
   };
 };
 
-const createHtmlTemplateReader = (htmlCandidates) => {
+const assertUnifiedBuildExists = (frontendPaths) => {
+  const requiredPaths = [
+    { label: 'public frontend index', filePath: frontendPaths.publicIndexPath },
+    { label: 'public frontend assets directory', filePath: frontendPaths.publicAssetsDir },
+    { label: 'admin frontend index', filePath: frontendPaths.adminIndexPath },
+    { label: 'admin frontend assets directory', filePath: frontendPaths.adminAssetsDir },
+  ];
+
+  const missing = requiredPaths.filter(({ filePath }) => !fs.existsSync(filePath));
+  if (!missing.length) {
+    return;
+  }
+
+  const details = missing.map(({ label, filePath }) => `${label}: ${filePath}`).join('; ');
+  throw new Error(
+    `Unified runtime build output is missing. Run "npm run build:unified" from ${frontendPaths.repoRoot}. Missing: ${details}`
+  );
+};
+
+const createHtmlTemplateReader = (htmlPath) => {
   let cachedHtmlTemplate = null;
 
   return () => {
@@ -209,15 +240,11 @@ const createHtmlTemplateReader = (htmlCandidates) => {
       return cachedHtmlTemplate;
     }
 
-    for (const filePath of htmlCandidates) {
-      if (fs.existsSync(filePath)) {
-        cachedHtmlTemplate = fs.readFileSync(filePath, 'utf8');
-        return cachedHtmlTemplate;
-      }
+    if (!fs.existsSync(htmlPath)) {
+      throw new Error(`Unified runtime HTML template not found at ${htmlPath}`);
     }
 
-    cachedHtmlTemplate =
-      '<!doctype html><html><head><title>Agona Nyakrom</title></head><body><div id="root"></div></body></html>';
+    cachedHtmlTemplate = fs.readFileSync(htmlPath, 'utf8');
     return cachedHtmlTemplate;
   };
 };
@@ -227,12 +254,52 @@ const sendIndexFile = (res, filePath) => {
   res.sendFile(filePath);
 };
 
+const resolveServerPort = (rawPort = process.env.PORT) => {
+  const normalizedPort = normalize(rawPort);
+  if (!normalizedPort) {
+    return DEFAULT_PORT;
+  }
+
+  const port = Number(normalizedPort);
+  if (!Number.isInteger(port) || port < MIN_PORT || port > MAX_PORT) {
+    throw new Error(
+      `Invalid PORT value "${rawPort}". Set PORT to an integer between ${MIN_PORT} and ${MAX_PORT}.`
+    );
+  }
+
+  return port;
+};
+
+const buildPortInUseMessage = (port) =>
+  `Port ${port} is already in use.
+
+Another local server may already be running.
+
+Windows PowerShell:
+  netstat -ano | findstr :${port}
+  taskkill /PID <PID> /F
+
+Warning: confirm the process identity before killing it.
+
+Or start this application on another port:
+  $env:PORT=${port + 1}
+  npm run start:unified`;
+
+const logStartupFailure = (error, port) => {
+  if (error?.code === 'EADDRINUSE') {
+    console.error(buildPortInUseMessage(port));
+    return;
+  }
+
+  console.error('Failed to start unified runtime:', error);
+};
+
 const createApp = (options = {}) => {
   const runtimeConfig = getRuntimeConfig();
   const frontendPaths = buildFrontendPaths(options);
-  const getHtmlTemplate = createHtmlTemplateReader(frontendPaths.htmlCandidates);
-  const publicIndexPath = path.join(frontendPaths.publicDistDir, 'index.html');
-  const adminIndexPath = path.join(frontendPaths.adminDistDir, 'index.html');
+  const publicIndexPath = frontendPaths.publicIndexPath;
+  const adminIndexPath = frontendPaths.adminIndexPath;
+  const getHtmlTemplate = createHtmlTemplateReader(publicIndexPath);
   const hasPublicBuild = fs.existsSync(publicIndexPath);
   const hasAdminBuild = fs.existsSync(adminIndexPath);
 
@@ -426,24 +493,107 @@ const createApp = (options = {}) => {
   return app;
 };
 
-const startServer = async (app = createApp()) => {
-  validateRuntimeEnv();
-
-  const PORT = process.env.PORT || 5000;
-  const HOST = '0.0.0.0';
-
-  try {
-    await connectDB();
-    app.listen(PORT, HOST, () => {
-      console.log(`Server is running on ${HOST}:${PORT}`);
+const installRuntimeLogging = () => {
+  if (!process.listenerCount('unhandledRejection')) {
+    process.on('unhandledRejection', (reason) => {
+      console.error('Unhandled promise rejection:', reason);
     });
-  } catch (error) {
-    console.error('Failed to start server:', error.message);
-    process.exit(1);
+  }
+
+  if (!process.listenerCount('uncaughtException')) {
+    process.on('uncaughtException', (error) => {
+      console.error('Uncaught exception:', error);
+    });
   }
 };
 
+const installSignalHandlers = (server) => {
+  let shuttingDown = false;
+
+  const shutdown = async (signal) => {
+    if (shuttingDown) {
+      return;
+    }
+
+    shuttingDown = true;
+    console.log(`${signal} received. Shutting down unified runtime...`);
+
+    await new Promise((resolve) => {
+      server.close((error) => {
+        if (error) {
+          console.error('HTTP server close failed:', error);
+        }
+        resolve();
+      });
+    });
+
+    try {
+      await pool.end();
+    } catch (error) {
+      console.error('Database pool shutdown failed:', error);
+    }
+  };
+
+  const handleSigint = () => {
+    shutdown('SIGINT').finally(() => {
+      process.exit(0);
+    });
+  };
+
+  const handleSigterm = () => {
+    shutdown('SIGTERM').finally(() => {
+      process.exit(0);
+    });
+  };
+
+  process.once('SIGINT', handleSigint);
+  process.once('SIGTERM', handleSigterm);
+
+  server.once('close', () => {
+    process.removeListener('SIGINT', handleSigint);
+    process.removeListener('SIGTERM', handleSigterm);
+  });
+};
+
+const startServer = async (app = createApp(), options = {}) => {
+  validateRuntimeEnv();
+  installRuntimeLogging();
+
+  const frontendPaths = buildFrontendPaths(options);
+  assertUnifiedBuildExists(frontendPaths);
+
+  const port = resolveServerPort();
+  const host = options.host || process.env.HOST || '0.0.0.0';
+  const connectToDatabase = options.connectToDatabase || connectDB;
+
+  await connectToDatabase();
+
+  return await new Promise((resolve, reject) => {
+    const server = app.listen(port, host);
+
+    server.once('error', (error) => {
+      logStartupFailure(error, port);
+      reject(error);
+    });
+
+    server.once('listening', () => {
+      console.log(`Server is running on http://localhost:${port}`);
+      installSignalHandlers(server);
+      resolve(server);
+    });
+
+    server.once('close', () => {
+      console.log('HTTP server closed.');
+    });
+  });
+};
+
 module.exports = {
+  assertUnifiedBuildExists,
+  buildPortInUseMessage,
+  buildFrontendPaths,
   createApp,
+  logStartupFailure,
+  resolveServerPort,
   startServer,
 };

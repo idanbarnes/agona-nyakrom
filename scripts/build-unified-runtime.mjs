@@ -96,13 +96,23 @@ function copyBuildOutput(sourceDir, targetDir) {
 const cleanupBackend = await ensureBackendRunning()
 
 try {
-  await run(NPM_COMMAND, ['run', 'build'], PUBLIC_DIR)
+  await run(
+    NPM_COMMAND,
+    ['run', 'build'],
+    PUBLIC_DIR,
+    {
+      ...process.env,
+      PRERENDER_API_BASE_URL: 'http://localhost:5000',
+      VITE_API_BASE_URL: '/api',
+    }
+  )
   await run(
     NPM_COMMAND,
     ['run', 'build'],
     ADMIN_DIR,
     {
       ...process.env,
+      VITE_API_BASE_URL: '/api',
       VITE_APP_BASE_PATH: '/admin/',
     }
   )

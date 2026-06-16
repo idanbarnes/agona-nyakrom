@@ -51,9 +51,6 @@ export default function AsafoList() {
   useEffect(() => {
     let cancelled = false
 
-    setLoading(true)
-    setError('')
-
     getAsafoCompanies()
       .then((res) => {
         if (cancelled) {
