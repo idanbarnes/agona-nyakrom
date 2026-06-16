@@ -17,7 +17,12 @@ const {
   pickText,
   staticPageDescriptor,
 } = require('./descriptors');
-const { normalizePath, stripHtml, truncate } = require('./utils');
+const { normalizePath, toIsoDate, truncate } = require('./utils');
+
+const toDisplayDate = (value) => {
+  const iso = toIsoDate(value);
+  return iso ? iso.slice(0, 10) : '';
+};
 
 const staticRoutes = new Map([
   ['/news', ['News and Updates', 'Latest community news, public updates, and stories from Agona Nyakrom.', 'CollectionPage']],
@@ -26,9 +31,6 @@ const staticRoutes = new Map([
   ['/asafo-companies', ['Asafo Companies', 'Explore Agona Nyakrom Asafo companies, their history, and cultural role.', 'CollectionPage']],
   ['/landmarks', ['Landmarks and Attractions', 'Discover landmarks, attractions, and places of interest in Agona Nyakrom.', 'CollectionPage']],
   ['/hall-of-fame', ['Hall of Fame', 'Celebrating people recognized for service, leadership, and contribution to Agona Nyakrom.', 'CollectionPage']],
-  ['/about/history', ['History of Agona Nyakrom', 'Read the history and heritage of Agona Nyakrom.', 'AboutPage']],
-  ['/about/who-we-are', ['Who We Are', 'Learn about the people, values, and community life of Agona Nyakrom.', 'AboutPage']],
-  ['/about/about-agona-nyakrom-town', ['About Agona Nyakrom Town', 'An overview of Agona Nyakrom town, its identity, and community life.', 'AboutPage']],
   ['/about/leadership-governance', ['Leadership and Governance', 'Public leadership and governance profiles for Agona Nyakrom.', 'CollectionPage']],
   ['/announcements-events', ['Announcements and Events', 'Community announcements and event information for Agona Nyakrom.', 'CollectionPage']],
   ['/contact', ['Contact Agona Nyakrom', 'Official public contact information for Agona Nyakrom.', 'ContactPage']],
@@ -105,12 +107,22 @@ const buildObituary = async (slug) => {
     image,
     imageAlt: item.full_name || item.name,
     schema: {
-      '@type': 'Person',
-      birthDate: item.date_of_birth || undefined,
-      deathDate: item.date_of_death || undefined,
+      '@type': 'WebPage',
+      mainEntity: {
+        '@type': 'Person',
+        name: item.full_name || item.name,
+        birthDate: item.date_of_birth || undefined,
+        deathDate: item.date_of_death || undefined,
+        image: image || undefined,
+      },
     },
-    ogType: 'profile',
+    ogType: 'article',
     modifiedDate: item.updated_at,
+    visibleDates: [
+      item.date_of_birth ? `Born ${toDisplayDate(item.date_of_birth)}` : '',
+      item.date_of_death ? `Died ${toDisplayDate(item.date_of_death)}` : '',
+      item.funeral_date ? `Funeral ${toDisplayDate(item.funeral_date)}` : '',
+    ].filter(Boolean),
   });
 };
 
@@ -232,6 +244,9 @@ const buildEvent = async (slug) => {
     ogType: 'article',
     publishedDate: item.created_at,
     modifiedDate: item.updated_at,
+    visibleDates: [
+      item.event_date ? `Event date ${toDisplayDate(item.event_date)}` : 'Event date to be announced',
+    ],
   });
 };
 

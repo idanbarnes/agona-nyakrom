@@ -24,13 +24,17 @@ The transform inserts:
 - one canonical URL for indexable pages;
 - Open Graph and Twitter/X metadata;
 - JSON-LD structured data;
-- minimal visible initial content for the transformed route.
+- visible initial content for the transformed route.
 
 The content is not user-agent specific and is not bot-only. Every HTML requester receives the same route-specific metadata.
+
+For detail pages, the initial content is intentionally compact: heading, primary description/excerpt, section identity, available publish/update/event/memorial dates, author where applicable, and a safe image URL. Stored rich text is converted to text before insertion, and generated HTML is escaped.
 
 ## Route Data
 
 Static and listing routes use centrally defined metadata in `backend/src/seo/routeSeoService.js`.
+
+CMS-backed about pages (`/about/history`, `/about/who-we-are`, and `/about/about-agona-nyakrom-town`) are resolved through published database records. They are not treated as always-published static pages.
 
 Detail routes load one published public record through existing public services:
 
@@ -59,6 +63,7 @@ Rules:
 - query strings and fragments are excluded;
 - preview/noindex pages do not emit canonical tags;
 - `/updates`, `/history`, `/about-nyakrom/leadership-governance`, and `/obituary/:slug` redirect to canonical route families.
+- public HTML route paths with duplicate or trailing slashes redirect to their normalized path and drop query strings.
 
 ## Structured Data
 
@@ -81,9 +86,11 @@ Implemented types include:
 
 No fake ratings, coordinates, prices, opening hours, private contact details, or ticket data are generated.
 
+Obituary detail pages are represented as a `WebPage` whose `mainEntity` is the deceased `Person`. This avoids treating memorial content as a news article and avoids generating funeral event schema from partial date/location fields.
+
 ## Sitemap And Robots
 
-`GET /sitemap.xml` is generated dynamically from the database and static route matrix. It includes only canonical, public, published route families and omits admin, API, preview, tokenized, and unpublished content.
+`GET /sitemap.xml` is generated dynamically from the database and static route matrix. It includes only canonical, public, published route families and omits admin, API, preview, tokenized, legacy duplicate, empty-slug, and unpublished content. CMS about pages are included only when the corresponding `about_pages` row is published.
 
 `GET /robots.txt` references the absolute sitemap URL. Production disallows obvious admin/API/preview/internal paths while allowing public assets. Development and test environments discourage indexing with `Disallow: /`.
 
@@ -103,7 +110,9 @@ The existing public prerender script still runs after `vite build` and writes me
 
 ## Known Limitations
 
-- The React app itself is still client-rendered beyond the minimal initial content injected into HTML.
+- The React app itself is still client-rendered beyond the initial summary content injected into HTML.
 - FAQ structured data is not emitted yet because the FAQ content is loaded inside the contact page at runtime and should be verified against visible-page eligibility before enabling.
 - Sitemap generation requires database access.
 - Final canonical production behavior depends on setting `SITE_URL` after domain purchase.
+
+See `docs/seo-known-limitations.md` for route-family rendering tiers and deferred validation tasks.

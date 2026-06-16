@@ -154,6 +154,7 @@ const getPublishedBySlug = async (slug) => {
     meta_title: page.seo_meta_title || page.page_title,
     meta_description: page.seo_meta_description || null,
     share_image: shareImage,
+    updated_at: page.updated_at,
   };
 };
 

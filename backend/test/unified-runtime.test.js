@@ -350,6 +350,7 @@ test('unified runtime serves built admin assets when the browser sends the unifi
 
 test('public entry routes serve the public application shell', async () => {
   const fixtures = createFixtureDirs();
+  writeFile(path.join(fixtures.publicDir, 'news', 'index.html'), '<html>PRERENDER_NEWS</html>');
   process.env.UPLOAD_DIR = fixtures.uploadsDir;
   const { createApp } = loadAppModule();
   const app = createApp({
@@ -358,13 +359,14 @@ test('public entry routes serve the public application shell', async () => {
   });
 
   await withServer(app, async (baseUrl) => {
-    for (const route of ['/', '/news/some-slug']) {
+    for (const route of ['/', '/news', '/news/some-slug']) {
       const response = await fetch(`${baseUrl}${route}`);
       const html = await response.text();
 
       assert.equal(response.status, 200, route);
       assert.match(html, /PUBLIC_APP_SHELL/, route);
       assert.doesNotMatch(html, /ADMIN_APP_SHELL/, route);
+      assert.doesNotMatch(html, /PRERENDER_NEWS/, route);
     }
   });
 });

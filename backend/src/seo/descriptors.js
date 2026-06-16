@@ -72,6 +72,34 @@ const pickImage = (config, ...values) => {
   return config.defaultSocialImage;
 };
 
+const renderInitialContent = ({
+  title,
+  description,
+  image,
+  imageAlt,
+  dates = [],
+  author,
+  sectionName,
+}) => {
+  const facts = [
+    sectionName ? `Section: ${sectionName}` : '',
+    author ? `By ${author}` : '',
+    ...dates,
+  ].filter(Boolean);
+  const imageMarkup = image
+    ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(imageAlt || title)}" loading="eager" />`
+    : '';
+  const factsMarkup = facts.length
+    ? `<dl>${facts
+        .map((fact) => `<div><dt>Detail</dt><dd>${escapeHtml(fact)}</dd></div>`)
+        .join('')}</dl>`
+    : '';
+
+  return `<main data-seo-initial-content="true"><h1>${escapeHtml(title)}</h1><p>${escapeHtml(
+    description
+  )}</p>${factsMarkup}${imageMarkup}</main>`;
+};
+
 const createDescriptor = (partial = {}, config = getSeoConfig()) => {
   const path = normalizePath(partial.path || '/');
   const title = applyTitleTemplate(config, partial.title || config.defaultTitle);
@@ -196,7 +224,20 @@ const homepageDescriptor = () => {
   }, config);
 };
 
-const contentDescriptor = ({ path, sectionName, title, description, image, imageAlt, schema, ogType = 'article', publishedDate, modifiedDate, author }) => {
+const contentDescriptor = ({
+  path,
+  sectionName,
+  title,
+  description,
+  image,
+  imageAlt,
+  schema,
+  ogType = 'article',
+  publishedDate,
+  modifiedDate,
+  author,
+  visibleDates = [],
+}) => {
   const config = getSeoConfig();
   const pageTitle = `${title} | ${sectionName}`;
   const schemaType = schema['@type'];
@@ -217,6 +258,8 @@ const contentDescriptor = ({ path, sectionName, title, description, image, image
     baseSchema.author = author ? { '@type': 'Person', name: author } : undefined;
   } else if (schemaType === 'Event') {
     baseSchema.startDate = toIsoDate(schema.startDate) || schema.startDate;
+  } else if (schemaType === 'WebPage' && schema.mainEntity) {
+    baseSchema.mainEntity = schema.mainEntity;
   }
 
   const structuredData = [
@@ -239,7 +282,19 @@ const contentDescriptor = ({ path, sectionName, title, description, image, image
     modifiedDate,
     author,
     structuredData,
-    initialContent: `<main><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p></main>`,
+    initialContent: renderInitialContent({
+      title,
+      description,
+      image,
+      imageAlt,
+      sectionName,
+      author,
+      dates: [
+        publishedDate ? `Published ${toIsoDate(publishedDate)}` : '',
+        modifiedDate ? `Updated ${toIsoDate(modifiedDate)}` : '',
+        ...visibleDates,
+      ].filter(Boolean),
+    }),
   }, config);
 };
 
@@ -253,6 +308,7 @@ module.exports = {
   organizationSchema,
   pickImage,
   pickText,
+  renderMetaTags,
   staticPageDescriptor,
   websiteSchema,
 };

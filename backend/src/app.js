@@ -58,6 +58,7 @@ const { injectSeoIntoHtml } = require('./seo/descriptors');
 const { getSeoConfig } = require('./seo/config');
 const { buildRobotsTxt, buildSitemapXml } = require('./seo/sitemapService');
 const { notFoundDescriptor, resolveSeoForRoute } = require('./seo/routeSeoService');
+const { normalizePath: normalizeSeoPath } = require('./seo/utils');
 
 const BACKEND_ROOT = path.resolve(__dirname, '..');
 const REPO_ROOT = path.resolve(BACKEND_ROOT, '..');
@@ -206,6 +207,29 @@ const sendSeoHtml = async (req, res, getHtmlTemplate) => {
 
 const redirectTo = (target, status = 301) => (req, res) => {
   res.redirect(status, target);
+};
+
+const redirectCanonicalPublicPath = (req, res, next) => {
+  if (req.method !== 'GET' || !prefersHtml(req) || hasFileExtension(req.path)) {
+    return next();
+  }
+
+  if (
+    req.path === '/' ||
+    req.path.startsWith('/api/') ||
+    req.path === '/api' ||
+    req.path.startsWith('/admin') ||
+    req.path.startsWith('/uploads/')
+  ) {
+    return next();
+  }
+
+  const normalizedPath = normalizeSeoPath(req.path);
+  if (normalizedPath !== req.path) {
+    return res.redirect(301, normalizedPath);
+  }
+
+  return next();
 };
 
 const resolveServerPort = (rawPort = process.env.PORT) => {
@@ -364,6 +388,8 @@ const createApp = (options = {}) => {
     }
   });
 
+  app.get(/.*/, redirectCanonicalPublicPath);
+
   app.get('/updates', redirectTo('/news'));
   app.get('/history', redirectTo('/about/history'));
   app.get('/about-nyakrom/leadership-governance', redirectTo('/about/leadership-governance'));
@@ -376,6 +402,7 @@ const createApp = (options = {}) => {
       '/admin',
       express.static(frontendPaths.adminDistDir, {
         index: false,
+        redirect: false,
       })
     );
   }
@@ -392,6 +419,7 @@ const createApp = (options = {}) => {
     app.use(
       express.static(frontendPaths.publicDistDir, {
         index: false,
+        redirect: false,
       })
     );
   }

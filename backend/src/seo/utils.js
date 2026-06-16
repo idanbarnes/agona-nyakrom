@@ -49,13 +49,24 @@ const safeJsonLd = (value) =>
 
 const isAbsoluteHttpUrl = (value = '') => /^https?:\/\//i.test(String(value || '').trim());
 
+const isPrivateSeoPath = (pathname = '') =>
+  /^\/(?:admin|api|preview)(?:\/|$)/i.test(pathname) || /^\/uploads\/tmp(?:\/|$)/i.test(pathname);
+
 const resolveAbsoluteUrl = (value, { siteOrigin, assetOrigin, defaultUrl, preferSite = false } = {}) => {
   const rawValue = String(value || '').trim();
   if (!rawValue) {
     return defaultUrl || '';
   }
   if (isAbsoluteHttpUrl(rawValue)) {
-    return rawValue;
+    try {
+      const parsed = new URL(rawValue);
+      if (isPrivateSeoPath(parsed.pathname)) {
+        return defaultUrl || '';
+      }
+      return parsed.href;
+    } catch {
+      return defaultUrl || '';
+    }
   }
   if (/^\/\//.test(rawValue)) {
     return `https:${rawValue}`;
@@ -65,6 +76,9 @@ const resolveAbsoluteUrl = (value, { siteOrigin, assetOrigin, defaultUrl, prefer
   }
 
   const normalizedPath = normalizePath(rawValue);
+  if (isPrivateSeoPath(normalizedPath)) {
+    return defaultUrl || '';
+  }
   const origin = preferSite || !normalizedPath.startsWith('/uploads/') ? siteOrigin : assetOrigin || siteOrigin;
   return `${normalizeOrigin(origin)}${normalizedPath}`;
 };
@@ -79,6 +93,7 @@ const toIsoDate = (value) => {
 module.exports = {
   escapeHtml,
   isAbsoluteHttpUrl,
+  isPrivateSeoPath,
   normalizeOrigin,
   normalizePath,
   resolveAbsoluteUrl,

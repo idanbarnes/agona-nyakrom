@@ -3,6 +3,7 @@
 ## Automated
 
 - Run backend tests: `npm --prefix backend test`.
+- Run duplicate/critical metadata validation: `npm --prefix backend run seo:validate`.
 - Run public lint: `npm --prefix public-frontend run lint`.
 - Run admin lint if admin source changes: `npm --prefix admin-frontend run lint`.
 - Run public production build with a local backend available: `npm --prefix public-frontend run build`.
@@ -19,6 +20,7 @@ Inspect raw HTTP responses, not only the browser DOM:
 - `/landmarks/:slug`
 - `/clans/:slug` or `/asafo-companies/:slug`
 - `/hall-of-fame/:slug` or `/about/leadership-governance/:slug`
+- `/about/history`, `/about/who-we-are`, or `/about/about-agona-nyakrom-town`
 - `/admin`
 - a missing public detail route
 - `/robots.txt`
@@ -33,9 +35,12 @@ For indexable routes, confirm:
 - Open Graph title, description, URL, image, image alt, site name, and locale;
 - Twitter/X summary card tags;
 - JSON-LD with the expected type;
+- obituary JSON-LD uses a `WebPage` with a deceased `Person` as `mainEntity`;
+- initial visible content includes heading, description/excerpt, relevant dates, author/profile identity where applicable, and a safe image when one exists;
 - no suspended Render URLs;
 - local `/uploads/...` images are absolute;
-- Cloudinary URLs are preserved.
+- Cloudinary URLs are preserved;
+- admin, API, preview, and `/uploads/tmp` image URLs are not exposed in metadata.
 
 For noindex routes, confirm:
 
@@ -57,7 +62,8 @@ Confirm `/sitemap.xml` includes only:
 - published landmarks;
 - published leadership profiles;
 - published events;
-- published announcements.
+- published announcements;
+- published CMS about pages.
 
 Confirm it excludes:
 
@@ -66,6 +72,7 @@ Confirm it excludes:
 - preview routes;
 - tokenized URLs;
 - unpublished records;
+- unpublished CMS about pages;
 - empty slugs;
 - legacy duplicate routes.
 
