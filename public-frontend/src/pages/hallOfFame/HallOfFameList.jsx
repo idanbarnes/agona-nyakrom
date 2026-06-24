@@ -15,6 +15,7 @@ import {
   Input,
   StateGate,
 } from '../../components/ui/index.jsx'
+import { trackSearch } from '../../lib/analytics.js'
 import { buildHallOfFameDetailPath } from './paths.js'
 
 // Extract list data across possible payload shapes.
@@ -172,6 +173,18 @@ function HallOfFameList() {
       return name.includes(normalizedSearch)
     })
   }, [items, normalizedSearch])
+
+  useEffect(() => {
+    if (!normalizedSearch || loading) return undefined
+    const timer = window.setTimeout(() => {
+      trackSearch({
+        query: normalizedSearch,
+        resultCount: filteredItems.length,
+        contentType: 'hall_of_fame',
+      })
+    }, 700)
+    return () => window.clearTimeout(timer)
+  }, [filteredItems.length, loading, normalizedSearch])
 
   const totalEntriesLabel = loading ? 'Loading honourees' : `${items.length} honourees documented`
   const matchCountLabel = normalizedSearch

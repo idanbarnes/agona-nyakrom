@@ -3,6 +3,7 @@ import { getObituaries } from '../../api/endpoints.js'
 import RevealItem from '../../components/motion/RevealItem.jsx'
 import StaggerGridReveal from '../../components/motion/StaggerGridReveal.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
+import { trackSearch } from '../../lib/analytics.js'
 import {
   Button,
   DetailPageCTA,
@@ -629,6 +630,18 @@ function ObituaryList() {
       getDisplayName(item).toLowerCase().includes(normalizedQuery),
     )
   }, [allItems, normalizedQuery])
+
+  useEffect(() => {
+    if (!normalizedQuery || loading) return undefined
+    const timer = window.setTimeout(() => {
+      trackSearch({
+        query: normalizedQuery,
+        resultCount: filteredItems.length,
+        contentType: 'obituary',
+      })
+    }, 700)
+    return () => window.clearTimeout(timer)
+  }, [filteredItems.length, loading, normalizedQuery])
 
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE)),

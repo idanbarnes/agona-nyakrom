@@ -9,6 +9,7 @@ import ImageLightbox from '../components/ImageLightbox.jsx'
 import RevealItem from '../components/motion/RevealItem.jsx'
 import StaggerGridReveal from '../components/motion/StaggerGridReveal.jsx'
 import { resolveAssetUrl } from '../lib/apiBase.js'
+import { trackSearch } from '../lib/analytics.js'
 import {
   buildAnnouncementDetailPath,
   buildEventDetailPath,
@@ -531,6 +532,19 @@ function AnnouncementsEventsPage() {
         filteredEventsCount + visibleAnnouncements.length === 1 ? '' : 's'
       }`
     : 'Search events and announcements'
+
+  useEffect(() => {
+    if (!normalizedSearch || loading) return undefined
+    const resultCount = filteredEventsCount + visibleAnnouncements.length
+    const timer = window.setTimeout(() => {
+      trackSearch({
+        query: normalizedSearch,
+        resultCount,
+        contentType: 'event',
+      })
+    }, 700)
+    return () => window.clearTimeout(timer)
+  }, [filteredEventsCount, loading, normalizedSearch, visibleAnnouncements.length])
 
   useEffect(() => {
     setShowAllPast(false)

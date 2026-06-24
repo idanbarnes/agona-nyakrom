@@ -63,6 +63,8 @@ export const loadAdminFaqManagerPage = () =>
   import('../pages/contact/AdminFaqManagerPage.jsx')
 export const loadAdminUsersPage = () =>
   import('../pages/adminUsers/AdminUsersPage.jsx')
+export const loadAdminAnalyticsPage = () =>
+  import('../pages/analytics/AdminAnalyticsPage.jsx')
 export const loadDashboardPage = () => import('../pages/DashboardPage.jsx')
 export const loadLoginPage = () => import('../pages/LoginPage.jsx')
 export const loadNotFoundPage = () => import('../pages/NotFoundPage.jsx')
@@ -207,6 +209,7 @@ export const adminRouteDefinitions = [
   },
   { key: 'contact', path: '/admin/contact', loader: loadAdminContactInfoPage },
   { key: 'faqs', path: '/admin/faqs', loader: loadAdminFaqManagerPage },
+  { key: 'analytics', path: '/admin/analytics', loader: loadAdminAnalyticsPage },
   { key: 'admin-users', path: '/admin/users', loader: loadAdminUsersPage },
   {
     key: 'preview-redirect',

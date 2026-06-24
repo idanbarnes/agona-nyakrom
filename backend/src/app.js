@@ -36,6 +36,8 @@ const contactAdminRoutes = require('./routes/admin/contactAdminRoutes');
 const faqAdminRoutes = require('./routes/admin/faqAdminRoutes');
 const adminUserRoutes = require('./routes/admin/adminUserRoutes');
 const faqsAdminCompatRoutes = require('./routes/faqsAdminCompatRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
+const analyticsAdminRoutes = require('./routes/admin/analyticsAdminRoutes');
 
 const publicNewsRoutes = require('./routes/public/newsRoutes');
 const publicObituaryRoutes = require('./routes/public/obituaryRoutes');
@@ -337,6 +339,7 @@ const createApp = (options = {}) => {
   app.use('/api/admin/announcements', adminAnnouncementsRoutes);
   app.use('/api/admin/contact', contactAdminRoutes);
   app.use('/api/admin/faqs', faqAdminRoutes);
+  app.use('/api/admin/analytics', analyticsAdminRoutes);
   app.use('/api/admin/users', adminUserRoutes);
   app.use('/api/faqs', faqsAdminCompatRoutes);
 
@@ -363,6 +366,7 @@ const createApp = (options = {}) => {
   app.use('/api/v1/admin', adminAuthRoutes);
   app.use('/api/v1/admin/contact', contactAdminRoutes);
   app.use('/api/v1/admin/faqs', faqAdminRoutes);
+  app.use('/api/analytics', analyticsRoutes);
 
   app.use('/api', (req, res) => {
     res.status(404).json({

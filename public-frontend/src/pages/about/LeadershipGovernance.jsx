@@ -1,5 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { getPublicLeaders } from '../../api/endpoints.js'
+import { trackSearch } from '../../lib/analytics.js'
 import CmsCardImage from '../../components/media/CmsCardImage.jsx'
 import AnimatedHeroIntro from '../../components/motion/AnimatedHeroIntro.jsx'
 import RevealItem from '../../components/motion/RevealItem.jsx'
@@ -238,6 +239,19 @@ export default function LeadershipGovernance() {
       ),
     [data.community_admin, normalizedSearch],
   )
+
+  useEffect(() => {
+    if (!normalizedSearch) return undefined
+    const resultCount = filteredTraditional.length + filteredCommunityAdmin.length
+    const timer = window.setTimeout(() => {
+      trackSearch({
+        query: normalizedSearch,
+        resultCount,
+        contentType: 'leader',
+      })
+    }, 700)
+    return () => window.clearTimeout(timer)
+  }, [filteredCommunityAdmin.length, filteredTraditional.length, normalizedSearch])
   const totalMatches = filteredTraditional.length + filteredCommunityAdmin.length
 
   return (

@@ -27,6 +27,7 @@ import {
   PhoneIcon,
   SettingsIcon,
   ShieldIcon,
+  TrendingUpIcon,
   UsersIcon,
 } from '../components/admin/icons.jsx'
 
@@ -59,6 +60,7 @@ const navItems = [
   { label: 'Homepage Settings', to: '/admin/homepage-sections', icon: HomeIcon },
   { label: 'Contact Information', to: '/admin/contact', icon: PhoneIcon },
   { label: 'Contact FAQs', to: '/admin/faqs', icon: HelpCircleIcon },
+  { label: 'Visitor Analytics', to: '/admin/analytics', icon: TrendingUpIcon },
   { label: 'Admin Users', to: '/admin/users', icon: UsersIcon },
   { label: 'Global Settings', to: '/admin/global-settings', icon: SettingsIcon },
 ]

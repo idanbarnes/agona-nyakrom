@@ -15,7 +15,8 @@
     "migrate:local-to-neon": "node src/scripts/migrateLocalDbToNeon.js",
     "migrate:uploads-to-cloudinary": "node src/scripts/migrateLocalUploadsToCloudinary.js",
     "admin:create": "node src/scripts/createAdmin.js",
-    "seed:admin": "node src/scripts/seedAdmin.js"
+    "seed:admin": "node src/scripts/seedAdmin.js",
+    "analytics:cleanup": "node src/scripts/cleanupAnalytics.js"
   },
   "keywords": [],
   "author": "",

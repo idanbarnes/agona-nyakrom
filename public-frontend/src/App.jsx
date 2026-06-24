@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './layouts/Layout.jsx'
 import ScrollToTop from './components/ScrollToTop.jsx'
+import AnalyticsRouteTracker from './components/AnalyticsRouteTracker.jsx'
 // import DevApiTest from './dev/DevApiTest.jsx' //For Dev-only API test component
 import {
   publicRouteDefinitions,
@@ -36,6 +37,7 @@ function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <AnalyticsRouteTracker />
       <Routes>
         <Route path="/" element={<Layout />}>
           {/* <Route element={<DevApiTest />} /> Dev-only API test component */}
