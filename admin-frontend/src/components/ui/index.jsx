@@ -1,4 +1,5 @@
 export { Button } from './button.jsx'
+export { GoBackButton } from './go-back-button.jsx'
 export { Input } from './input.jsx'
 export { Checkbox } from './checkbox.jsx'
 export { Textarea } from './textarea.jsx'

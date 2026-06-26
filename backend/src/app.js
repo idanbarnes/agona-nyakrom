@@ -166,17 +166,22 @@ const assertUnifiedBuildExists = (frontendPaths) => {
 
 const createHtmlTemplateReader = (htmlPath) => {
   let cachedHtmlTemplate = null;
+  let cachedTemplateSignature = null;
 
   return () => {
-    if (cachedHtmlTemplate) {
-      return cachedHtmlTemplate;
-    }
-
     if (!fs.existsSync(htmlPath)) {
       throw new Error(`Unified runtime HTML template not found at ${htmlPath}`);
     }
 
+    const stats = fs.statSync(htmlPath);
+    const templateSignature = `${stats.mtimeMs}:${stats.size}`;
+
+    if (cachedHtmlTemplate && cachedTemplateSignature === templateSignature) {
+      return cachedHtmlTemplate;
+    }
+
     cachedHtmlTemplate = fs.readFileSync(htmlPath, 'utf8');
+    cachedTemplateSignature = templateSignature;
     return cachedHtmlTemplate;
   };
 };
@@ -308,6 +313,9 @@ const createApp = (options = {}) => {
     res.json({ status: 'ok', message: 'Backend running' });
   });
 
+  app.use('/uploads/tmp', (req, res) => {
+    res.status(404).send('Not found');
+  });
   app.use('/uploads', express.static(uploadsRoot));
 
   app.use('/api/news', newsRoutes);

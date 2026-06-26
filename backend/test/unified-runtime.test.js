@@ -37,6 +37,7 @@ const createFixtureDirs = () => {
   );
   writeFile(path.join(adminDir, 'assets', 'app.js'), 'console.log("admin")');
   writeFile(path.join(uploadsDir, 'sample.txt'), 'uploaded-media');
+  writeFile(path.join(uploadsDir, 'tmp', 'private.txt'), 'temporary-upload');
 
   return { root, publicDir, adminDir, uploadsDir };
 };
@@ -371,6 +372,39 @@ test('public entry routes serve the public application shell', async () => {
   });
 });
 
+test('public SEO HTML reloads index template after frontend rebuild changes asset hashes', async () => {
+  const fixtures = createFixtureDirs();
+  const publicIndexPath = path.join(fixtures.publicDir, 'index.html');
+  writeFile(
+    publicIndexPath,
+    '<!doctype html><html><head><title>Public App</title><link rel="stylesheet" href="/assets/index-old.css"></head><body><div id="root">PUBLIC_APP_SHELL</div></body></html>'
+  );
+  process.env.UPLOAD_DIR = fixtures.uploadsDir;
+  const { createApp } = loadAppModule();
+  const app = createApp({
+    publicDistDir: fixtures.publicDir,
+    adminDistDir: fixtures.adminDir,
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const firstResponse = await fetch(`${baseUrl}/news/some-slug`);
+    const firstHtml = await firstResponse.text();
+    assert.equal(firstResponse.status, 200);
+    assert.match(firstHtml, /index-old\.css/);
+
+    writeFile(
+      publicIndexPath,
+      '<!doctype html><html><head><title>Public App</title><link rel="stylesheet" href="/assets/index-new.css"></head><body><div id="root">PUBLIC_APP_SHELL</div></body></html>'
+    );
+
+    const secondResponse = await fetch(`${baseUrl}/news/some-slug`);
+    const secondHtml = await secondResponse.text();
+    assert.equal(secondResponse.status, 200);
+    assert.match(secondHtml, /index-new\.css/);
+    assert.doesNotMatch(secondHtml, /index-old\.css/);
+  });
+});
+
 test('preview-token public routes stay classified as public routes', async () => {
   const fixtures = createFixtureDirs();
   process.env.UPLOAD_DIR = fixtures.uploadsDir;
@@ -409,5 +443,24 @@ test('/uploads assets are not intercepted by an SPA fallback', async () => {
     const missingText = await missingResponse.text();
     assert.equal(missingResponse.status, 404);
     assert.doesNotMatch(missingText, /PUBLIC_APP_SHELL|ADMIN_APP_SHELL/);
+  });
+});
+
+test('/uploads/tmp assets are not served publicly', async () => {
+  const fixtures = createFixtureDirs();
+  process.env.UPLOAD_DIR = fixtures.uploadsDir;
+  const { createApp } = loadAppModule();
+  const app = createApp({
+    publicDistDir: fixtures.publicDir,
+    adminDistDir: fixtures.adminDir,
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/uploads/tmp/private.txt`);
+    const text = await response.text();
+
+    assert.equal(response.status, 404);
+    assert.doesNotMatch(text, /temporary-upload/);
+    assert.doesNotMatch(text, /PUBLIC_APP_SHELL|ADMIN_APP_SHELL/);
   });
 });

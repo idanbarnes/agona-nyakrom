@@ -17,6 +17,7 @@ import {
   DetailPageCTA,
   EmptyState,
   ErrorState,
+  GoBackButton,
   ImageWithFallback,
   StateGate,
 } from '../../components/ui/index.jsx'
@@ -105,24 +106,6 @@ function ShareIcon({ className = 'h-[18px] w-[18px]' }) {
         strokeLinejoin="round"
         strokeWidth="2.5"
       />
-    </svg>
-  )
-}
-
-function ArrowLeftIcon({ className = 'h-4 w-4' }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={className}
-    >
-      <path d="M19 12H5" />
-      <path d="m12 19-7-7 7-7" />
     </svg>
   )
 }
@@ -395,20 +378,10 @@ function AnnouncementDetail() {
         }
       >
         <div className="mx-auto max-w-6xl space-y-8">
-          <Link
+          <GoBackButton
             to="/announcements-events"
-            className="group inline-flex items-center gap-3 rounded-full border border-border/70 bg-surface/90 px-3 py-2 text-sm font-medium text-foreground shadow-sm backdrop-blur transition-[border-color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-white hover:shadow-md"
-          >
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground transition-colors duration-200 group-hover:text-foreground">
-              <ArrowLeftIcon className="h-4 w-4" />
-            </span>
-            <span className="flex flex-col leading-tight">
-              <span className="text-[0.64rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Go Back
-              </span>
-              <span>Announcements & Events</span>
-            </span>
-          </Link>
+            label="Back to Announcements & Events"
+          />
 
           <article className="relative overflow-hidden rounded-[28px] border border-border/70 bg-surface shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
             <div

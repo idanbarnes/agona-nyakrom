@@ -23,12 +23,20 @@ const getDbSslConfig = () =>
   isTruthy(process.env.DB_SSL) ? { rejectUnauthorized: false } : false;
 
 const getMediaStorageMode = () =>
-  normalize(process.env.MEDIA_STORAGE || 'local').toLowerCase() || 'local';
+  normalize(
+    process.env.MEDIA_STORAGE || (isProductionLikeRuntime() ? 'cloudinary' : 'local')
+  ).toLowerCase();
 
 const isHostedRuntime = () => Boolean(normalize(process.env.RENDER));
 
-const allowHostedLocalUploads = () =>
+const isProductionLikeRuntime = () =>
+  normalize(process.env.NODE_ENV).toLowerCase() === 'production' || isHostedRuntime();
+
+const allowProductionLocalUploads = () =>
+  isTruthy(process.env.ALLOW_PRODUCTION_LOCAL_UPLOADS) ||
   isTruthy(process.env.ALLOW_RENDER_LOCAL_UPLOADS);
+
+const allowHostedLocalUploads = allowProductionLocalUploads;
 
 const validateDatabaseEnv = () => {
   const hasDatabaseUrl = Boolean(normalize(process.env.DATABASE_URL));
@@ -112,7 +120,7 @@ const validateCloudinaryEnv = () => {
 };
 
 const validateSeoEnv = () => {
-  const productionLike = normalize(process.env.NODE_ENV).toLowerCase() === 'production' || isHostedRuntime();
+  const productionLike = isProductionLikeRuntime();
   const rawSiteUrl = normalize(
     process.env.SITE_URL || process.env.UNIFIED_SITE_URL || process.env.PUBLIC_SITE_URL
   );
@@ -147,13 +155,22 @@ const validateSeoEnv = () => {
 };
 
 const validateMediaStorageEnv = () => {
-  if (!isHostedRuntime() || allowHostedLocalUploads()) {
+  const mediaStorage = getMediaStorageMode();
+  const allowedModes = new Set(['local', 'cloudinary']);
+
+  if (!allowedModes.has(mediaStorage)) {
+    throw new Error(
+      `Invalid MEDIA_STORAGE value "${process.env.MEDIA_STORAGE}". Expected one of: local, cloudinary.`
+    );
+  }
+
+  if (!isProductionLikeRuntime() || allowProductionLocalUploads()) {
     return;
   }
 
-  if (getMediaStorageMode() !== 'cloudinary') {
+  if (mediaStorage !== 'cloudinary') {
     throw new Error(
-      'Hosted uploads on Render must use Cloudinary-backed storage. Set MEDIA_STORAGE=cloudinary or explicitly opt out with ALLOW_RENDER_LOCAL_UPLOADS=true if you accept ephemeral local uploads.'
+      'Production uploads must use Cloudinary-backed storage. Set MEDIA_STORAGE=cloudinary or explicitly opt out with ALLOW_PRODUCTION_LOCAL_UPLOADS=true if you accept ephemeral local uploads.'
     );
   }
 };
@@ -168,6 +185,7 @@ const validateRuntimeEnv = () => {
 };
 
 module.exports = {
+  allowProductionLocalUploads,
   allowHostedLocalUploads,
   buildDatabaseConnectionConfig,
   getMediaStorageMode,
@@ -175,6 +193,7 @@ module.exports = {
   getJwtSecret,
   getPreviewTokenSecret,
   isHostedRuntime,
+  isProductionLikeRuntime,
   isTruthy,
   normalize,
   validateCloudinaryEnv,

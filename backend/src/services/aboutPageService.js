@@ -1,9 +1,9 @@
 const { pool } = require('../config/db');
+const { getMediaStorageMode } = require('../config/env');
 
 const ALLOWED_SLUGS = ['history', 'who-we-are', 'about-agona-nyakrom-town'];
 const DEFAULT_SHARE_IMAGE = process.env.PUBLIC_SHARE_IMAGE_URL || '/share-default.svg';
-const isCloudinaryStorageEnabled =
-  String(process.env.MEDIA_STORAGE || 'local').trim().toLowerCase() === 'cloudinary';
+const isCloudinaryStorageEnabled = () => getMediaStorageMode() === 'cloudinary';
 
 const baseSelect = `
   id,
@@ -132,7 +132,7 @@ const getPublishedBySlug = async (slug) => {
   if (!page) return null;
 
   if (
-    isCloudinaryStorageEnabled &&
+    isCloudinaryStorageEnabled() &&
     (hasLegacyLocalAssetReference(page.body) || hasLegacyLocalAssetReference(page.seo_share_image))
   ) {
     console.warn(

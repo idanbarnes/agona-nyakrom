@@ -12,6 +12,7 @@ import {
   DetailSkeleton,
   EmptyState,
   ErrorState,
+  GoBackButton,
   StateGate,
 } from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
@@ -231,6 +232,7 @@ function ClanDetail() {
         }
       >
         <article className="container mx-auto max-w-6xl space-y-6">
+          <GoBackButton to="/clans" label="Back to Clans" />
           <ClanDetailHero
             name={clanName}
             caption={caption}

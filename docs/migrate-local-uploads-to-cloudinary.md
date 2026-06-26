@@ -23,9 +23,12 @@ The script:
 1. reads your current Neon database
 2. finds image-related columns that still point at local `uploads/...` files
 3. uploads those files from your local `backend/uploads` directory to Cloudinary
-4. updates the matching database values in Neon to the new Cloudinary `https://...` URLs
+4. in dry-run mode, reports the database values that would change
+5. in execute mode only, uploads files and updates matching database values to the new Cloudinary `https://...` URLs
 
 It also scans JSON/JSONB columns, so homepage block image references are included.
+
+The script does not delete local files.
 
 ## Requirements
 
@@ -48,14 +51,14 @@ Important:
 
 ## Safe Dry Run
 
-Run this first:
+Dry-run is mandatory before execution. Run this first:
 
 ```powershell
 cd C:\agona-nyakrom\backend
 npm run migrate:uploads-to-cloudinary -- --dry-run
 ```
 
-This shows what would be updated without changing Neon.
+This shows what would be updated without changing Neon or uploading files to Cloudinary. Review every proposed update and every missing local file before continuing.
 
 ## Real Migration
 
@@ -63,14 +66,17 @@ If the dry run looks correct:
 
 ```powershell
 cd C:\agona-nyakrom\backend
-npm run migrate:uploads-to-cloudinary
+npm run migrate:uploads-to-cloudinary -- --execute
 ```
+
+A plain command without `--execute` stays in dry-run mode.
 
 ## After Migration
 
 1. redeploy the backend on Render
 2. hard refresh both frontends
 3. verify that old records now return Cloudinary URLs instead of `/uploads/...`
+4. keep the local `backend/uploads` directory until public/admin verification is complete
 
 ## How To Verify
 
@@ -93,3 +99,9 @@ not:
 ```text
 /uploads/...
 ```
+
+## Rollback Limitations
+
+The script rewrites database values when run with `--execute`. It does not keep a built-in rollback table and it does not delete local files. Rollback requires restoring a database backup or manually changing affected records back to their previous `/uploads/...` values.
+
+Cloudinary uploads created during execution are not removed automatically during rollback.

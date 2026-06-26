@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
   FormField,
+  GoBackButton,
   InlineError,
   Input,
   Textarea,
@@ -74,24 +75,6 @@ function SendIcon({ className = 'h-4 w-4' }) {
     >
       <line x1="22" y1="2" x2="11" y2="13" />
       <polygon points="22 2 15 22 11 13 2 9 22 2" />
-    </svg>
-  )
-}
-
-function ArrowLeftIcon({ className = 'h-4 w-4' }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M19 12H5" />
-      <path d="M12 19l-7-7 7-7" />
     </svg>
   )
 }
@@ -403,16 +386,7 @@ function AdminNewsEditPage() {
     return (
       <div className="mx-auto max-w-6xl space-y-6 pb-8 md:space-y-8">
         <header className="rounded-2xl border border-border/80 bg-gradient-to-r from-white via-slate-50 to-blue-50/40 p-5 shadow-sm sm:p-7">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="mb-4 px-0 text-slate-700 transition-all duration-200 hover:bg-transparent hover:text-primary"
-            onClick={() => navigate('/admin/news')}
-          >
-            <ArrowLeftIcon />
-            Back to NewsList
-          </Button>
+          <GoBackButton to="/admin/news" label="Back to News" className="mb-4" />
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
             Edit News Article
           </h1>
@@ -438,16 +412,7 @@ function AdminNewsEditPage() {
   const formContent = (
     <div className="mx-auto w-full max-w-[1700px] space-y-6 pb-8 md:space-y-8">
       <header className="rounded-2xl border border-border/80 bg-gradient-to-r from-white via-slate-50 to-blue-50/40 p-5 shadow-sm transition-shadow duration-200 hover:shadow-md sm:p-7">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="mb-4 px-0 text-slate-700 transition-all duration-200 hover:bg-transparent hover:text-primary"
-          onClick={() => navigate('/admin/news')}
-        >
-          <ArrowLeftIcon />
-          Back to NewsList
-        </Button>
+        <GoBackButton to="/admin/news" label="Back to News" className="mb-4" />
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
           Edit News Article
         </h1>

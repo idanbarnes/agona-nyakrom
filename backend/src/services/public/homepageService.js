@@ -1,8 +1,8 @@
 // Public homepage payload served by GET /api/public/homepage; admin controls blocks via /admin/homepage-sections.
 const { pool } = require('../../config/db');
+const { getMediaStorageMode } = require('../../config/env');
 const { resolveCloudinaryDeliveryUrl } = require('../cloudinaryService');
-const isCloudinaryStorageEnabled =
-  String(process.env.MEDIA_STORAGE || 'local').trim().toLowerCase() === 'cloudinary';
+const isCloudinaryStorageEnabled = () => getMediaStorageMode() === 'cloudinary';
 
 const mapImages = (row) => ({
   original: row?.original_image_path || null,
@@ -225,7 +225,7 @@ const getPublishedBlocks = async () => {
     const whoWeAreGallery = normalizeWhoWeAreGallery(row.who_we_are_gallery, `homepage block ${row.id}`);
 
     if (
-      isCloudinaryStorageEnabled &&
+      isCloudinaryStorageEnabled() &&
       (
         hasLegacyLocalAssetReference(mediaImageId) ||
         hasLegacyLocalAssetReference(backgroundImageId) ||

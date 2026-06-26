@@ -139,6 +139,9 @@ test('initial crawlable content is escaped and includes important route facts', 
   const html = injectSeoIntoHtml('<html><head><title></title></head><body><div id="root"></div></body></html>', descriptor);
 
   assert.match(html, /data-seo-initial-content="true"/);
+  assert.match(html, /id="seo-initial-content-style"/);
+  assert.match(html, /#root \[data-seo-initial-content="true"\]\{display:none!important\}/);
+  assert.match(html, /<noscript><style>#root \[data-seo-initial-content="true"\]\{display:block!important\}/);
   assert.match(html, /&lt;Unsafe Story&gt;/);
   assert.doesNotMatch(html, /<script>alert\(1\)<\/script>/);
   assert.match(html, /By Reporter/);

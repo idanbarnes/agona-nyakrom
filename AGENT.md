@@ -12,6 +12,14 @@ This repository is an existing multi-app production-style system for the Agona N
 
 Work here as an operator inside an established system. Do not treat this repository like a starter app, redesign exercise, or architecture playground.
 
+Current development is local-first. The approved runtime target is one unified Express runtime:
+- `/` serves the public frontend
+- `/admin` serves the admin frontend
+- `/api` serves the backend API
+- `/uploads` serves uploaded media
+
+The old Render public/admin/API services are suspended and are legacy references only. Do not hard-code old Render URLs or reintroduce them as canonical origins. Final deployment and domain setup are deferred until the planned updates are complete and the domain/hosting purchase is made.
+
 ## Project Operating Principles
 
 - Modify existing code before creating new files.
@@ -23,6 +31,13 @@ Work here as an operator inside an established system. Do not treat this reposit
 - Favor production-safe implementation over cleverness.
 - Avoid speculative refactors and dependency additions.
 - Match the repository’s current coding style and data shapes, even if you would design them differently from scratch.
+
+## Approved Migration State
+
+- Unified runtime work has been completed locally and must be preserved.
+- Future work must not undo the unified `/`, `/admin`, `/api`, and `/uploads` routing contract.
+- Keep the React/Vite frontends and Express backend within the unified runtime unless a task explicitly requests otherwise.
+- Next.js migration, framework replatforming, or application architecture replacement is not approved unless explicitly requested.
 
 ## Repository Awareness
 
@@ -69,7 +84,7 @@ There is no dedicated shared workspace package. Do not force cross-app abstracti
 
 ## Existing-Project Rule
 
-- This is not a rebuild.
+- Do not rewrite, replatform, or rebuild the application architecture unless explicitly requested. Running build commands for verification is required when relevant.
 - This is not a redesign unless the task explicitly says so.
 - Do not rewrite working modules just because another pattern is preferable.
 - Do not replace the routing strategy, auth flow, API client approach, or CMS structure without a concrete requirement.
@@ -94,6 +109,10 @@ The public site is route-driven and already lazily loaded through `public-fronte
 The admin app is protected by `ProtectedRoute` and session state in `admin-frontend/src/lib/auth.js` and `admin-frontend/src/context`.
 
 - Preserve login, logout, redirect-after-login, and protected route behavior.
+- Preserve bearer JWT auth and the current localStorage-based admin auth flow.
+- Preserve `master_admin`-only admin-user management.
+- Preserve `ADMIN_BOOTSTRAP_TOKEN` rules, including `ALLOW_ADMIN_BOOTSTRAP_WHEN_ADMINS_EXIST` behavior.
+- Preserve login rate limiting.
 - Reuse `admin-frontend/src/services/api/*` and `admin-frontend/src/lib/apiClient.js` patterns for API work. Do not bypass the established auth/token handling without a reason.
 - Preserve CRUD consistency across list/create/edit flows.
 - Reuse existing admin form primitives and page patterns before building new ones:
@@ -104,8 +123,10 @@ The admin app is protected by `ProtectedRoute` and session state in `admin-front
   - card/form wrappers in `components/ui`
 - Preserve image upload behavior, preview behavior, draft/publish behavior, and validation UX.
 - Preserve inline preview and preview redirect behavior where already present.
+- Preserve preview-token behavior for public previews and admin preview redirects.
 - Favor predictable admin UX and validation over hidden automation or “smart” form behavior.
 - Any admin-side content change must be evaluated against public rendering impact.
+- Administrator audit trails have not yet been implemented; do not claim or depend on them unless a task adds them.
 
 ## CMS and Data Integrity Rules
 
@@ -123,6 +144,11 @@ This project is content-driven. Schema and payload changes are high-risk.
 - Preserve backward compatibility when practical. This codebase contains compatibility paths and aliases; do not remove them casually.
 - Check loading, empty, error, and fallback states when content shape may vary.
 - If content can be draft/unpublished, ensure public filtering still behaves correctly.
+- Treat the hosted database as the source of truth.
+- Do not run `migrate:local-to-neon` casually. It is a high-risk data movement script.
+- Destructive migrations require explicit approval.
+- Inspect migrations before applying them to production.
+- The analytics migration is part of the approved first-party analytics implementation and should be preserved.
 
 ## Homepage and CMS Block Discipline
 
@@ -139,7 +165,12 @@ Homepage work is especially sensitive.
 Media is not generic here. It follows an existing pipeline.
 
 - Preserve admin upload flows and existing persisted path behavior.
+- Preserve `/uploads` compatibility in local and hosted routing.
 - Backend uploads enter `backend/uploads/tmp` through `uploadMiddleware`, then `mediaService` converts images to WebP variants in section-specific upload folders.
+- Do not rely on local disk uploads for hosted production unless explicitly approved.
+- Cloudinary remains the expected hosted media storage.
+- Uploads-to-Cloudinary migration requires a dry-run first.
+- Never delete or rewrite media records without explicit approval.
 - Preserve current image constraints unless the task explicitly requires a change:
   - max file size around 5 MB
   - existing MIME restrictions
@@ -149,6 +180,28 @@ Media is not generic here. It follows an existing pipeline.
 - Preserve aspect ratio handling and avoid stretching/distortion.
 - Reuse existing upload components and backend media helpers before inventing feature-specific upload logic.
 - Do not create inconsistent image rules across modules without a deliberate system-wide decision.
+
+## SEO Safety Rules
+
+SEO foundation and SEO hardening have been implemented.
+
+- Preserve centralized SEO configuration.
+- Preserve sitemap and robots behavior.
+- Preserve route-specific metadata.
+- Preserve canonical URL generation.
+- Preserve JSON-LD generation.
+- Do not reintroduce suspended Render URLs as canonical origins.
+- `SITE_URL` must be configured when the final domain is purchased.
+
+## Analytics Safety Rules
+
+First-party visitor analytics has been implemented. No external analytics vendor is used.
+
+- Preserve the first-party analytics design.
+- Do not add external analytics vendors unless explicitly requested.
+- Do not store raw IPs, JWTs, cookies, passwords, exact geolocation, fingerprints, or form contents.
+- Analytics dashboard routes and UI must remain protected by admin auth.
+- Analytics cleanup must be dry-run by default.
 
 ## Reusability and Component Discipline
 
@@ -172,6 +225,7 @@ The frontends use React + Vite + Tailwind CSS. Preserve the established visual s
 ## Backend and API Guardrails
 
 - Preserve the Express route structure in `backend/server.js`.
+- Preserve the unified Express runtime behavior for `/`, `/admin`, `/api`, and `/uploads`.
 - Keep public routes, admin routes, and compatibility aliases intact unless change is required.
 - Be careful with route aliases such as `/api/admin/asafo-companies` and `/api/admin/asafo`, and versioned aliases under `/api/v1`.
 - Preserve server-rendered meta tag behavior for `/events/:slug` and `/announcements/:slug` when touching event/announcement detail flows.
@@ -234,11 +288,20 @@ For meaningful completion, use a layered verification pass appropriate to the ch
 - verify public/admin integration when CMS data is involved
 
 Repository-specific notes:
+- backend has `npm test`
+- backend has `npm run seo:validate`
+- backend has `npm run analytics:cleanup`; cleanup must remain dry-run by default
+- root has `npm run build:unified`
+- root has `npm run start:unified`
 - `public-frontend` has `npm run lint`, `npm run build`, `npm run smoke:e2e`
+- `public-frontend` has `npm run smoke:e2e:all`
 - `admin-frontend` has `npm run lint`, `npm run build`, `npm run smoke:e2e`
+- `admin-frontend` has `npm run smoke:e2e:all`
 - `scripts/frontends-smoke.mjs` can exercise public and admin flows and expects a usable Edge/Chrome binary; `BROWSER_BIN` can be set if needed
 - smoke flows assume backend on `http://localhost:5000`, admin on `http://127.0.0.1:5173`, public on `http://127.0.0.1:5174`
 - admin smoke login uses `ADMIN_DEFAULT_EMAIL` and `ADMIN_DEFAULT_PASSWORD`
+
+For unified runtime verification, build with `npm run build:unified`, start with `npm run start:unified`, then smoke both public `/` and admin `/admin` through the unified Express server. For public/admin dev-server verification, use the existing `smoke:e2e` or `smoke:e2e:all` scripts when the required servers are running.
 
 If backend changes affect runtime behavior but no automated test exists, call that out and compensate with targeted manual verification.
 
@@ -314,7 +377,7 @@ Future agents should report completion in this structure:
 
 ## Forbidden Actions
 
-- Do not rebuild the project.
+- Do not rewrite, replatform, or rebuild the application architecture unless explicitly requested. Running build commands for verification is required when relevant.
 - Do not redesign working UI unless explicitly asked.
 - Do not rewrite large working areas without a task-driven reason.
 - Do not silently change schema or payload contracts.
@@ -326,3 +389,6 @@ Future agents should report completion in this structure:
 - Do not mark work complete based only on lint/build.
 - Do not break CMS/public/admin coupling through local shortcuts.
 - Do not ship frontend-only patches that mask backend data problems.
+- Do not deploy, configure DNS, or modify hosting unless explicitly requested.
+- Final deployment should use the unified runtime.
+- Final `SITE_URL`, Search Console, sitemap submission, and Rich Results checks are deferred until domain purchase.

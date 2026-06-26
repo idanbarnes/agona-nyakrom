@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const sharp = require('sharp');
 const { uploadsRoot } = require('../config/storage');
-const { allowHostedLocalUploads, getMediaStorageMode, isHostedRuntime } = require('../config/env');
+const { allowProductionLocalUploads, getMediaStorageMode, isProductionLikeRuntime } = require('../config/env');
 const {
   buildCloudinaryFolder,
   deleteCloudinaryImage,
@@ -45,7 +45,7 @@ const carouselVariants = [
 const managedVariantKeys = variants.map((variant) => variant.key);
 
 const assertPersistentImageStorage = (section) => {
-  if (!isHostedRuntime() || allowHostedLocalUploads()) {
+  if (!isProductionLikeRuntime() || allowProductionLocalUploads()) {
     return;
   }
 
@@ -54,7 +54,7 @@ const assertPersistentImageStorage = (section) => {
   }
 
   throw new Error(
-    `Hosted ${section} image uploads require persistent Cloudinary storage. Set MEDIA_STORAGE=cloudinary before uploading images on Render.`
+    `Production ${section} image uploads require persistent Cloudinary storage. Set MEDIA_STORAGE=cloudinary before uploading images.`
   );
 };
 

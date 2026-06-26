@@ -6,6 +6,7 @@ import {
   DetailSkeleton,
   EmptyState,
   ErrorState,
+  GoBackButton,
   ImageWithFallback,
   StateGate,
 } from '../../components/ui/index.jsx'
@@ -418,7 +419,9 @@ function NewsDetail() {
           />
         }
       >
-        <article className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_6px_20px_rgba(15,23,42,0.06)] transition hover:shadow-[0_18px_40px_rgba(15,23,42,0.11)]">
+        <div className="mx-auto max-w-4xl space-y-4">
+          <GoBackButton to="/news" label="Back to News" />
+          <article className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_6px_20px_rgba(15,23,42,0.06)] transition hover:shadow-[0_18px_40px_rgba(15,23,42,0.11)]">
           <div className="p-5 sm:p-7 lg:p-8">
             <header>
               <h1 className="max-w-4xl break-words text-2xl font-semibold leading-tight tracking-tight text-gray-900 md:text-4xl">
@@ -485,18 +488,9 @@ function NewsDetail() {
               )}
             </div>
 
-            <div className="mt-8 border-t border-gray-100 pt-6">
-              <Button
-                as={Link}
-                to="/news"
-                variant="ghost"
-                className="h-10 rounded-lg border border-gray-300 bg-white px-4 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-              >
-                Back to news
-              </Button>
-            </div>
           </div>
-        </article>
+          </article>
+        </div>
       </StateGate>
     </section>
   )

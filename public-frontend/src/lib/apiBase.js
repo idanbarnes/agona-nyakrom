@@ -26,6 +26,28 @@ function isLoopbackUrl(value) {
   }
 }
 
+function isLoopbackUploadUrl(value) {
+  try {
+    const parsed = new URL(value)
+    return LOOPBACK_HOST_PATTERN.test(parsed.hostname) && parsed.pathname.startsWith('/uploads/')
+  } catch {
+    return false
+  }
+}
+
+function getLoopbackAssetBaseUrl() {
+  if (typeof window === 'undefined' || !window.location) {
+    return ''
+  }
+
+  const { protocol, hostname, port } = window.location
+  if (!LOOPBACK_HOST_PATTERN.test(hostname) || port === '5000') {
+    return ''
+  }
+
+  return `${protocol || 'http:'}//localhost:5000`
+}
+
 function stripDuplicateApiPrefix(path) {
   const normalizedPath = normalizePath(path)
 
@@ -84,7 +106,7 @@ export function getApiRuntimeConfig(env = {}) {
   if (!isAbsoluteHttpUrl(apiBaseUrl)) {
     return {
       apiBaseUrl,
-      assetBaseUrl: '',
+      assetBaseUrl: env?.DEV && !configuredBase ? 'http://localhost:5000' : '',
       stripDuplicateApiPrefix: shouldStripDuplicateApiPrefix(apiBaseUrl),
     }
   }
@@ -136,6 +158,12 @@ export function resolveAssetUrlFromBase(assetBaseUrl, path) {
     try {
       const parsed = new URL(rawPath)
       const rewrittenPath = `${parsed.pathname || ''}${parsed.search || ''}${parsed.hash || ''}`
+      if (isLoopbackUploadUrl(rawPath)) {
+        const loopbackAssetBaseUrl = getLoopbackAssetBaseUrl()
+        if (loopbackAssetBaseUrl) {
+          return joinUrl(loopbackAssetBaseUrl, rewrittenPath)
+        }
+      }
       return resolveAssetUrlFromBase(assetBaseUrl, rewrittenPath)
     } catch {
       return rawPath
@@ -143,6 +171,13 @@ export function resolveAssetUrlFromBase(assetBaseUrl, path) {
   }
 
   const normalizedPath = normalizePath(rawPath)
+  if (!assetBaseUrl && normalizedPath.startsWith('/uploads/')) {
+    const loopbackAssetBaseUrl = getLoopbackAssetBaseUrl()
+    if (loopbackAssetBaseUrl) {
+      return joinUrl(loopbackAssetBaseUrl, normalizedPath)
+    }
+  }
+
   return assetBaseUrl ? joinUrl(assetBaseUrl, normalizedPath) : normalizedPath
 }
 

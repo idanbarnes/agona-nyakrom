@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import AnimatedHeroIntro from '../motion/AnimatedHeroIntro.jsx'
 import { Button } from '../ui/index.jsx'
 
@@ -40,7 +39,6 @@ export default function ClanDetailHero({
   imageUrl,
   currentLeaderCount = 0,
   pastLeaderCount = 0,
-  backTo = '/clans',
   historyAnchorId = 'clan-history',
   leadersAnchorId = 'clan-leadership',
 }) {
@@ -100,14 +98,6 @@ export default function ClanDetailHero({
           }
           actions={
             <div className="flex flex-wrap items-center gap-3">
-              <Button
-                as={Link}
-                to={backTo}
-                variant="secondary"
-                className="rounded-full border-stone-200 bg-white px-5 text-sm font-semibold text-stone-900 hover:bg-stone-50"
-              >
-                Back to Clans
-              </Button>
               <Button
                 as="a"
                 href={`#${historyAnchorId}`}

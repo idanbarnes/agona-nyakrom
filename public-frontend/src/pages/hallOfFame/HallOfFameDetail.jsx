@@ -7,6 +7,7 @@ import {
   DetailSkeleton,
   EmptyState,
   ErrorState,
+  GoBackButton,
   StateGate,
 } from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
@@ -31,24 +32,6 @@ function Share2Icon({ className = 'h-5 w-5' }) {
       <circle cx="18" cy="19" r="3" />
       <path d="M8.7 10.7 15.3 7.3" />
       <path d="m8.7 13.3 6.6 3.4" />
-    </svg>
-  )
-}
-
-function ArrowLeftIcon({ className = 'h-4 w-4' }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={className}
-    >
-      <path d="M19 12H5" />
-      <path d="m12 19-7-7 7-7" />
     </svg>
   )
 }
@@ -197,20 +180,7 @@ function HallOfFameDetail() {
         }
       >
         <article className="container mx-auto max-w-6xl space-y-4">
-          <Link
-            to="/hall-of-fame"
-            className="group inline-flex items-center gap-3 rounded-full border border-border/70 bg-surface/90 px-3 py-2 text-sm font-medium text-foreground shadow-sm backdrop-blur transition-[border-color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-white hover:shadow-md"
-          >
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground transition-colors duration-200 group-hover:text-foreground">
-              <ArrowLeftIcon className="h-4 w-4" />
-            </span>
-            <span className="flex flex-col leading-tight">
-              <span className="text-[0.64rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Go Back
-              </span>
-              <span>Hall of Fame</span>
-            </span>
-          </Link>
+          <GoBackButton to="/hall-of-fame" label="Back to Hall of Fame" />
 
           <div className="rounded-2xl border border-border/70 bg-surface p-5 shadow-sm sm:p-7 lg:p-9">
             <div className="grid gap-6 md:grid-cols-[minmax(220px,300px),1fr] md:items-start lg:gap-10">
@@ -232,11 +202,11 @@ function HallOfFameDetail() {
                 </div>
               </div>
 
-              <div className="space-y-5">
-                <header className="space-y-4">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="space-y-2">
-                      <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-4xl">
+              <div className="space-y-6">
+                <header className="space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 space-y-2">
+                      <h1 className="break-words text-2xl font-semibold tracking-tight text-foreground md:text-4xl">
                         {name}
                       </h1>
                       {role ? (
@@ -244,23 +214,27 @@ function HallOfFameDetail() {
                       ) : null}
                     </div>
 
-                    <div className="flex flex-col items-start gap-3 sm:items-end">
-                      <Button
-                        variant="ghost"
-                        className="h-12 rounded-xl border border-[#d7d7d7] bg-white px-5 text-[1.0625rem] font-semibold text-[#111111] shadow-none hover:translate-y-0 hover:bg-[#fafafa] active:translate-y-0 active:scale-100 [&>span]:gap-0 [&>span>span:first-child]:hidden [&>span>span:last-child]:inline-flex [&>span>span:last-child]:items-center [&>span>span:last-child]:gap-2"
-                        aria-label="Share profile"
-                        onClick={handleShare}
-                      >
-                        <Share2Icon className="h-[18px] w-[18px] text-[#111111]" />
-                        <span>Share Profile</span>
-                      </Button>
-                      <p
-                        className="min-h-5 text-sm text-neutral-600 sm:text-right"
-                        aria-live="polite"
-                      >
-                        {shareMessage}
-                      </p>
-                    </div>
+                    <Button
+                      variant="ghost"
+                      className="h-10 shrink-0 rounded-full border border-border/80 bg-background px-3 text-sm font-semibold text-foreground shadow-sm hover:translate-y-0 hover:border-primary/40 hover:bg-primary/5 hover:text-primary active:translate-y-0 active:scale-100 sm:px-4 [&>span]:gap-0 [&>span>span:first-child]:hidden [&>span>span:last-child]:inline-flex [&>span>span:last-child]:items-center [&>span>span:last-child]:justify-center [&>span>span:last-child]:gap-2"
+                      aria-label="Share profile"
+                      onClick={handleShare}
+                    >
+                      <Share2Icon className="h-4 w-4" />
+                      <span>
+                        <span className="sm:hidden">Share</span>
+                        <span className="hidden sm:inline">Share Profile</span>
+                      </span>
+                    </Button>
+                  </div>
+
+                  <div className="border-y border-border/70 py-2">
+                    <p
+                      className="min-h-5 text-right text-sm text-muted-foreground sm:text-left"
+                      aria-live="polite"
+                    >
+                      {shareMessage}
+                    </p>
                   </div>
                 </header>
 

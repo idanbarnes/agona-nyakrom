@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { getHistory } from '../../api/endpoints.js'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
 import {
   EmptyState,
   ErrorState,
+  GoBackButton,
   RichContentPageSkeleton,
 } from '../../components/ui/index.jsx'
 import {
@@ -169,6 +169,7 @@ function History() {
 
   return (
     <section className={sectionClassName}>
+      <GoBackButton to="/" label="Back to home" />
       <h1 className={titleClassName}>{title}</h1>
       {subtitle && (
         <p className="text-sm text-muted-foreground">{subtitle}</p>
@@ -211,9 +212,6 @@ function History() {
           </ul>
         </section>
       )}
-      <p>
-        <Link to="/">Back to home</Link>
-      </p>
     </section>
   )
 }

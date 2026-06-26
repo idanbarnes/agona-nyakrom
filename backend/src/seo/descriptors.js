@@ -170,6 +170,17 @@ const renderMetaTags = (descriptor, config = getSeoConfig()) => {
   return tags.join('\n');
 };
 
+const SEO_INITIAL_CONTENT_STYLE_ID = 'seo-initial-content-style';
+const SEO_INITIAL_CONTENT_STYLE = `<style id="${SEO_INITIAL_CONTENT_STYLE_ID}">#root [data-seo-initial-content="true"]{display:none!important}</style><noscript><style>#root [data-seo-initial-content="true"]{display:block!important}</style></noscript>`;
+
+const injectSeoInitialContentStyle = (html) => {
+  if (html.includes(`id="${SEO_INITIAL_CONTENT_STYLE_ID}"`)) {
+    return html;
+  }
+
+  return html.replace('</head>', `${SEO_INITIAL_CONTENT_STYLE}\n</head>`);
+};
+
 const injectSeoIntoHtml = (html, descriptor, config = getSeoConfig()) => {
   const title = `<title>${escapeHtml(descriptor.title)}</title>`;
   const metaBlock = `<!-- social-meta:start -->\n${renderMetaTags(descriptor, config)}\n<!-- social-meta:end -->`;
@@ -184,7 +195,7 @@ const injectSeoIntoHtml = (html, descriptor, config = getSeoConfig()) => {
     return withMeta;
   }
 
-  return withMeta.replace(
+  return injectSeoInitialContentStyle(withMeta).replace(
     '<div id="root"></div>',
     `<div id="root">${descriptor.initialContent}</div>`
   );
@@ -220,7 +231,7 @@ const homepageDescriptor = () => {
     title: config.defaultTitle,
     description: config.defaultDescription,
     structuredData: [organizationSchema(config), websiteSchema(config)],
-    initialContent: `<main><h1>${escapeHtml(config.platformName)}</h1><p>${escapeHtml(config.defaultDescription)}</p></main>`,
+    initialContent: `<main data-seo-initial-content="true"><h1>${escapeHtml(config.platformName)}</h1><p>${escapeHtml(config.defaultDescription)}</p></main>`,
   }, config);
 };
 

@@ -1,4 +1,5 @@
 const { pool } = require('../../config/db');
+const { normalizeUploadPath } = require('../../utils/uploadPath');
 
 const baseSelect = `
   id,
@@ -40,8 +41,13 @@ const mapEntry = (row) => {
   } = row;
 
   const normalizedBody = body || bio || achievements || '';
-  const imageUrl =
-    medium_image_path || large_image_path || original_image_path || thumbnail_image_path || '';
+  const images = {
+    original: normalizeUploadPath(original_image_path),
+    large: normalizeUploadPath(large_image_path),
+    medium: normalizeUploadPath(medium_image_path),
+    thumbnail: normalizeUploadPath(thumbnail_image_path),
+  };
+  const imageUrl = images.medium || images.large || images.original || images.thumbnail || '';
 
   return {
     id,
@@ -55,12 +61,7 @@ const mapEntry = (row) => {
     imageUrl,
     isPublished: Boolean(published),
     is_featured,
-    images: {
-      original: original_image_path,
-      large: large_image_path,
-      medium: medium_image_path,
-      thumbnail: thumbnail_image_path,
-    },
+    images,
     createdAt: created_at,
     updatedAt: updated_at,
     created_at,

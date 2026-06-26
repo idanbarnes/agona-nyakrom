@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   CardContent,
+  GoBackButton,
   ImageWithFallback,
 } from '../../components/ui/index.jsx'
 import { resolveAssetUrl } from '../../lib/apiBase.js'
@@ -105,23 +106,6 @@ function Share2Icon({ className = 'h-5 w-5' }) {
       <circle cx="18" cy="19" r="3" />
       <path d="M8.7 10.7 15.3 7.3" />
       <path d="m8.7 13.3 6.6 3.4" />
-    </svg>
-  )
-}
-
-function ArrowLeftIcon({ className = 'h-4 w-4' }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={className}
-    >
-      <path d="m15 18-6-6 6-6" />
     </svg>
   )
 }
@@ -684,13 +668,7 @@ function ObituaryDetail() {
         {!loading && !error && normalizedItem ? (
           <article className="mx-auto max-w-6xl">
             <div className="mb-4">
-              <Link
-                to="/obituaries"
-                className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
-              >
-                <ArrowLeftIcon className="h-4 w-4" />
-                <span>Back to Obituaries</span>
-              </Link>
+              <GoBackButton to="/obituaries" label="Back to Obituaries" />
             </div>
             <div className="rounded-2xl border border-border/70 bg-surface p-5 shadow-sm sm:p-7 lg:p-9">
               <div className="grid gap-6 md:grid-cols-[minmax(220px,300px),1fr] md:items-start lg:gap-10">

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { createObituary } from '../../services/api/adminObituariesApi.js'
 import { getAuthToken } from '../../lib/auth.js'
 import { useDraftAutosave } from '../../hooks/useDraftAutosave.js'
@@ -14,6 +14,7 @@ import {
   CardTitle,
   CardContent,
   FormField,
+  GoBackButton,
   InlineError,
   Input,
 } from '../../components/ui/index.jsx'
@@ -31,24 +32,6 @@ function formatDraftTime(timestamp) {
   }
 
   return parsed.toLocaleString()
-}
-
-function ArrowLeftIcon({ className = 'h-4 w-4' }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M19 12H5" />
-      <path d="M12 19l-7-7 7-7" />
-    </svg>
-  )
 }
 
 function AdminObituariesCreatePage() {
@@ -270,13 +253,7 @@ function AdminObituariesCreatePage() {
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 md:space-y-8">
       <header className="space-y-3">
-        <Link
-          to="/admin/obituaries"
-          className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 hover:no-underline"
-        >
-          <ArrowLeftIcon />
-          <span>Back to Dashboard</span>
-        </Link>
+        <GoBackButton to="/admin/obituaries" label="Back to Obituaries" />
         <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
             Create New Obituary

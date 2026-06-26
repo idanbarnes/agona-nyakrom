@@ -10,7 +10,21 @@ const {
 } = require('../services/cloudinaryService');
 const { validateCloudinaryEnv } = require('../config/env');
 
-const DRY_RUN = process.argv.includes('--dry-run');
+const parseExecutionMode = (argv = process.argv) => {
+  const dryRun = argv.includes('--dry-run');
+  const execute = argv.includes('--execute');
+
+  if (dryRun && execute) {
+    throw new Error('Use either --dry-run or --execute, not both.');
+  }
+
+  return {
+    dryRun: !execute,
+    execute,
+  };
+};
+
+const { dryRun: DRY_RUN, execute: EXECUTE } = parseExecutionMode();
 
 const quoteIdent = (value) => `"${String(value).replace(/"/g, '""')}"`;
 
@@ -297,6 +311,11 @@ const updateJsonColumn = async ({
 };
 
 const main = async () => {
+  if (!EXECUTE) {
+    console.log('Dry-run mode. No Cloudinary uploads or database updates will be written.');
+    console.log('Run again with --execute only after reviewing this dry run.');
+  }
+
   validateCloudinaryEnv();
 
   const columns = await getCandidateColumns();
@@ -352,11 +371,18 @@ const main = async () => {
   }
 };
 
-main()
-  .catch((error) => {
-    console.error(error.message || error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await pool.end().catch(() => {});
-  });
+if (require.main === module) {
+  main()
+    .catch((error) => {
+      console.error(error.message || error);
+      process.exitCode = 1;
+    })
+    .finally(async () => {
+      await pool.end().catch(() => {});
+    });
+}
+
+module.exports = {
+  extractUploadPath,
+  parseExecutionMode,
+};

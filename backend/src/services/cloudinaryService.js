@@ -1,7 +1,8 @@
 const crypto = require('crypto');
+const { getMediaStorageMode } = require('../config/env');
 
 const isCloudinaryStorageEnabled = () =>
-  String(process.env.MEDIA_STORAGE || 'local').trim().toLowerCase() === 'cloudinary';
+  getMediaStorageMode() === 'cloudinary';
 
 const getCloudinaryConfig = () => {
   const cloudName = String(process.env.CLOUDINARY_CLOUD_NAME || '').trim();
