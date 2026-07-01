@@ -77,7 +77,43 @@ function DesktopNavLink({ item }) {
   )
 }
 
-function DesktopDropdown({ item, isOpen, onToggle, onClose, isActive, variants }) {
+function resolveTarget(to) {
+  try {
+    return new URL(to, 'http://localhost')
+  } catch {
+    return null
+  }
+}
+
+function isNavTargetActive(to, location) {
+  const target = resolveTarget(to)
+  if (!target) return false
+
+  if (target.search) {
+    return location.pathname === target.pathname && location.search === target.search
+  }
+
+  return target.pathname === '/'
+    ? location.pathname === '/'
+    : location.pathname.startsWith(target.pathname)
+}
+
+function handleDropdownTriggerKeyDown(event, onToggle) {
+  if (!['Enter', ' ', 'ArrowDown'].includes(event.key)) return
+
+  event.preventDefault()
+  onToggle()
+}
+
+function handleDropdownLinkKeyDown(event, onClose) {
+  if (!['Enter', ' '].includes(event.key)) return
+
+  event.preventDefault()
+  onClose()
+  event.currentTarget.click()
+}
+
+function DesktopDropdown({ item, isOpen, onToggle, onClose, isActive, variants, location }) {
   const panelId = `desktop-menu-${item.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
 
   return (
@@ -85,11 +121,13 @@ function DesktopDropdown({ item, isOpen, onToggle, onClose, isActive, variants }
       <button
         type="button"
         onClick={onToggle}
+        onKeyDown={(event) => handleDropdownTriggerKeyDown(event, onToggle)}
         className={`${linkBaseClass} inline-flex items-center gap-1.5 ${
           isActive ? activeDesktopLinkClass : ''
         }`}
         aria-expanded={isOpen}
         aria-controls={panelId}
+        aria-haspopup="menu"
       >
         <span>{item.label}</span>
         <ChevronIcon className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -106,27 +144,30 @@ function DesktopDropdown({ item, isOpen, onToggle, onClose, isActive, variants }
             className="absolute left-0 top-full z-50 mt-2 w-72 rounded-xl border border-white/10 bg-[#111827] p-2 shadow-lg shadow-black/20"
           >
             <li className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-wide text-white/50 uppercase">
-              {ABOUT_SECTION_LABEL}
+              {item.sectionLabel || ABOUT_SECTION_LABEL}
             </li>
-            {item.children.map((child) => (
-              <li key={child.to} role="none">
-                <NavLink
-                  to={child.to}
-                  role="menuitem"
-                  onClick={onClose}
-                  onMouseEnter={() => preloadPublicRoute(child.to)}
-                  onFocus={() => preloadPublicRoute(child.to)}
-                  onTouchStart={() => preloadPublicRoute(child.to)}
-                  className={({ isActive: childActive }) =>
-                    `flex items-center rounded-lg px-3.5 py-2.5 text-sm font-medium text-white/85 transition-all duration-200 hover:translate-x-[2px] hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111827] ${
+            {item.children.map((child) => {
+              const childActive = isNavTargetActive(child.to, location)
+
+              return (
+                <li key={child.to} role="none">
+                  <NavLink
+                    to={child.to}
+                    role="menuitem"
+                    onClick={onClose}
+                    onKeyDown={(event) => handleDropdownLinkKeyDown(event, onClose)}
+                    onMouseEnter={() => preloadPublicRoute(child.to)}
+                    onFocus={() => preloadPublicRoute(child.to)}
+                    onTouchStart={() => preloadPublicRoute(child.to)}
+                    className={`flex items-center rounded-lg px-3.5 py-2.5 text-sm font-medium text-white/85 transition-all duration-200 hover:translate-x-[2px] hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111827] ${
                       childActive ? 'bg-white/10 text-white' : ''
-                    }`
-                  }
-                >
-                  {child.label}
-                </NavLink>
-              </li>
-            ))}
+                    }`}
+                  >
+                    {child.label}
+                  </NavLink>
+                </li>
+              )
+            })}
           </Motion.ul>
         ) : null}
       </AnimatePresence>
@@ -134,7 +175,7 @@ function DesktopDropdown({ item, isOpen, onToggle, onClose, isActive, variants }
   )
 }
 
-function MobileAccordionSection({ item, expanded, onToggle, onNavigate, isActive }) {
+function MobileAccordionSection({ item, expanded, onToggle, onNavigate, isActive, location }) {
   const panelId = `mobile-panel-${item.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
 
   return (
@@ -142,35 +183,40 @@ function MobileAccordionSection({ item, expanded, onToggle, onNavigate, isActive
       <button
         type="button"
         onClick={onToggle}
+        onKeyDown={(event) => handleDropdownTriggerKeyDown(event, onToggle)}
         className={`flex min-h-11 w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-100 transition-colors duration-200 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111827] ${
           isActive ? activeMobileLinkClass : ''
         }`}
         aria-expanded={expanded}
         aria-controls={panelId}
+        aria-haspopup="menu"
       >
         <span>{item.label}</span>
         <ChevronIcon className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
       </button>
       {expanded ? (
         <ul id={panelId} className="mt-1 space-y-1 pl-3">
-          {item.children.map((child) => (
-            <li key={child.to}>
-              <NavLink
-                to={child.to}
-                onClick={onNavigate}
-                onMouseEnter={() => preloadPublicRoute(child.to)}
-                onFocus={() => preloadPublicRoute(child.to)}
-                onTouchStart={() => preloadPublicRoute(child.to)}
-                className={({ isActive }) =>
-                  `flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-gray-200 transition-colors duration-200 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111827] ${
-                    isActive ? activeMobileLinkClass : ''
-                  }`
-                }
-              >
-                {child.label}
-              </NavLink>
-            </li>
-          ))}
+          {item.children.map((child) => {
+            const childActive = isNavTargetActive(child.to, location)
+
+            return (
+              <li key={child.to}>
+                <NavLink
+                  to={child.to}
+                  onClick={onNavigate}
+                  onKeyDown={(event) => handleDropdownLinkKeyDown(event, onNavigate)}
+                  onMouseEnter={() => preloadPublicRoute(child.to)}
+                  onFocus={() => preloadPublicRoute(child.to)}
+                  onTouchStart={() => preloadPublicRoute(child.to)}
+                  className={`flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-gray-200 transition-colors duration-200 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111827] ${
+                    childActive ? activeMobileLinkClass : ''
+                  }`}
+                >
+                  {child.label}
+                </NavLink>
+              </li>
+            )
+          })}
         </ul>
       ) : null}
     </li>
@@ -286,9 +332,10 @@ function Navbar({ settings, loading }) {
   }, [isMobileOpen])
 
   const isDropdownParentActive = (item) =>
-    item.children?.some((child) =>
-      child.to === '/' ? location.pathname === '/' : location.pathname.startsWith(child.to),
-    )
+    item.children?.some((child) => {
+      const target = resolveTarget(child.to)
+      return target?.pathname === location.pathname || isNavTargetActive(child.to, location)
+    })
 
   return (
     <header
@@ -334,6 +381,7 @@ function Navbar({ settings, loading }) {
                 onClose={() => setOpenDesktopDropdown(null)}
                 isActive={isDropdownParentActive(item)}
                 variants={dropdownVariants}
+                location={location}
               />
             ) : (
               <li key={item.to}>
@@ -407,6 +455,7 @@ function Navbar({ settings, loading }) {
                             }
                             onNavigate={() => setIsMobileOpen(false)}
                             isActive={isDropdownParentActive(item)}
+                            location={location}
                           />
                         )
                       }

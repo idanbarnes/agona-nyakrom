@@ -11,7 +11,15 @@ const BACKEND_DIST_DIR = path.join(ROOT_DIR, 'backend', 'dist')
 const PUBLIC_TARGET_DIR = path.join(BACKEND_DIST_DIR, 'public')
 const ADMIN_TARGET_DIR = path.join(BACKEND_DIST_DIR, 'admin')
 const NPM_COMMAND = process.platform === 'win32' ? 'npm.cmd' : 'npm'
-const BACKEND_HEALTH_URL = 'http://127.0.0.1:5000/api/health'
+
+function resolveBuildBackendPort() {
+  const port = Number.parseInt(String(process.env.PORT || '5000'), 10)
+  return Number.isInteger(port) && port > 0 && port <= 65535 ? port : 5000
+}
+
+const BUILD_BACKEND_PORT = resolveBuildBackendPort()
+const BUILD_BACKEND_ORIGIN = `http://127.0.0.1:${BUILD_BACKEND_PORT}`
+const BACKEND_HEALTH_URL = `${BUILD_BACKEND_ORIGIN}/api/health`
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -67,11 +75,14 @@ async function ensureBackendRunning() {
     return async () => {}
   }
 
-  const child = spawn(NPM_COMMAND, ['run', 'start'], {
+  const child = spawn(process.execPath, ['src/scripts/startBuildApi.js'], {
     cwd: path.join(ROOT_DIR, 'backend'),
-    env: process.env,
+    env: {
+      ...process.env,
+      PORT: String(BUILD_BACKEND_PORT),
+    },
     stdio: 'inherit',
-    shell: true,
+    shell: false,
   })
 
   try {
@@ -102,7 +113,7 @@ try {
     PUBLIC_DIR,
     {
       ...process.env,
-      PRERENDER_API_BASE_URL: 'http://localhost:5000',
+      PRERENDER_API_BASE_URL: BUILD_BACKEND_ORIGIN,
       VITE_API_BASE_URL: '/api',
     }
   )

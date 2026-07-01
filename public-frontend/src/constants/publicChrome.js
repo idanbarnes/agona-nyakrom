@@ -2,6 +2,7 @@ export const DEFAULT_SITE_NAME = 'Nyakrom Community'
 export const DEFAULT_SITE_TAGLINE = 'Preserving our heritage, building our future.'
 
 export const ABOUT_SECTION_LABEL = 'About Nyakrom'
+export const ANNOUNCEMENTS_EVENTS_SECTION_LABEL = 'Announcements and Events'
 
 export const ABOUT_PAGE_TITLES = {
   history: 'History',
@@ -26,7 +27,14 @@ export const PUBLIC_NAV_ITEMS = [
   { label: 'Hall of Fame', to: '/hall-of-fame' },
   { label: 'Obituaries', to: '/obituaries' },
   { label: 'News', to: '/news' },
-  { label: 'Announcements & Events', to: '/announcements-events' },
+  {
+    label: ANNOUNCEMENTS_EVENTS_SECTION_LABEL,
+    sectionLabel: ANNOUNCEMENTS_EVENTS_SECTION_LABEL,
+    children: [
+      { label: 'Announcements', to: '/announcements-events?view=announcements' },
+      { label: 'Events', to: '/announcements-events?view=events' },
+    ],
+  },
   { label: 'Contact Us', to: '/contact' },
 ]
 
@@ -46,7 +54,8 @@ export const DEFAULT_FOOTER_QUICK_LINKS = [
 
 export const FOOTER_COMMUNITY_LINKS = [
   { label: 'News', url: '/news' },
-  { label: 'Announcements & Events', url: '/announcements-events' },
+  { label: 'Announcements', url: '/announcements-events?view=announcements' },
+  { label: 'Events', url: '/announcements-events?view=events' },
   { label: 'Clans', url: '/clans' },
   { label: 'Asafo Companies', url: '/asafo-companies' },
   { label: 'Obituaries', url: '/obituaries' },

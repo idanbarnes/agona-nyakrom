@@ -370,8 +370,12 @@ function AnnouncementDetail() {
               title="Not found"
               description="This announcement may have been removed."
               action={
-                <Button as={Link} to="/announcements-events" variant="ghost">
-                  Back to Announcements & Events
+                <Button
+                  as={Link}
+                  to="/announcements-events?view=announcements"
+                  variant="ghost"
+                >
+                  Back to Announcements
                 </Button>
               }
             />
@@ -379,8 +383,8 @@ function AnnouncementDetail() {
       >
         <div className="mx-auto max-w-6xl space-y-8">
           <GoBackButton
-            to="/announcements-events"
-            label="Back to Announcements & Events"
+            to="/announcements-events?view=announcements"
+            label="Back to Announcements"
           />
 
           <article className="relative overflow-hidden rounded-[28px] border border-border/70 bg-surface shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
@@ -540,7 +544,12 @@ function AnnouncementDetail() {
               <h2 className="text-xl font-semibold tracking-tight text-foreground">
                 More Announcements
               </h2>
-              <Button as={Link} to="/announcements-events" variant="ghost" size="sm">
+              <Button
+                as={Link}
+                to="/announcements-events?view=announcements"
+                variant="ghost"
+                size="sm"
+              >
                 View all
               </Button>
             </div>

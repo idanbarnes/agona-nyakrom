@@ -1,10 +1,10 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   getAnnouncementsEvents,
   getPublicAnnouncements,
   getPublicEvents,
 } from '../api/endpoints.js'
-import AnimatedHeroIntro from '../components/motion/AnimatedHeroIntro.jsx'
 import ImageLightbox from '../components/ImageLightbox.jsx'
 import RevealItem from '../components/motion/RevealItem.jsx'
 import StaggerGridReveal from '../components/motion/StaggerGridReveal.jsx'
@@ -28,8 +28,6 @@ import {
   Input,
   StateGate,
 } from '../components/ui/index.jsx'
-import { buildIcsEvent, downloadIcs, hasCalendarDate } from '../utils/calendar.js'
-import { downloadRemoteFile, openFileFallback } from '../utils/download.js'
 
 const TABS = [
   { key: 'all', label: 'All' },
@@ -39,6 +37,35 @@ const TABS = [
 ]
 
 const DEFAULT_PAST_LIMIT = 6
+const EVENT_GRID_CLASS =
+  'grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+const ANNOUNCEMENT_GRID_CLASS =
+  'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-5'
+
+const VIEW_CONTENT = {
+  announcements: {
+    title: 'Announcements',
+    description:
+      'Official updates, public notices, and important information from Agona Nyakrom community leadership and bodies.',
+    searchLabel: 'Search Announcements',
+    searchAriaLabel: 'Search announcements',
+    searchIdleLabel: 'Search announcement notices',
+    searchPlaceholder: 'Search notices by title or keyword',
+    showEvents: false,
+    showAnnouncements: true,
+  },
+  events: {
+    title: 'Events',
+    description:
+      'Upcoming and recent community programs, ceremonies, meetings, gatherings, and scheduled activities.',
+    searchLabel: 'Search Events',
+    searchAriaLabel: 'Search events',
+    searchIdleLabel: 'Search events',
+    searchPlaceholder: 'Search events by title, tag, or keyword',
+    showEvents: true,
+    showAnnouncements: false,
+  },
+}
 
 function SearchIcon({ className = 'h-5 w-5' }) {
   return (
@@ -130,6 +157,67 @@ function getEventSlug(event) {
   return event?.slug || event?.id || 'event'
 }
 
+function PageHeader({
+  title,
+  description,
+  countLabel,
+  searchLabel,
+  searchAriaLabel,
+  searchPlaceholder,
+  searchTerm,
+  onSearchChange,
+  onClearSearch,
+}) {
+  return (
+    <header className="border-b border-border/70 bg-surface">
+      <div className="container py-8 md:py-12">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr),minmax(320px,420px)] lg:items-end">
+          <div className="max-w-3xl space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+              Community Information
+            </p>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+              {title}
+            </h1>
+            <p className="text-base leading-7 text-muted-foreground">
+              {description}
+            </p>
+            <p className="text-sm font-medium text-foreground">{countLabel}</p>
+          </div>
+
+          <div className="rounded-lg border border-border/70 bg-background p-4">
+            <label
+              htmlFor="announcements-events-search"
+              className="mb-2 block text-sm font-medium text-foreground"
+            >
+              {searchLabel}
+            </label>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="relative flex-1">
+                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="announcements-events-search"
+                  type="search"
+                  value={searchTerm}
+                  onChange={(event) => onSearchChange(event.target.value)}
+                  placeholder={searchPlaceholder}
+                  aria-label={searchAriaLabel}
+                  className="h-11 pl-10"
+                />
+              </div>
+              {searchTerm ? (
+                <Button variant="secondary" onClick={onClearSearch}>
+                  Clear
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  )
+}
+
 function matchesSearch(value, normalizedSearch) {
   if (!normalizedSearch) {
     return true
@@ -168,19 +256,8 @@ function EventImage({ event }) {
 
   if (!flyer) {
     return (
-      <div className="flex h-full w-full items-center justify-center rounded-t-lg bg-muted text-muted-foreground">
-        <svg
-          viewBox="0 0 24 24"
-          width="28"
-          height="28"
-          aria-hidden="true"
-          className="text-muted-foreground"
-        >
-          <path
-            d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm0 2v10h16V7H4Zm2 2h5v3H6V9Zm0 4h9v2H6v-2Z"
-            fill="currentColor"
-          />
-        </svg>
+      <div className="flex h-full w-full items-center justify-center bg-muted text-sm font-medium text-muted-foreground">
+        Event
       </div>
     )
   }
@@ -189,76 +266,29 @@ function EventImage({ event }) {
     <ImageWithFallback
       src={resolveAssetUrl(flyer)}
       alt={event?.flyer_alt_text || `${title} flyer`}
-      className="h-full w-full transform-gpu rounded-t-lg object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03]"
+      className="h-full w-full transform-gpu object-contain p-2 transition-transform duration-200 ease-out group-hover:scale-[1.01]"
       fallbackText={title}
     />
   )
 }
 
-function EventCard({
-  event,
-  variant = 'compact',
-  showCalendar,
-  onPreviewImage,
-}) {
+function EventCard({ event, onPreviewImage }) {
   const slug = getEventSlug(event)
   const dateLabel = formatDate(event?.event_date)
+  const displayDateLabel = dateLabel || 'Date to be announced'
   const hasFlyer = Boolean(event?.flyer_image_path)
   const flyerUrl = hasFlyer ? resolveAssetUrl(event.flyer_image_path) : ''
-  const [flyerDownloading, setFlyerDownloading] = useState(false)
-  const canAddToCalendar = showCalendar && hasCalendarDate(event?.event_date)
 
-  const handleCalendar = () => {
-    if (!canAddToCalendar) {
-      return
-    }
-
-    const eventUrl =
-      typeof window !== 'undefined'
-        ? new URL(buildEventDetailPath(slug), window.location.origin).toString()
-        : ''
-    const ics = buildIcsEvent({
-      title: event?.title || 'Community Event',
-      description: event?.excerpt || event?.body || '',
-      date: event?.event_date,
-      uid: `${slug}@agona-nyakrom`,
-      url: eventUrl,
-      isAllDay: true,
-    })
-
-    downloadIcs({ filename: `event-${slug}.ics`, content: ics })
-  }
-
-  const handleFlyerDownload = async () => {
-    if (!flyerUrl || flyerDownloading) {
-      return
-    }
-
-    setFlyerDownloading(true)
-
-    try {
-      await downloadRemoteFile({
-        url: flyerUrl,
-        filename: event?.slug ? `event-${event.slug}` : event?.title || 'event-flyer',
-        fallbackBaseName: 'event-flyer',
-      })
-    } catch {
-      openFileFallback(flyerUrl)
-    } finally {
-      setFlyerDownloading(false)
-    }
-  }
-
-  const contentStyle = {
+  const titleStyle = {
     display: '-webkit-box',
-    WebkitLineClamp: variant === 'compact' ? 2 : 3,
+    WebkitLineClamp: 2,
     WebkitBoxOrient: 'vertical',
     overflow: 'hidden',
   }
 
   return (
-    <Card className="group flex h-full flex-col overflow-hidden border border-border/70 shadow-sm">
-      <div className="aspect-[16/9] w-full overflow-hidden">
+    <Card className="group flex h-full min-h-[29rem] flex-col overflow-hidden border-border/80 bg-surface shadow-sm transition-[border-color,box-shadow,transform] duration-200 ease-out hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg motion-reduce:transform-none">
+      <div className="relative aspect-[3/4] w-full overflow-hidden border-b border-border/70 bg-muted sm:aspect-[4/5]">
         {hasFlyer ? (
           <button
             type="button"
@@ -278,47 +308,31 @@ function EventCard({
           <EventImage event={event} />
         )}
       </div>
-      <CardContent className="flex flex-1 flex-col gap-3 pt-4">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-lg font-semibold text-foreground">
-              {event?.title || 'Untitled event'}
-            </h3>
-            {event?.event_tag ? (
-              <Badge variant="muted">{event.event_tag}</Badge>
-            ) : null}
-          </div>
-          {dateLabel ? (
-            <p className="text-sm text-muted-foreground">{dateLabel}</p>
-          ) : null}
+
+      <CardContent className="flex flex-1 flex-col gap-3 p-4">
+        <div className="min-w-0 space-y-2">
+          <h3
+            className="text-lg font-semibold leading-snug text-foreground"
+            style={titleStyle}
+          >
+            {event?.title || 'Untitled event'}
+          </h3>
+          {event?.event_date ? (
+            <time
+              dateTime={event.event_date}
+              className="inline-flex rounded-md border border-primary/20 bg-primary/10 px-3 py-1.5 text-sm font-semibold leading-5 text-primary"
+            >
+              {displayDateLabel}
+            </time>
+          ) : (
+            <span className="inline-flex rounded-md border border-primary/20 bg-primary/10 px-3 py-1.5 text-sm font-semibold leading-5 text-primary">
+              {displayDateLabel}
+            </span>
+          )}
         </div>
-        {event?.excerpt || event?.body ? (
-          <p
-            className="text-sm text-muted-foreground"
-            style={contentStyle}
-          >
-            {event?.excerpt || event?.body}
-          </p>
-        ) : null}
       </CardContent>
-      <CardFooter className="flex flex-wrap justify-start gap-2">
-        {canAddToCalendar ? (
-          <Button variant="secondary" size="sm" onClick={handleCalendar}>
-            Add to Calendar
-          </Button>
-        ) : null}
-        {hasFlyer ? (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleFlyerDownload}
-            loading={flyerDownloading}
-            disabled={flyerDownloading}
-          >
-            Download Flyer
-          </Button>
-        ) : null}
-        <DetailPageCTA to={buildEventDetailPath(slug)} label="View Details" />
+      <CardFooter className="mt-auto flex justify-start border-t border-border/60 px-4 py-3">
+        <DetailPageCTA to={buildEventDetailPath(slug)} label="View details" />
       </CardFooter>
     </Card>
   )
@@ -330,78 +344,73 @@ function AnnouncementCard({ item, onPreviewImage }) {
   const slug = item?.slug || item?.id || 'announcement'
   const flyerUrl = hasFlyer ? resolveAssetUrl(item.flyer_image_path) : ''
 
-  const contentStyle = {
+  const titleStyle = {
     display: '-webkit-box',
-    WebkitLineClamp: 2,
+    WebkitLineClamp: 3,
     WebkitBoxOrient: 'vertical',
     overflow: 'hidden',
   }
 
   return (
-    <Card className="group flex h-full flex-col overflow-hidden border border-border/70 shadow-sm">
+    <Card className="group relative flex h-full min-h-[27rem] flex-col overflow-hidden border-border/80 bg-surface shadow-[0_14px_36px_-28px_rgba(15,23,42,0.45)] transition-[border-color,box-shadow,transform] duration-200 ease-out hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-[0_22px_46px_-30px_rgba(15,23,42,0.55)]">
+      <span
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 h-1 bg-[#D97706]"
+      />
       {hasFlyer ? (
-        <div className="overflow-hidden">
-          <button
-            type="button"
-            onClick={() =>
-              onPreviewImage?.({
-                src: flyerUrl,
-                alt: item?.flyer_alt_text || `${item?.title || 'Announcement'} flyer`,
-                caption: item?.title || 'Announcement flyer',
-              })
-            }
-            aria-label={`View image for ${item?.title || 'this announcement'}`}
-            className="h-full w-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        <button
+          type="button"
+          onClick={() =>
+            onPreviewImage?.({
+              src: flyerUrl,
+              alt: item?.flyer_alt_text || `${item?.title || 'Announcement'} flyer`,
+              caption: item?.title || 'Announcement flyer',
+            })
+          }
+          aria-label={`View image for ${item?.title || 'this announcement'}`}
+          className="aspect-[3/4] w-full cursor-zoom-in overflow-hidden border-b border-border/70 bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:aspect-[4/5]"
+        >
+          <ImageWithFallback
+            src={flyerUrl}
+            alt={item?.flyer_alt_text || `${item?.title || 'Announcement'} flyer`}
+            className="h-full w-full transform-gpu object-contain p-2 transition-transform duration-300 ease-out group-hover:scale-[1.01]"
+            fallbackText={item?.title || 'Announcement'}
+          />
+        </button>
+      ) : null}
+      <CardContent className="flex flex-1 flex-col gap-3 p-4">
+        <div className="space-y-2">
+          <h3
+            className="text-base font-semibold leading-snug text-foreground sm:text-[1.05rem]"
+            style={titleStyle}
           >
-            <ImageWithFallback
-              src={flyerUrl}
-              alt={item?.flyer_alt_text || `${item?.title || 'Announcement'} flyer`}
-              className="h-40 w-full transform-gpu object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03]"
-              fallbackText={item?.title || 'Announcement'}
-            />
-          </button>
-        </div>
-      ) : (
-        <div className="flex h-40 w-full items-center justify-center bg-muted text-muted-foreground">
-          <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-background">
-            <svg
-              viewBox="0 0 24 24"
-              width="22"
-              height="22"
-              aria-hidden="true"
-              className="text-muted-foreground"
-            >
-              <path
-                d="M5 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4Zm2 2v12h8V6H7Zm11 4h1a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-1v-2h1v-4h-1v-2Z"
-                fill="currentColor"
-              />
-            </svg>
-          </span>
-        </div>
-      )}
-      <CardContent className="flex flex-1 flex-col gap-3 pt-4">
-        <div className="space-y-1">
-          <h3 className="text-lg font-semibold text-foreground">
             {item?.title || 'Untitled announcement'}
           </h3>
           {dateLabel ? (
-            <p className="text-xs text-muted-foreground">Posted {dateLabel}</p>
+            <p className="text-xs font-medium leading-5 text-muted-foreground">
+              Published {dateLabel}
+            </p>
           ) : null}
         </div>
-        {item?.excerpt || item?.body ? (
-          <p className="text-sm text-muted-foreground" style={contentStyle}>
-            {item?.excerpt || item?.body}
-          </p>
-        ) : null}
       </CardContent>
-      <CardFooter className="justify-start">
-        <DetailPageCTA to={buildAnnouncementDetailPath(slug)} label="View Details" />
+      <CardFooter className="mt-auto border-t border-border/60 px-4 py-3">
+        <DetailPageCTA
+          to={buildAnnouncementDetailPath(slug)}
+          label="Read more"
+          className="w-full justify-center sm:w-auto"
+        />
       </CardFooter>
     </Card>
   )
 }
 
 function AnnouncementsEventsPage() {
+  const [searchParams] = useSearchParams()
+  const requestedView = searchParams.get('view')
+  const pageView = VIEW_CONTENT[requestedView] ? requestedView : 'announcements'
+  const viewContent = VIEW_CONTENT[pageView]
+  const showEvents = viewContent.showEvents
+  const showAnnouncements = viewContent.showAnnouncements
   const [activeTab, setActiveTab] = useState('all')
   const [events, setEvents] = useState({
     comingSoon: [],
@@ -527,389 +536,277 @@ function AnnouncementsEventsPage() {
     : visiblePast.slice(0, DEFAULT_PAST_LIMIT)
   const filteredEventsCount =
     visibleComingSoon.length + visibleUpcoming.length + visiblePast.length
+  const visibleResultCount =
+    (showEvents ? filteredEventsCount : 0) +
+    (showAnnouncements ? visibleAnnouncements.length : 0)
   const searchResultLabel = normalizedSearch
-    ? `${filteredEventsCount + visibleAnnouncements.length} result${
-        filteredEventsCount + visibleAnnouncements.length === 1 ? '' : 's'
-      }`
-    : 'Search events and announcements'
+    ? `${visibleResultCount} result${visibleResultCount === 1 ? '' : 's'}`
+    : viewContent.searchIdleLabel
+  const headerCountLabel = loading
+    ? `Loading ${pageView}...`
+    : pageView === 'events'
+      ? `${totalEventsCount} event${totalEventsCount === 1 ? '' : 's'} listed`
+      : `${totalAnnouncementsCount} announcement${
+          totalAnnouncementsCount === 1 ? '' : 's'
+        } posted`
 
   useEffect(() => {
     if (!normalizedSearch || loading) return undefined
-    const resultCount = filteredEventsCount + visibleAnnouncements.length
     const timer = window.setTimeout(() => {
       trackSearch({
         query: normalizedSearch,
-        resultCount,
-        contentType: 'event',
+        resultCount: visibleResultCount,
+        contentType: pageView === 'announcements' ? 'announcement' : 'event',
       })
     }, 700)
     return () => window.clearTimeout(timer)
-  }, [filteredEventsCount, loading, normalizedSearch, visibleAnnouncements.length])
+  }, [loading, normalizedSearch, pageView, visibleResultCount])
 
   useEffect(() => {
     setShowAllPast(false)
   }, [activeTab, normalizedSearch])
 
   return (
-    <section className="container py-8 md:py-12">
-      <div className="overflow-hidden rounded-[2rem] border border-[#E8D7BE] bg-[radial-gradient(circle_at_top_left,_rgba(217,119,6,0.14),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(120,53,15,0.12),_transparent_34%),linear-gradient(135deg,_#fffaf2_0%,_#fffefb_48%,_#f5ede1_100%)] shadow-[0_24px_60px_rgba(120,53,15,0.12)]">
-        <div className="grid gap-8 px-5 py-6 sm:px-7 sm:py-8 lg:grid-cols-[minmax(0,1.05fr),minmax(320px,0.95fr)] lg:items-center lg:px-10 lg:py-10">
-          <AnimatedHeroIntro
-            className="space-y-5"
-            entry="left"
-            visualEntry="up"
-            headline={
-              <div className="space-y-4">
-                <span className="inline-flex items-center rounded-full border border-amber-200 bg-white/85 px-4 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-amber-700 shadow-sm backdrop-blur">
-                  Community Updates
-                </span>
-                <div className="space-y-3">
-                  <h1 className="max-w-2xl break-words text-4xl font-semibold leading-[0.95] tracking-tight text-stone-950 sm:text-5xl lg:text-[3.7rem]">
-                    Announcements and events in one clear community hub.
-                  </h1>
-                  <p className="max-w-xl text-sm leading-7 text-stone-600 sm:text-base">
-                    Browse official notices, upcoming gatherings, and past events,
-                    then search the list to jump directly to what matters.
-                  </p>
-                </div>
-              </div>
-            }
-            subtext={
-              <div className="flex flex-wrap gap-3">
-                <div className="rounded-2xl border border-amber-100 bg-white/85 px-4 py-3 shadow-sm backdrop-blur">
-                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-stone-400">
-                    Events
-                  </p>
-                  <p className="mt-1 text-base font-semibold text-stone-900">
-                    {loading ? 'Loading events' : `${totalEventsCount} listed`}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-amber-100 bg-white/75 px-4 py-3 shadow-sm">
-                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-stone-400">
-                    Announcements
-                  </p>
-                  <p className="mt-1 text-base font-semibold text-stone-900">
-                    {loading
-                      ? 'Loading updates'
-                      : `${totalAnnouncementsCount} posted`}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-amber-100 bg-white/75 px-4 py-3 shadow-sm">
-                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-stone-400">
-                    Search
-                  </p>
-                  <p className="mt-1 text-base font-semibold text-stone-900">
-                    {searchResultLabel}
-                  </p>
-                </div>
-              </div>
-            }
-            actions={
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button
-                    as="a"
-                    href="#announcements-events-content"
-                    className="rounded-full border-transparent bg-amber-700 px-5 text-sm font-semibold text-white hover:bg-amber-800"
-                  >
-                    Browse Updates
-                  </Button>
-                  <p className="text-sm text-stone-500">
-                    Search titles, tags, and descriptions across the page.
-                  </p>
-                </div>
+    <section className="bg-background">
+      <PageHeader
+        title={viewContent.title}
+        description={viewContent.description}
+        countLabel={normalizedSearch ? searchResultLabel : headerCountLabel}
+        searchLabel={viewContent.searchLabel}
+        searchAriaLabel={viewContent.searchAriaLabel}
+        searchPlaceholder={viewContent.searchPlaceholder}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        onClearSearch={() => setSearchTerm('')}
+      />
 
-                <div className="rounded-[1.5rem] border border-amber-100 bg-white/80 p-3 shadow-sm backdrop-blur sm:p-4">
-                  <label
-                    htmlFor="announcements-events-search"
-                    className="mb-2 block text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-stone-500"
-                  >
-                    Search Announcements and Events
-                  </label>
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <div className="relative flex-1">
-                      <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
-                      <Input
-                        id="announcements-events-search"
-                        type="search"
-                        value={searchTerm}
-                        onChange={(event) => setSearchTerm(event.target.value)}
-                        placeholder="Search by title, tag, or keyword"
-                        aria-label="Search announcements and events"
-                        className="h-12 rounded-full border-stone-200 bg-white pl-11 pr-4 text-sm shadow-none"
-                      />
-                    </div>
-                    {searchTerm ? (
-                      <Button
-                        variant="ghost"
-                        onClick={() => setSearchTerm('')}
-                        className="h-12 rounded-full border border-stone-200 bg-white px-5 text-sm font-semibold text-stone-700 hover:bg-stone-50"
-                      >
-                        Clear
-                      </Button>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-            }
-            visual={
-              <div className="relative">
-                <div className="pointer-events-none absolute -left-6 top-6 h-24 w-24 rounded-full bg-amber-200/45 blur-3xl" />
-                <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-stone-300/35 blur-2xl" />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <article className="relative overflow-hidden rounded-[1.75rem] border border-white/80 bg-white/90 p-5 shadow-[0_18px_40px_rgba(120,53,15,0.16)] sm:col-span-2">
-                    <p className="text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-amber-700">
-                      Browse by event status
-                    </p>
-                    <div className="mt-4 flex flex-wrap gap-2.5">
-                      {TABS.map((tab) => (
-                        <span
-                          key={`hero-${tab.key}`}
-                          className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold ${
-                            activeTab === tab.key
-                              ? 'bg-amber-700 text-white'
-                              : 'border border-stone-200 bg-stone-50 text-stone-700'
-                          }`}
-                        >
-                          {tab.label}
-                        </span>
-                      ))}
-                    </div>
-                  </article>
-
-                  <article className="overflow-hidden rounded-[1.5rem] border border-white/80 bg-[#fff7ea] p-5 shadow-[0_16px_34px_rgba(120,53,15,0.12)]">
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-stone-400">
-                      Coming soon
-                    </p>
-                    <p className="mt-3 text-3xl font-semibold tracking-tight text-stone-950">
-                      {loading ? '...' : events.comingSoon.length}
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-stone-600">
-                      Early previews of community gatherings and activities.
-                    </p>
-                  </article>
-
-                  <article className="overflow-hidden rounded-[1.5rem] border border-white/80 bg-white/90 p-5 shadow-[0_16px_34px_rgba(120,53,15,0.12)]">
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-stone-400">
-                      Upcoming
-                    </p>
-                    <p className="mt-3 text-3xl font-semibold tracking-tight text-stone-950">
-                      {loading ? '...' : events.upcoming.length}
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-stone-600">
-                      Events with confirmed dates ready to explore in full.
-                    </p>
-                  </article>
-                </div>
-              </div>
-            }
-          />
-        </div>
-      </div>
-
-      <div className="mt-8 space-y-12" id="announcements-events-content">
-        <section className="space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="space-y-1">
-              <h2 className="text-xl font-semibold text-foreground">Events</h2>
-              <p className="text-sm text-muted-foreground">
-                Filter by event timeline and search within the current list.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {TABS.map((tab) => (
-                <Button
-                  key={tab.key}
-                  type="button"
-                  variant={activeTab === tab.key ? 'primary' : 'secondary'}
-                  size="sm"
-                  onClick={() => setActiveTab(tab.key)}
-                  aria-pressed={activeTab === tab.key}
+      <div
+        className="container space-y-12 py-8 md:py-10"
+        id="announcements-events-content"
+      >
+        {showEvents ? (
+          <section className="space-y-6" aria-labelledby="events-list-heading">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="space-y-1">
+                <h2
+                  id="events-list-heading"
+                  className="text-xl font-semibold text-foreground"
                 >
-                  {tab.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          <StateGate
-            loading={loading}
-            error={error}
-            isEmpty={!loading && !error && !hasEvents}
-            skeleton={
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <CardSkeleton key={`events-skeleton-${index}`} />
+                  Community events
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Filter events by timeline. Dates are shown when available.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2" aria-label="Event status filter">
+                {TABS.map((tab) => (
+                  <Button
+                    key={tab.key}
+                    type="button"
+                    variant={activeTab === tab.key ? 'primary' : 'secondary'}
+                    size="sm"
+                    onClick={() => setActiveTab(tab.key)}
+                    aria-pressed={activeTab === tab.key}
+                  >
+                    {tab.label}
+                  </Button>
                 ))}
               </div>
-            }
-            errorFallback={
-              <ErrorState message={error?.message || 'Unable to load events.'} />
-            }
-            empty={
-              <EmptyState
-                title="No events published yet."
-                description="Check back soon for upcoming community gatherings."
-              />
-            }
-          >
-            {filteredEventsCount === 0 ? (
-              <EmptyState
-                title={
-                  normalizedSearch ? 'No matching events found.' : 'No events published yet.'
-                }
-                description={
-                  normalizedSearch
-                    ? `No event matched "${searchTerm.trim()}". Try another keyword or clear the search.`
-                    : 'Check back soon for upcoming community gatherings.'
-                }
-                action={
-                  normalizedSearch ? (
-                    <Button variant="secondary" onClick={() => setSearchTerm('')}>
-                      Clear search
-                    </Button>
-                  ) : null
-                }
-              />
-            ) : (
-              <div className="space-y-10">
-              {visibleComingSoon.length ? (
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold text-foreground">
-                    Coming Soon
-                  </h2>
-                  <StaggerGridReveal className="grid gap-6 sm:grid-cols-2">
-                    {visibleComingSoon.map((event) => (
-                      <RevealItem key={event.id || event.slug || event.title}>
-                        <EventCard
-                          event={event}
-                          variant="compact"
-                          showCalendar
-                          onPreviewImage={setPreviewImage}
-                        />
-                      </RevealItem>
-                    ))}
-                  </StaggerGridReveal>
-                </div>
-              ) : null}
+            </div>
 
-              {visibleUpcoming.length ? (
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold text-foreground">Upcoming</h2>
-                  <StaggerGridReveal className="grid gap-6 lg:grid-cols-2">
-                    {visibleUpcoming.map((event) => (
-                      <RevealItem key={event.id || event.slug || event.title}>
-                        <EventCard
-                          event={event}
-                          variant="large"
-                          showCalendar
-                          onPreviewImage={setPreviewImage}
-                        />
-                      </RevealItem>
-                    ))}
-                  </StaggerGridReveal>
+            <StateGate
+              loading={loading}
+              error={error}
+              isEmpty={!loading && !error && !hasEvents}
+              skeleton={
+                <div className={EVENT_GRID_CLASS}>
+                  {Array.from({ length: 4 }).map((_, index) => (
+                    <CardSkeleton key={`events-skeleton-${index}`} />
+                  ))}
                 </div>
-              ) : null}
-
-              {visiblePast.length ? (
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold text-foreground">
-                    Past Events
-                  </h2>
-                  <StaggerGridReveal className="grid gap-6 sm:grid-cols-2">
-                    {pastVisibleItems.map((event) => (
-                      <RevealItem key={event.id || event.slug || event.title}>
-                        <EventCard
-                          event={event}
-                          variant="compact"
-                          showCalendar={false}
-                          onPreviewImage={setPreviewImage}
-                        />
-                      </RevealItem>
-                    ))}
-                  </StaggerGridReveal>
-                  {visiblePast.length > DEFAULT_PAST_LIMIT ? (
-                    <div>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={() => setShowAllPast((current) => !current)}
-                      >
-                        {showAllPast
-                          ? 'Show less'
-                          : 'Show more past events'}
+              }
+              errorFallback={
+                <ErrorState message="Events could not be loaded right now. Please try again later." />
+              }
+              empty={
+                <EmptyState
+                  title="No events published yet."
+                  description="Upcoming community events will appear here when they are available."
+                />
+              }
+            >
+              {filteredEventsCount === 0 ? (
+                <EmptyState
+                  title={
+                    normalizedSearch ? 'No matching events found.' : 'No events published yet.'
+                  }
+                  description={
+                    normalizedSearch
+                      ? `No event matched "${searchTerm.trim()}". Try another keyword or clear the search.`
+                      : 'Upcoming community events will appear here when they are available.'
+                  }
+                  action={
+                    normalizedSearch ? (
+                      <Button variant="secondary" onClick={() => setSearchTerm('')}>
+                        Clear search
                       </Button>
+                    ) : null
+                  }
+                />
+              ) : (
+                <div className="space-y-10">
+                  {visibleComingSoon.length ? (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-foreground">
+                        Date to be announced
+                      </h3>
+                      <StaggerGridReveal className={EVENT_GRID_CLASS}>
+                        {visibleComingSoon.map((event) => (
+                          <RevealItem
+                            key={event.id || event.slug || event.title}
+                            className="h-full"
+                          >
+                            <EventCard
+                              event={event}
+                              onPreviewImage={setPreviewImage}
+                            />
+                          </RevealItem>
+                        ))}
+                      </StaggerGridReveal>
+                    </div>
+                  ) : null}
+
+                  {visibleUpcoming.length ? (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-foreground">
+                        Upcoming
+                      </h3>
+                      <StaggerGridReveal className={EVENT_GRID_CLASS}>
+                        {visibleUpcoming.map((event) => (
+                          <RevealItem
+                            key={event.id || event.slug || event.title}
+                            className="h-full"
+                          >
+                            <EventCard
+                              event={event}
+                              onPreviewImage={setPreviewImage}
+                            />
+                          </RevealItem>
+                        ))}
+                      </StaggerGridReveal>
+                    </div>
+                  ) : null}
+
+                  {visiblePast.length ? (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-foreground">
+                        Past events
+                      </h3>
+                      <StaggerGridReveal className={EVENT_GRID_CLASS}>
+                        {pastVisibleItems.map((event) => (
+                          <RevealItem
+                            key={event.id || event.slug || event.title}
+                            className="h-full"
+                          >
+                            <EventCard
+                              event={event}
+                              onPreviewImage={setPreviewImage}
+                            />
+                          </RevealItem>
+                        ))}
+                      </StaggerGridReveal>
+                      {visiblePast.length > DEFAULT_PAST_LIMIT ? (
+                        <div>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => setShowAllPast((current) => !current)}
+                          >
+                            {showAllPast ? 'Show less' : 'Show more past events'}
+                          </Button>
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
-              ) : null}
-              </div>
-            )}
-          </StateGate>
-        </section>
+              )}
+            </StateGate>
+          </section>
+        ) : null}
 
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-foreground">Announcements</h2>
-          </div>
+        {showAnnouncements ? (
+          <section className="space-y-6" aria-labelledby="announcements-list-heading">
+            <div className="space-y-1">
+              <h2
+                id="announcements-list-heading"
+                className="text-xl font-semibold text-foreground"
+              >
+                Official notices
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Published community announcements and administrative updates.
+              </p>
+            </div>
 
-          <StateGate
-            loading={loading}
-            error={error}
-            isEmpty={!loading && !error && announcements.length === 0}
-            skeleton={
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <CardSkeleton key={`announcements-skeleton-${index}`} />
-                ))}
-              </div>
-            }
-            errorFallback={
-              <ErrorState
-                message={error?.message || 'Unable to load announcements.'}
-              />
-            }
-            empty={
-              <EmptyState
-                title="No announcements at the moment."
-                description="Please check back soon for updates."
-              />
-            }
-          >
-            {visibleAnnouncements.length === 0 ? (
-              <EmptyState
-                title={
-                  normalizedSearch
-                    ? 'No matching announcements found.'
-                    : 'No announcements at the moment.'
-                }
-                description={
-                  normalizedSearch
-                    ? `No announcement matched "${searchTerm.trim()}". Try another keyword or clear the search.`
-                    : 'Please check back soon for updates.'
-                }
-                action={
-                  normalizedSearch ? (
-                    <Button variant="secondary" onClick={() => setSearchTerm('')}>
-                      Clear search
-                    </Button>
-                  ) : null
-                }
-              />
-            ) : (
-              <StaggerGridReveal className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {visibleAnnouncements.map((item) => (
-                  <RevealItem key={item.id || item.slug || item.title}>
-                    <AnnouncementCard
-                      item={item}
-                      onPreviewImage={setPreviewImage}
-                    />
-                  </RevealItem>
-                ))}
-              </StaggerGridReveal>
-            )}
-          </StateGate>
-        </section>
+            <StateGate
+              loading={loading}
+              error={error}
+              isEmpty={!loading && !error && announcements.length === 0}
+              skeleton={
+                <div className={ANNOUNCEMENT_GRID_CLASS}>
+                  {Array.from({ length: 8 }).map((_, index) => (
+                    <CardSkeleton key={`announcements-skeleton-${index}`} />
+                  ))}
+                </div>
+              }
+              errorFallback={
+                <ErrorState message="Announcements could not be loaded right now. Please try again later." />
+              }
+              empty={
+                <EmptyState
+                  title="No announcements at the moment."
+                  description="Official community notices will appear here when they are available."
+                />
+              }
+            >
+              {visibleAnnouncements.length === 0 ? (
+                <EmptyState
+                  title={
+                    normalizedSearch
+                      ? 'No matching announcements found.'
+                      : 'No announcements at the moment.'
+                  }
+                  description={
+                    normalizedSearch
+                      ? `No announcement matched "${searchTerm.trim()}". Try another keyword or clear the search.`
+                      : 'Official community notices will appear here when they are available.'
+                  }
+                  action={
+                    normalizedSearch ? (
+                      <Button variant="secondary" onClick={() => setSearchTerm('')}>
+                        Clear search
+                      </Button>
+                    ) : null
+                  }
+                />
+              ) : (
+                <StaggerGridReveal className={ANNOUNCEMENT_GRID_CLASS}>
+                  {visibleAnnouncements.map((item) => (
+                    <RevealItem
+                      key={item.id || item.slug || item.title}
+                      className="min-w-0"
+                    >
+                      <AnnouncementCard
+                        item={item}
+                        onPreviewImage={setPreviewImage}
+                      />
+                    </RevealItem>
+                  ))}
+                </StaggerGridReveal>
+              )}
+            </StateGate>
+          </section>
+        ) : null}
       </div>
 
       {previewImage?.src ? (

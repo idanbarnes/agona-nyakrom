@@ -454,8 +454,12 @@ function EventDetail() {
               title="Not found"
               description="This event may have been removed."
               action={
-                <Button as={Link} to="/announcements-events" variant="ghost">
-                  Back to Announcements & Events
+                <Button
+                  as={Link}
+                  to="/announcements-events?view=events"
+                  variant="ghost"
+                >
+                  Back to Events
                 </Button>
               }
             />
@@ -463,8 +467,8 @@ function EventDetail() {
       >
         <div className="mx-auto max-w-6xl space-y-8">
           <GoBackButton
-            to="/announcements-events"
-            label="Back to Announcements & Events"
+            to="/announcements-events?view=events"
+            label="Back to Events"
           />
 
           <article className="relative overflow-hidden rounded-[28px] border border-border/70 bg-surface shadow-[0_20px_50px_rgba(15,23,42,0.08)]">

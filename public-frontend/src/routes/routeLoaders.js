@@ -267,7 +267,7 @@ export function preloadPublicRoute(href) {
     return
   }
 
-  const pathname = normalizedHref.split('#')[0]
+  const pathname = normalizedHref.split(/[?#]/)[0]
   const matchedRoute = findMatchingRoute(pathname)
   if (!matchedRoute) {
     return

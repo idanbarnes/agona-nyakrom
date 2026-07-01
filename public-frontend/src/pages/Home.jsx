@@ -705,7 +705,8 @@ function Home() {
   useEffect(() => {
     schedulePublicRoutePrefetch([
       '/news',
-      '/announcements-events',
+      '/announcements-events?view=announcements',
+      '/announcements-events?view=events',
       '/about/who-we-are',
       '/contact',
     ])
@@ -1687,7 +1688,7 @@ function Home() {
                   title: 'Events',
                   type: 'events',
                   items: highlightEvents,
-                  listHref: '/announcements-events',
+                  listHref: '/announcements-events?view=events',
                   detailBase: '/events',
                 },
                 {
@@ -1695,7 +1696,7 @@ function Home() {
                   title: 'Announcements',
                   type: 'announcements',
                   items: highlightAnnouncements,
-                  listHref: '/announcements-events',
+                  listHref: '/announcements-events?view=announcements',
                   detailBase: '/announcements',
                 },
               ]
